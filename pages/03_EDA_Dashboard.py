@@ -123,7 +123,12 @@ with tab1:
     
     if visualization_suggestions:
         # Display the top 3 suggestions
-        for i, suggestion in enumerate(visualization_suggestions[:3]):
+        # Convert to list first to ensure we can slice it safely
+        suggestions_list = list(visualization_suggestions)
+        max_suggestions = min(3, len(suggestions_list))
+        
+        for i in range(max_suggestions):
+            suggestion = suggestions_list[i]
             st.markdown(f"### {suggestion.get('title', f'Suggestion {i+1}')}")
             st.markdown(suggestion.get('description', ''))
             
