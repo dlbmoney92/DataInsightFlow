@@ -242,9 +242,9 @@ if uploaded_file is None:
                         
                     steps = np.random.randint(2000, 15000)
                     heart_rate = np.random.randint(60, 100)
-                    sleep_hours = np.random.uniform(4, 10).round(1)
+                    sleep_hours = round(np.random.uniform(4, 10), 1)
                     calories = np.random.randint(1500, 3000)
-                    weight = np.random.uniform(60, 90).round(1)
+                    weight = round(np.random.uniform(60, 90), 1)
                     
                     all_data.append({
                         'Date': date,

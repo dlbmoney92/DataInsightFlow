@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from datetime import datetime
 import json
 from utils.ai_suggestions import generate_dataset_insights, answer_data_question
@@ -114,7 +115,7 @@ with tab1:
                         
                         fig = create_visualization_from_suggestion(df, suggestion)
                         if fig:
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key=f"insight_vis_{i}_{insight_type}")
                 
                 st.markdown("---")
         
@@ -161,9 +162,13 @@ with tab2:
                     
                     # Show confidence if available
                     if 'confidence' in answer_data:
-                        confidence = answer_data['confidence']
-                        confidence_color = 'green' if confidence > 0.8 else 'orange' if confidence > 0.5 else 'red'
-                        st.markdown(f"**Confidence:** <span style='color:{confidence_color}'>{confidence:.0%}</span>", unsafe_allow_html=True)
+                        try:
+                            confidence = float(answer_data['confidence'])
+                            confidence_color = 'green' if confidence > 0.8 else 'orange' if confidence > 0.5 else 'red'
+                            st.markdown(f"**Confidence:** <span style='color:{confidence_color}'>{confidence:.0%}</span>", unsafe_allow_html=True)
+                        except (TypeError, ValueError):
+                            # If confidence can't be converted to float, just display it as is
+                            st.markdown(f"**Confidence:** {answer_data['confidence']}")
                     
                     # Show visualization if suggested
                     if 'suggested_visualization' in answer_data and answer_data['suggested_visualization']:
@@ -225,7 +230,7 @@ with tab2:
                                 if suggestion:
                                     fig = create_visualization_from_suggestion(df, suggestion)
                                     if fig:
-                                        st.plotly_chart(fig, use_container_width=True)
+                                        st.plotly_chart(fig, use_container_width=True, key=f"answer_vis_{suggestion['chart_type']}")
                 else:
                     st.error("Failed to get an answer. Please try rephrasing your question.")
     
