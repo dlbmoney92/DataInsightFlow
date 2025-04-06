@@ -20,7 +20,8 @@ from utils.transformations import (
     drop_columns,
     rename_columns,
     create_bins,
-    log_transform
+    log_transform,
+    convert_numeric_to_datetime
 )
 from utils.ai_suggestions import generate_column_cleaning_suggestions
 from utils.visualization import create_distribution_plot, create_categorical_plot
@@ -198,6 +199,8 @@ with tab1:
                                 df_after = drop_columns(df, [column])
                             elif 'log_transform' in code_action:
                                 df_after = log_transform(df, [column])
+                            elif 'convert_numeric_to_datetime' in code_action:
+                                df_after = convert_numeric_to_datetime(df, [column])
                             elif 'create_bins' in code_action:
                                 num_bins = 5
                                 if 'num_bins=' in code_action:
@@ -259,6 +262,15 @@ with tab1:
                                 except Exception as e:
                                     st.warning(f"Error processing date extraction: {str(e)}")
                                     df_after = df.copy()  # Just use original dataframe
+                            
+                            elif 'convert_numeric_to_datetime' in code_action:
+                                # Extract column name from the code
+                                try:
+                                    col_name = code_action.split('(')[1].split(')')[0].strip("'\"")
+                                    df_after = convert_numeric_to_datetime(df, [col_name])
+                                except Exception as e:
+                                    st.warning(f"Error in convert_numeric_to_datetime: {str(e)}")
+                                    df_after = df.copy()
                             
                             else:
                                 st.warning(f"Unknown transformation: {code_action}")
@@ -510,6 +522,24 @@ with tab1:
                                 function="log_transform",
                                 columns=[column]
                             )
+                            
+                        elif 'convert_numeric_to_datetime' in code_action:
+                            # Extract column name from the code
+                            try:
+                                col_name = code_action.split('(')[1].split(')')[0].strip("'\"")
+                                # Apply transformation
+                                df_transformed = convert_numeric_to_datetime(df, [column])
+                                # Register the transformation
+                                register_transformation(
+                                    df,
+                                    name="Convert to DateTime",
+                                    description=f"Convert numeric timestamps in '{column}' to datetime format.",
+                                    function="convert_numeric_to_datetime",
+                                    columns=[column]
+                                )
+                            except Exception as e:
+                                st.error(f"Error in convert_numeric_to_datetime: {str(e)}")
+                                continue
                             
                         elif 'create_bins' in code_action:
                             num_bins = 5

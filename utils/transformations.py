@@ -93,6 +93,8 @@ def apply_transformations(df, transformations=None):
             df_transformed = create_bins(df_transformed, columns[0], params.get('num_bins', 5), params.get('new_column_name'))
         elif function_name == 'log_transform':
             df_transformed = log_transform(df_transformed, columns)
+        elif function_name == 'convert_numeric_to_datetime':
+            df_transformed = convert_numeric_to_datetime(df_transformed, columns)
     
     return df_transformed
 
@@ -257,6 +259,33 @@ def log_transform(df, columns):
             
             # Apply log transformation
             df_out[f"{column}_log"] = np.log(df[column] + constant)
+    
+    return df_out
+
+def convert_numeric_to_datetime(df, columns):
+    """Convert numeric values (e.g., Unix timestamps) to datetime."""
+    df_out = df.copy()
+    
+    for column in columns:
+        if column in df.columns:
+            try:
+                # Try to detect the format
+                first_valid = df[column].iloc[df[column].first_valid_index()] if not df[column].isna().all() else None
+                
+                if first_valid is not None:
+                    if pd.api.types.is_numeric_dtype(df[column]):
+                        # If it's numeric, assume it's a Unix timestamp
+                        # Try both seconds and milliseconds
+                        if df[column].max() > 2e10:  # likely milliseconds
+                            df_out[column] = pd.to_datetime(df[column], unit='ms')
+                        else:  # likely seconds
+                            df_out[column] = pd.to_datetime(df[column], unit='s')
+                    else:
+                        # Otherwise just try standard conversion
+                        df_out[column] = pd.to_datetime(df[column])
+            except Exception as e:
+                # If conversion fails, keep the original
+                pass
     
     return df_out
 

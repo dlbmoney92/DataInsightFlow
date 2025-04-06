@@ -394,9 +394,14 @@ with tab3:
                 with col1:
                     # Month distribution
                     month_counts = df_time['month'].value_counts().sort_index()
+                    # Create a complete set of months (1-12) with zeros for missing months
+                    all_months = list(range(1, 13))
+                    month_values = [month_counts.get(m, 0) for m in all_months]
+                    month_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                    
                     fig_month = px.bar(
-                        x=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                        y=month_counts.values,
+                        x=month_labels,
+                        y=month_values,
                         title="Distribution by Month",
                         color_discrete_sequence=['#4F8BF9']
                     )
