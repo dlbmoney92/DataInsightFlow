@@ -5,6 +5,7 @@ import os
 import json
 from datetime import datetime
 from utils.file_processor import supported_file_types
+from utils.database import initialize_database
 import uuid
 
 # Set page configuration
@@ -14,6 +15,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Initialize database
+initialize_database()
 
 # Initialize session state variables if they don't exist
 if 'dataset' not in st.session_state:
@@ -36,6 +40,8 @@ if 'current_project' not in st.session_state:
     st.session_state.current_project = None
 if 'ai_suggestions' not in st.session_state:
     st.session_state.ai_suggestions = []
+if 'dataset_id' not in st.session_state:
+    st.session_state.dataset_id = None
 
 # Main page header
 st.title("Analytics Assist")

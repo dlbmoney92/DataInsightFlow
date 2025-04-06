@@ -10,6 +10,7 @@ from utils.file_processor import (
     infer_column_types,
     supported_file_types
 )
+from utils.database import save_dataset, list_datasets, get_dataset
 
 st.set_page_config(
     page_title="Upload Data | Analytics Assist",
@@ -62,11 +63,27 @@ if uploaded_file is not None:
                 st.session_state.transformations = []
                 st.session_state.transformation_history = []
                 
+                # Save to database
+                with st.spinner("Saving to database..."):
+                    description = f"Uploaded on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    file_type = uploaded_file.name.split('.')[-1].lower()
+                    dataset_id = save_dataset(
+                        name=project_name,
+                        description=description,
+                        file_name=uploaded_file.name,
+                        file_type=file_type,
+                        df=df,
+                        column_types=column_types
+                    )
+                    if dataset_id:
+                        st.session_state.dataset_id = dataset_id
+                
                 # Create a new project
                 st.session_state.current_project = {
                     'name': project_name,
                     'file_name': uploaded_file.name,
-                    'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'dataset_id': st.session_state.dataset_id
                 }
                 
                 # Success message
@@ -253,16 +270,85 @@ if uploaded_file is None:
         st.session_state.transformations = []
         st.session_state.transformation_history = []
         
+        # Save to database
+        with st.spinner("Saving to database..."):
+            project_name = f"Sample - {selected_sample}"
+            description = f"Sample dataset created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            file_name = f"{selected_sample}.csv"
+            file_type = "csv"
+            dataset_id = save_dataset(
+                name=project_name,
+                description=description,
+                file_name=file_name,
+                file_type=file_type,
+                df=df,
+                column_types=column_types
+            )
+            if dataset_id:
+                st.session_state.dataset_id = dataset_id
+        
         # Create a new project
         st.session_state.current_project = {
             'name': f"Sample - {selected_sample}",
             'file_name': f"{selected_sample}.csv",
-            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'dataset_id': st.session_state.dataset_id
         }
         
         # Success message and redirect
         st.success(f"Successfully loaded sample dataset with {df.shape[0]} rows and {df.shape[1]} columns.")
         st.rerun()
+
+# Add a section to load existing datasets
+st.markdown("---")
+st.subheader("Load Existing Dataset")
+
+# Get list of existing datasets
+datasets_list = list_datasets()
+
+if datasets_list:
+    # Create a DataFrame for displaying the datasets
+    datasets_df = pd.DataFrame([
+        {'ID': ds['id'], 'Name': ds['name'], 'Rows': ds['row_count'], 
+         'Columns': ds['column_count'], 'Created': ds['created_at'].strftime('%Y-%m-%d %H:%M')}
+        for ds in datasets_list
+    ])
+    
+    st.dataframe(datasets_df)
+    
+    # Select a dataset to load
+    selected_dataset_id = st.selectbox("Select a dataset to load", 
+                                      options=[ds['id'] for ds in datasets_list],
+                                      format_func=lambda x: next((ds['name'] for ds in datasets_list if ds['id'] == x), ''))
+    
+    if st.button("Load Selected Dataset"):
+        with st.spinner("Loading dataset from database..."):
+            dataset_data = get_dataset(selected_dataset_id)
+            
+            if dataset_data:
+                # Store in session state
+                st.session_state.dataset = dataset_data['dataset']
+                st.session_state.file_name = dataset_data['file_name']
+                st.session_state.column_types = dataset_data['column_types']
+                st.session_state.dataset_id = dataset_data['id']
+                
+                # Reset transformations
+                st.session_state.transformations = []
+                st.session_state.transformation_history = []
+                
+                # Create a new project
+                st.session_state.current_project = {
+                    'name': dataset_data['name'],
+                    'file_name': dataset_data['file_name'],
+                    'created_at': dataset_data['created_at'].strftime('%Y-%m-%d %H:%M:%S'),
+                    'dataset_id': dataset_data['id']
+                }
+                
+                st.success(f"Successfully loaded dataset '{dataset_data['name']}' with {dataset_data['row_count']} rows and {dataset_data['column_count']} columns.")
+                st.rerun()
+else:
+    st.info("No existing datasets found. Upload a new dataset or use a sample dataset.")
+
 
 # Add a sidebar with tips
 with st.sidebar:

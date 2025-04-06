@@ -4,9 +4,10 @@ import numpy as np
 from datetime import datetime
 import json
 import re
+from utils.database import save_transformation
 
 def register_transformation(df, name, description, function, columns, params=None):
-    """Register a transformation in the session state."""
+    """Register a transformation in the session state and database."""
     if 'transformations' not in st.session_state:
         st.session_state.transformations = []
     
@@ -33,6 +34,22 @@ def register_transformation(df, name, description, function, columns, params=Non
     }
     
     st.session_state.transformation_history.append(history_entry)
+    
+    # Save to database if dataset_id is available
+    if 'dataset_id' in st.session_state and st.session_state.dataset_id:
+        transformation_details = {
+            'function': function,
+            'params': params,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        save_transformation(
+            dataset_id=st.session_state.dataset_id,
+            name=name,
+            description=description,
+            transformation_details=transformation_details,
+            affected_columns=columns
+        )
     
     return transformation
 
