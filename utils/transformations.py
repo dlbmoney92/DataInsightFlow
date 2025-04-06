@@ -81,10 +81,14 @@ def apply_transformations(df, transformations=None):
             df_transformed = remove_outliers(df_transformed, columns, method=params.get('method', 'zscore'))
         elif function_name == 'normalize':
             df_transformed = normalize_columns(df_transformed, columns, method=params.get('method', 'minmax'))
+        elif function_name == 'standardize_data':
+            df_transformed = standardize_data(df_transformed, columns)
         elif function_name == 'encode_categorical':
             df_transformed = encode_categorical(df_transformed, columns, method=params.get('method', 'onehot'))
         elif function_name == 'format_dates':
             df_transformed = format_dates(df_transformed, columns, format=params.get('format'))
+        elif function_name == 'to_datetime':
+            df_transformed = to_datetime(df_transformed, columns)
         elif function_name == 'drop_columns':
             df_transformed = drop_columns(df_transformed, columns)
         elif function_name == 'rename_columns':
@@ -95,6 +99,10 @@ def apply_transformations(df, transformations=None):
             df_transformed = log_transform(df_transformed, columns)
         elif function_name == 'convert_numeric_to_datetime':
             df_transformed = convert_numeric_to_datetime(df_transformed, columns)
+        elif function_name == 'round_off':
+            df_transformed = round_off(df_transformed, columns, params.get('decimals', 2))
+        elif function_name == 'standardize_category_names':
+            df_transformed = standardize_category_names(df_transformed, columns, params.get('case', 'upper'))
     
     return df_transformed
 
@@ -283,6 +291,63 @@ def convert_numeric_to_datetime(df, columns):
                     else:
                         # Otherwise just try standard conversion
                         df_out[column] = pd.to_datetime(df[column])
+            except Exception as e:
+                # If conversion fails, keep the original
+                pass
+    
+    return df_out
+
+def standardize_data(df, columns):
+    """Standardize data (z-score normalization)."""
+    df_out = df.copy()
+    
+    for column in columns:
+        if column in df.columns and pd.api.types.is_numeric_dtype(df[column]):
+            mean = df[column].mean()
+            std = df[column].std()
+            if std > 0:  # Avoid division by zero
+                df_out[column] = (df[column] - mean) / std
+    
+    return df_out
+
+def round_off(df, columns, decimals=2):
+    """Round numeric values to specified number of decimal places."""
+    df_out = df.copy()
+    
+    for column in columns:
+        if column in df.columns and pd.api.types.is_numeric_dtype(df[column]):
+            df_out[column] = df[column].round(decimals)
+    
+    return df_out
+
+def standardize_category_names(df, columns, case='upper'):
+    """Standardize category names by converting to specified case and removing extra spaces."""
+    df_out = df.copy()
+    
+    for column in columns:
+        if column in df.columns and pd.api.types.is_string_dtype(df[column]):
+            # Convert to appropriate case
+            if case.lower() == 'upper':
+                df_out[column] = df[column].str.upper()
+            elif case.lower() == 'lower':
+                df_out[column] = df[column].str.lower()
+            elif case.lower() == 'title':
+                df_out[column] = df[column].str.title()
+            
+            # Remove extra spaces
+            df_out[column] = df_out[column].str.strip()
+            df_out[column] = df_out[column].str.replace(r'\s+', ' ', regex=True)
+    
+    return df_out
+
+def to_datetime(df, columns):
+    """Convert columns to datetime format."""
+    df_out = df.copy()
+    
+    for column in columns:
+        if column in df.columns:
+            try:
+                df_out[column] = pd.to_datetime(df[column])
             except Exception as e:
                 # If conversion fails, keep the original
                 pass

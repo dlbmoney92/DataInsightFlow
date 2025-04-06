@@ -21,7 +21,11 @@ from utils.transformations import (
     rename_columns,
     create_bins,
     log_transform,
-    convert_numeric_to_datetime
+    convert_numeric_to_datetime,
+    standardize_data,
+    round_off,
+    standardize_category_names,
+    to_datetime
 )
 from utils.ai_suggestions import generate_column_cleaning_suggestions
 from utils.visualization import create_distribution_plot, create_categorical_plot
@@ -201,6 +205,23 @@ with tab1:
                                 df_after = log_transform(df, [column])
                             elif 'convert_numeric_to_datetime' in code_action:
                                 df_after = convert_numeric_to_datetime(df, [column])
+                            elif 'standardize_data' in code_action:
+                                df_after = standardize_data(df, [column])
+                            elif 'round_off' in code_action:
+                                decimals = 2
+                                if 'decimals=' in code_action:
+                                    try:
+                                        decimals = int(code_action.split('decimals=')[1].split(')')[0])
+                                    except:
+                                        pass
+                                df_after = round_off(df, [column], decimals)
+                            elif 'standardize_category_names' in code_action:
+                                case = 'upper'
+                                if 'case=' in code_action:
+                                    case = code_action.split('case=')[1].split(')')[0].replace("'", "").replace('"', '')
+                                df_after = standardize_category_names(df, [column], case)
+                            elif "pd.to_datetime" in code_action:
+                                df_after = to_datetime(df, [column])
                             elif 'create_bins' in code_action:
                                 num_bins = 5
                                 if 'num_bins=' in code_action:
@@ -540,6 +561,69 @@ with tab1:
                             except Exception as e:
                                 st.error(f"Error in convert_numeric_to_datetime: {str(e)}")
                                 continue
+                                
+                        elif 'standardize_data' in code_action:
+                            # Apply transformation
+                            df_transformed = standardize_data(df, [column])
+                            # Register the transformation
+                            register_transformation(
+                                df,
+                                name="Standardize Data",
+                                description=f"Apply z-score standardization to '{column}'.",
+                                function="standardize_data",
+                                columns=[column]
+                            )
+                            
+                        elif 'round_off' in code_action:
+                            # Extract decimals parameter if present
+                            decimals = 2
+                            if 'decimals=' in code_action:
+                                try:
+                                    decimals = int(code_action.split('decimals=')[1].split(')')[0])
+                                except:
+                                    pass
+                            
+                            # Apply transformation
+                            df_transformed = round_off(df, [column], decimals)
+                            # Register the transformation
+                            register_transformation(
+                                df,
+                                name="Round Values",
+                                description=f"Round values in '{column}' to {decimals} decimal places.",
+                                function="round_off",
+                                columns=[column],
+                                params={"decimals": decimals}
+                            )
+                            
+                        elif 'standardize_category_names' in code_action:
+                            # Extract case parameter if present
+                            case = 'upper'
+                            if 'case=' in code_action:
+                                case = code_action.split('case=')[1].split(')')[0].replace("'", "").replace('"', '')
+                            
+                            # Apply transformation
+                            df_transformed = standardize_category_names(df, [column], case)
+                            # Register the transformation
+                            register_transformation(
+                                df,
+                                name="Standardize Category Names",
+                                description=f"Standardize category names in '{column}' to {case} case.",
+                                function="standardize_category_names",
+                                columns=[column],
+                                params={"case": case}
+                            )
+                            
+                        elif 'pd.to_datetime' in code_action:
+                            # Apply transformation
+                            df_transformed = to_datetime(df, [column])
+                            # Register the transformation
+                            register_transformation(
+                                df,
+                                name="Convert to DateTime",
+                                description=f"Convert '{column}' to datetime format.",
+                                function="to_datetime",
+                                columns=[column]
+                            )
                             
                         elif 'create_bins' in code_action:
                             num_bins = 5
