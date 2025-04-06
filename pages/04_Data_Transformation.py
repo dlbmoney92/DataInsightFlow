@@ -292,10 +292,92 @@ with tab1:
                                 except Exception as e:
                                     st.warning(f"Error in convert_numeric_to_datetime: {str(e)}")
                                     df_after = df.copy()
+                                    
+                            elif 'convert_numeric_to_date' in code_action or 'convert_to_date' in code_action:
+                                try:
+                                    # This is likely a date conversion - let's use to_datetime
+                                    df_after = to_datetime(df, [column])
+                                except Exception as e:
+                                    st.warning(f"Error converting to date: {str(e)}")
+                                    df_after = df.copy()
+                                
+                            elif 'check_date_range' in code_action:
+                                try:
+                                    # This is a date validation - we'll convert to datetime first
+                                    df_after = to_datetime(df, [column])
+                                except Exception as e:
+                                    st.warning(f"Error validating date range: {str(e)}")
+                                    df_after = df.copy()
+                                
+                            elif 'find_and_remove_duplicates' in code_action or 'drop_duplicates' in code_action:
+                                try:
+                                    # Handle duplicate removal
+                                    df_after = df.drop_duplicates(subset=[column] if column else None)
+                                except Exception as e:
+                                    st.warning(f"Error removing duplicates: {str(e)}")
+                                    df_after = df.copy()
+                                
+                            elif '.str.upper()' in code_action:
+                                try:
+                                    # Apply upper case transformation
+                                    df_after = standardize_category_names(df, [column], case='upper')
+                                except Exception as e:
+                                    st.warning(f"Error converting to uppercase: {str(e)}")
+                                    df_after = df.copy()
+                                
+                            elif '.str.lower()' in code_action:
+                                try:
+                                    # Apply lower case transformation
+                                    df_after = standardize_category_names(df, [column], case='lower')
+                                except Exception as e:
+                                    st.warning(f"Error converting to lowercase: {str(e)}")
+                                    df_after = df.copy()
+                                
+                            elif 'extract_date_components' in code_action:
+                                try:
+                                    # Make a copy to avoid SettingWithCopyWarning
+                                    df_after = df.copy()
+                                    
+                                    # Convert to datetime first
+                                    df_after[column] = pd.to_datetime(df_after[column], errors='coerce')
+                                    
+                                    # Extract date components
+                                    df_after[f"{column}_year"] = df_after[column].dt.year
+                                    df_after[f"{column}_month"] = df_after[column].dt.month
+                                    df_after[f"{column}_day"] = df_after[column].dt.day
+                                except Exception as e:
+                                    st.warning(f"Error extracting date components: {str(e)}")
+                                    df_after = df.copy()
                             
                             else:
-                                st.warning(f"Unknown transformation: {code_action}")
-                                continue
+                                # Try to extract string transformation from code
+                                if "df['" in code_action and "'] = " in code_action:
+                                    try:
+                                        # For custom string operations that follow pattern: df['column'] = ...
+                                        target_col = code_action.split("df['")[1].split("']")[0]
+                                        # Make a copy to avoid SettingWithCopyWarning
+                                        df_after = df.copy()
+                                        
+                                        # Simple string transformations
+                                        if ".str.upper()" in code_action:
+                                            df_after[target_col] = df_after[target_col].str.upper()
+                                        elif ".str.lower()" in code_action:
+                                            df_after[target_col] = df_after[target_col].str.lower()
+                                        elif ".str.strip()" in code_action:
+                                            df_after[target_col] = df_after[target_col].str.strip()
+                                        elif ".str.replace(" in code_action:
+                                            # This is more complex, let's at least try a basic version
+                                            df_after[target_col] = df_after[target_col].str.replace(" ", "")
+                                        else:
+                                            # If we can't determine the specific operation, just notify the user
+                                            st.warning(f"Couldn't interpret custom string operation: {code_action}")
+                                            df_after = df.copy()
+                                    except Exception as e:
+                                        st.warning(f"Error in custom string operation: {str(e)}")
+                                        df_after = df.copy()
+                                else:
+                                    st.warning(f"Unknown transformation: {code_action}")
+                                    continue
                             
                             # Display before/after comparison
                             col1, col2 = st.columns(2)
@@ -719,9 +801,156 @@ with tab1:
                             
 
                                 
+                        elif 'convert_numeric_to_date' in code_action or 'convert_to_date' in code_action:
+                            try:
+                                # This is likely a date conversion - let's use to_datetime
+                                df_transformed = to_datetime(df, [column])
+                                # Register the transformation
+                                register_transformation(
+                                    df,
+                                    name="Convert to Date",
+                                    description=f"Convert '{column}' to date format",
+                                    function="to_datetime",
+                                    columns=[column]
+                                )
+                            except Exception as e:
+                                st.error(f"Error converting to date: {str(e)}")
+                                continue
+                                
+                        elif 'check_date_range' in code_action:
+                            try:
+                                # This is a date validation - we'll convert to datetime first
+                                df_transformed = to_datetime(df, [column])
+                                # Register the transformation
+                                register_transformation(
+                                    df,
+                                    name="Validate Date Range",
+                                    description=f"Convert '{column}' to proper date format for validation",
+                                    function="to_datetime",
+                                    columns=[column]
+                                )
+                            except Exception as e:
+                                st.error(f"Error validating date range: {str(e)}")
+                                continue
+                                
+                        elif 'find_and_remove_duplicates' in code_action or 'drop_duplicates' in code_action:
+                            try:
+                                # Handle duplicate removal
+                                df_transformed = df.drop_duplicates(subset=[column] if column else None)
+                                # Register the transformation
+                                register_transformation(
+                                    df,
+                                    name="Remove Duplicates",
+                                    description=f"Remove duplicate rows based on '{column}'" if column else "Remove duplicate rows",
+                                    function="drop_duplicates",
+                                    columns=[column] if column else []
+                                )
+                            except Exception as e:
+                                st.error(f"Error removing duplicates: {str(e)}")
+                                continue
+                                
+                        elif '.str.upper()' in code_action:
+                            try:
+                                # Apply upper case transformation
+                                df_transformed = standardize_category_names(df, [column], case='upper')
+                                # Register the transformation
+                                register_transformation(
+                                    df,
+                                    name="Convert to Uppercase",
+                                    description=f"Convert text in '{column}' to uppercase",
+                                    function="standardize_category_names",
+                                    columns=[column],
+                                    params={"case": "upper"}
+                                )
+                            except Exception as e:
+                                st.error(f"Error converting to uppercase: {str(e)}")
+                                continue
+                                
+                        elif '.str.lower()' in code_action:
+                            try:
+                                # Apply lower case transformation
+                                df_transformed = standardize_category_names(df, [column], case='lower')
+                                # Register the transformation
+                                register_transformation(
+                                    df,
+                                    name="Convert to Lowercase",
+                                    description=f"Convert text in '{column}' to lowercase",
+                                    function="standardize_category_names",
+                                    columns=[column],
+                                    params={"case": "lower"}
+                                )
+                            except Exception as e:
+                                st.error(f"Error converting to lowercase: {str(e)}")
+                                continue
+                                
+                        elif 'extract_date_components' in code_action:
+                            try:
+                                # Make a copy to avoid SettingWithCopyWarning
+                                df_transformed = df.copy()
+                                
+                                # Convert to datetime first
+                                df_transformed[column] = pd.to_datetime(df_transformed[column], errors='coerce')
+                                
+                                # Extract date components
+                                df_transformed[f"{column}_year"] = df_transformed[column].dt.year
+                                df_transformed[f"{column}_month"] = df_transformed[column].dt.month
+                                df_transformed[f"{column}_day"] = df_transformed[column].dt.day
+                                
+                                # Register the transformation
+                                register_transformation(
+                                    df,
+                                    name="Extract Date Components",
+                                    description=f"Extract year, month, and day from '{column}'",
+                                    function="extract_date_components",
+                                    columns=[column],
+                                    params={"components": ["year", "month", "day"]}
+                                )
+                            except Exception as e:
+                                st.error(f"Error extracting date components: {str(e)}")
+                                continue
+                                
                         else:
-                            st.warning(f"Unknown transformation: {code_action}")
-                            continue
+                            # Try to extract string transformation from code
+                            if "df['" in code_action and "'] = " in code_action:
+                                try:
+                                    # For custom string operations that follow pattern: df['column'] = ...
+                                    target_col = code_action.split("df['")[1].split("']")[0]
+                                    # Make a copy to avoid SettingWithCopyWarning
+                                    df_transformed = df.copy()
+                                    
+                                    # Simple string transformations
+                                    if ".str.upper()" in code_action:
+                                        df_transformed[target_col] = df_transformed[target_col].str.upper()
+                                        operation = "Convert to Uppercase"
+                                    elif ".str.lower()" in code_action:
+                                        df_transformed[target_col] = df_transformed[target_col].str.lower()
+                                        operation = "Convert to Lowercase"
+                                    elif ".str.strip()" in code_action:
+                                        df_transformed[target_col] = df_transformed[target_col].str.strip()
+                                        operation = "Remove Whitespace"
+                                    elif ".str.replace(" in code_action:
+                                        # This is more complex, let's at least try a basic version
+                                        df_transformed[target_col] = df_transformed[target_col].str.replace(" ", "")
+                                        operation = "Replace Spaces"
+                                    else:
+                                        # If we can't determine the specific operation, just notify the user
+                                        st.warning(f"Couldn't interpret custom string operation: {code_action}")
+                                        continue
+                                        
+                                    # Register the transformation
+                                    register_transformation(
+                                        df,
+                                        name=operation,
+                                        description=f"Apply {operation.lower()} to '{target_col}'",
+                                        function="custom_string_operation",
+                                        columns=[target_col]
+                                    )
+                                except Exception as e:
+                                    st.error(f"Error in custom string operation: {str(e)}")
+                                    continue
+                            else:
+                                st.warning(f"Unknown transformation: {code_action}")
+                                continue
                         
                         # Update the dataset in session state
                         st.session_state.dataset = df_transformed
