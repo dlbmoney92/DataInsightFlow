@@ -37,10 +37,28 @@ Base = declarative_base()
 metadata = MetaData()
 
 # Define tables using SQLAlchemy's Table construct
+users = Table(
+    'users',
+    metadata,
+    Column('id', Integer, primary_key=True),
+    Column('email', String(255), nullable=False, unique=True),
+    Column('password_hash', String(255), nullable=False),
+    Column('full_name', String(255), nullable=True),
+    Column('created_at', DateTime, default=datetime.datetime.utcnow),
+    Column('last_login', DateTime, nullable=True),
+    Column('subscription_tier', String(50), default='free'),
+    Column('subscription_start_date', DateTime, nullable=True),
+    Column('subscription_end_date', DateTime, nullable=True),
+    Column('is_trial', Integer, default=0),  # Boolean (0 or 1)
+    Column('trial_start_date', DateTime, nullable=True),
+    Column('trial_end_date', DateTime, nullable=True)
+)
+
 datasets = Table(
     'datasets', 
     metadata,
     Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, nullable=True),  # Foreign key to users table
     Column('name', String(255), nullable=False),
     Column('description', Text, nullable=True),
     Column('file_name', String(255), nullable=False),
@@ -99,7 +117,7 @@ def initialize_database():
     inspector = inspect(engine)
     
     # Check if tables exist and create them if they don't
-    if not inspector.has_table('datasets'):
+    if not inspector.has_table('datasets') or not inspector.has_table('users'):
         metadata.create_all(engine)
         st.success("Database initialized successfully.")
         return True
@@ -511,3 +529,178 @@ def get_insights(dataset_id, version_id=None):
     except Exception as e:
         st.error(f"Failed to retrieve insights after retries: {str(e)}")
         return []
+
+# User management operations
+def create_user(email, password_hash, full_name=None):
+    """Create a new user."""
+    session = Session()
+    try:
+        # Check if user already exists
+        existing = session.query(users).filter(users.c.email == email).first()
+        if existing:
+            return {'success': False, 'message': 'Email already exists'}
+        
+        # Insert new user
+        result = session.execute(
+            users.insert().values(
+                email=email,
+                password_hash=password_hash,
+                full_name=full_name,
+                subscription_tier='free'
+            )
+        )
+        
+        session.commit()
+        return {'success': True, 'user_id': result.inserted_primary_key[0]}
+    except Exception as e:
+        session.rollback()
+        st.error(f"Error creating user: {str(e)}")
+        return {'success': False, 'message': str(e)}
+    finally:
+        session.close()
+
+def get_user_by_email(email):
+    """Get user by email."""
+    def _get_user_operation():
+        session = Session()
+        try:
+            result = session.query(users).filter(users.c.email == email).first()
+            if result:
+                return {
+                    'id': result.id,
+                    'email': result.email,
+                    'password_hash': result.password_hash,
+                    'full_name': result.full_name,
+                    'created_at': result.created_at,
+                    'last_login': result.last_login,
+                    'subscription_tier': result.subscription_tier,
+                    'subscription_start_date': result.subscription_start_date,
+                    'subscription_end_date': result.subscription_end_date,
+                    'is_trial': bool(result.is_trial),
+                    'trial_start_date': result.trial_start_date,
+                    'trial_end_date': result.trial_end_date
+                }
+            return None
+        except Exception as e:
+            if not isinstance(e, (OperationalError, SQLAlchemyError)):
+                st.error(f"Error retrieving user: {str(e)}")
+            raise
+        finally:
+            session.close()
+    
+    try:
+        return execute_with_retry(_get_user_operation)
+    except Exception as e:
+        st.error(f"Failed to retrieve user after retries: {str(e)}")
+        return None
+
+def get_user_by_id(user_id):
+    """Get user by ID."""
+    def _get_user_operation():
+        session = Session()
+        try:
+            result = session.query(users).filter(users.c.id == user_id).first()
+            if result:
+                return {
+                    'id': result.id,
+                    'email': result.email,
+                    'password_hash': result.password_hash,
+                    'full_name': result.full_name,
+                    'created_at': result.created_at,
+                    'last_login': result.last_login,
+                    'subscription_tier': result.subscription_tier,
+                    'subscription_start_date': result.subscription_start_date,
+                    'subscription_end_date': result.subscription_end_date,
+                    'is_trial': bool(result.is_trial),
+                    'trial_start_date': result.trial_start_date,
+                    'trial_end_date': result.trial_end_date
+                }
+            return None
+        except Exception as e:
+            if not isinstance(e, (OperationalError, SQLAlchemyError)):
+                st.error(f"Error retrieving user: {str(e)}")
+            raise
+        finally:
+            session.close()
+    
+    try:
+        return execute_with_retry(_get_user_operation)
+    except Exception as e:
+        st.error(f"Failed to retrieve user after retries: {str(e)}")
+        return None
+
+def update_user_subscription(user_id, tier, subscription_start_date=None, subscription_end_date=None):
+    """Update user subscription tier and dates."""
+    session = Session()
+    try:
+        values = {'subscription_tier': tier}
+        
+        if subscription_start_date:
+            values['subscription_start_date'] = subscription_start_date
+        
+        if subscription_end_date:
+            values['subscription_end_date'] = subscription_end_date
+        
+        session.execute(
+            users.update().where(users.c.id == user_id).values(**values)
+        )
+        
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        st.error(f"Error updating user subscription: {str(e)}")
+        return False
+    finally:
+        session.close()
+
+def start_user_trial(user_id, trial_days=7):
+    """Start a free trial for a user."""
+    session = Session()
+    try:
+        now = datetime.datetime.utcnow()
+        trial_end = now + datetime.timedelta(days=trial_days)
+        
+        session.execute(
+            users.update().where(users.c.id == user_id).values(
+                is_trial=1,
+                trial_start_date=now,
+                trial_end_date=trial_end,
+                subscription_tier='pro'
+            )
+        )
+        
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        st.error(f"Error starting trial: {str(e)}")
+        return False
+    finally:
+        session.close()
+
+def update_last_login(user_id):
+    """Update the last login timestamp for a user."""
+    session = Session()
+    try:
+        session.execute(
+            users.update().where(users.c.id == user_id).values(
+                last_login=datetime.datetime.utcnow()
+            )
+        )
+        
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        st.error(f"Error updating last login: {str(e)}")
+        return False
+    finally:
+        session.close()
+
+def check_valid_credentials(email, password_hash):
+    """Check if email and password combination is valid."""
+    user = get_user_by_email(email)
+    if user and user['password_hash'] == password_hash:
+        return user
+    return None
