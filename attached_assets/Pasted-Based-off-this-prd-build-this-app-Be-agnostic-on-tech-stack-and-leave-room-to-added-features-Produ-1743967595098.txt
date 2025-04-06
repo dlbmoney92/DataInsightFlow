@@ -1,0 +1,132 @@
+Based off this prd build this app. Be agnostic on tech stack and leave room to added features. Product Requirements Document (PRD)
+Product Name: Analytics Assist
+Prepared by: Darius Bell
+Date: April 6, 2025
+1. Background & Vision
+Analytics Assist is a modern, AI-driven data science application that empowers users of all backgrounds to perform exploratory data analysis (EDA), data cleaning, and machine learning on their datasets with no dependency on specific tech stacks.
+
+Born from my experience in pharmaceutical quality, data science, and research, I’ve often seen how the ability to analyze data is hindered by technical barriers. This tool aims to remove those barriers by enabling seamless data uploads, AI-driven insights, and human-in-the-loop data transformation—all in one intuitive platform.
+
+Analytics Assist is the "co-pilot for data discovery", combining automation, transparency, and control.
+
+2. Objectives
+Empower users to upload and analyze datasets without needing to write code.
+
+Provide AI-powered suggestions for data cleaning, visualizations, and modeling.
+
+Maintain full user control with a human-in-the-loop design for all transformations.
+
+Be tech stack agnostic—supporting a wide range of file formats.
+
+Continuously improve through machine learning based on user interactions and datasets.
+
+3. Target Users
+Business professionals (finance, HR, ops)
+
+Researchers and academic users
+
+Pharma/healthcare quality professionals
+
+Analysts and data science learners
+
+Small businesses and startups
+
+4. Key Features
+4.1 Data Upload & Recognition
+Upload support: .csv, .xlsx, .json, .txt, .docx
+
+Auto-detects schema and transforms into clean tabular data
+
+AI-based column type detection (e.g., date, numeric, category)
+
+4.2 Exploratory Data Analysis (EDA)
+Auto-summary of dataset (nulls, types, distributions)
+
+One-click EDA report with:
+
+Histograms, box plots, bar charts
+
+Correlation matrix
+
+Descriptive statistics
+
+4.3 AI Suggestions
+Suggest transformations (e.g., encoding, imputation, normalization)
+
+Recommend appropriate visualizations and models
+
+Feedback loop: Learns from user choices to refine future suggestions
+
+4.4 Human-in-the-loop Data Transformation
+All AI suggestions require user review/confirmation
+
+Version control for data transformations
+
+Visual interface for confirming/undoing changes
+
+4.5 Insights Dashboard
+Real-time insight cards based on uploaded data
+
+Interactive charts and filters
+
+Export to PowerPoint, PDF, Excel
+
+4.6 Machine Learning Integration
+AutoML for classification/regression/clustering
+
+Transparent model summary and explanation
+
+Train/test split and cross-validation settings
+
+5. Architecture & Tech Stack
+Frontend: React + Tailwind (modular, clean UI)
+
+Backend: Python (FastAPI), Node.js (for flexibility)
+
+AI/ML: OpenAI API, Scikit-learn, Pandas, PyCaret, AutoML frameworks
+
+Storage: AWS S3 or Google Cloud Storage
+
+Data Recognition: NLP for Word/Text docs, pandas profiling for structured data
+
+6. Pricing & Plans
+Plan	Features	Price
+Free Trial	1 project, 100MB file size, basic AI EDA, limited export	$0
+Pro	10 projects, 500MB file size, full EDA, ML models, unlimited exports	$19/mo
+Business	Unlimited projects, 5GB file size, team sharing, API access	$49/mo
+Enterprise	Custom integrations, private hosting, dedicated support	Custom
+7. User Journey
+Upload: User uploads dataset (.csv, .xlsx, .docx, etc.)
+
+Data Review: AI parses and presents tabular data
+
+EDA & Suggestions: Tool recommends visuals and key insights
+
+User Edits: Human reviews, edits, or accepts transformations
+
+Deeper Analysis: Option to run models or dive deeper into subsets
+
+Export or Share: Save dashboards or reports to share with others
+
+8. Continuous Improvement
+AI improves through reinforcement learning from user interactions
+
+Suggestion engine adapts to new industries and common patterns
+
+User feedback loop for every major feature (thumbs up/down or comment)
+
+9. Differentiators
+Tech stack agnostic: No coding required, but Python power under the hood
+
+Human-in-the-loop ensures control and trust
+
+Built by someone who understands regulated data workflows (pharma)
+
+Supports multiple data formats—including unstructured docs
+
+10. Roadmap (Phases)
+Phase	Timeline	Features
+MVP	Month 1	File upload, EDA suggestions, data transformations, export
+V1.0	Month 2	Full dashboard, ML models, pricing plans, user feedback
+V2.0	Month 3	AI model refinement, collaboration features, API integrations
+V3.0	Month 4	Real-time feedback learning, plugin marketplace, enterprise tools
