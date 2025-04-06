@@ -214,9 +214,8 @@ with tab1:
                                 # This is likely a date extraction operation like: 
                                 # df['Year'] = df['Date'].dt.year; df['Month'] = df['Date'].dt.month; df['Day'] = df['Date'].dt.day
                                 
-                                # First identify the source date column
                                 try:
-                                    # Find the source date column (should be after df[')
+                                    # Find the source date column
                                     parts = code_action.split('.dt.')
                                     if len(parts) > 0:
                                         source_col = parts[0].split("df['")[1].split("']")[0]
@@ -250,19 +249,17 @@ with tab1:
                                                 
                                                 affected_columns.append(target_col)
                                         
-                                        # If we successfully processed at least one operation
-                                        if affected_columns:
-                                            # All good, we have the transformed dataframe
-                                            pass
-                                        else:
+                                        # If we didn't process any operations successfully
+                                        if not affected_columns:
                                             st.warning(f"Couldn't identify date components to extract in: {code_action}")
-                                            continue
+                                            df_after = df.copy()  # Just use original dataframe
                                     else:
                                         st.warning(f"Couldn't identify source date column in: {code_action}")
-                                        continue
+                                        df_after = df.copy()  # Just use original dataframe
                                 except Exception as e:
                                     st.warning(f"Error processing date extraction: {str(e)}")
-                                    continue
+                                    df_after = df.copy()  # Just use original dataframe
+                            
                             else:
                                 st.warning(f"Unknown transformation: {code_action}")
                                 continue
@@ -306,11 +303,11 @@ with tab1:
                                         if pd.api.types.is_numeric_dtype(df_after[new_cols[0]]):
                                             fig_after = create_distribution_plot(df_after, new_cols[0], 'histogram')
                                             if fig_after:
-                                                st.plotly_chart(fig_after, use_container_width=True)
+                                                st.plotly_chart(fig_after, use_container_width=True, key=f"after_dist_{new_cols[0]}_{i}")
                                         else:
                                             fig_after = create_categorical_plot(df_after, new_cols[0], 'bar')
                                             if fig_after:
-                                                st.plotly_chart(fig_after, use_container_width=True)
+                                                st.plotly_chart(fig_after, use_container_width=True, key=f"after_cat_{new_cols[0]}_{i}")
                                     else:
                                         st.warning("The column structure has changed significantly after transformation.")
                                 else:
@@ -319,7 +316,7 @@ with tab1:
                                         # For numeric columns, show distribution and stats
                                         fig_after = create_distribution_plot(df_after, column, 'histogram')
                                         if fig_after:
-                                            st.plotly_chart(fig_after, use_container_width=True)
+                                            st.plotly_chart(fig_after, use_container_width=True, key=f"after_dist_{column}_{i}")
                                         
                                         # Show statistics
                                         stats_after = df_after[column].describe()
@@ -328,7 +325,7 @@ with tab1:
                                         # For categorical columns, show value counts
                                         fig_after = create_categorical_plot(df_after, column, 'bar')
                                         if fig_after:
-                                            st.plotly_chart(fig_after, use_container_width=True)
+                                            st.plotly_chart(fig_after, use_container_width=True, key=f"after_cat_{column}_{i}")
                                         
                                         # Show top values
                                         st.write(df_after[column].value_counts().head(5))
@@ -540,9 +537,6 @@ with tab1:
                             
                         # Handle special case for date component extraction
                         elif 'df[' in code_action and '.dt.' in code_action:
-                            # This is likely a date extraction operation like: 
-                            # df['Year'] = df['Date'].dt.year; df['Month'] = df['Date'].dt.month; df['Day'] = df['Date'].dt.day
-                            
                             try:
                                 # Find the source date column
                                 parts = code_action.split('.dt.')
@@ -582,11 +576,11 @@ with tab1:
                                                 component_desc = "weekday"
                                             elif 'week' in date_component:
                                                 df_transformed[target_col] = pd.to_datetime(df_transformed[source_col]).dt.isocalendar().week
-                                                component_desc = "week"
+                                                component_desc = "week number"
                                             
                                             if component_desc:
                                                 affected_columns.append(target_col)
-                                                operations_desc.append(f"extracted {component_desc} into '{target_col}'")
+                                                operations_desc.append(f"Extract {component_desc} to '{target_col}'")
                                     
                                     # If we successfully processed at least one operation
                                     if affected_columns:
@@ -594,20 +588,22 @@ with tab1:
                                         register_transformation(
                                             df,
                                             name="Extract Date Components",
-                                            description=f"From date column '{source_col}': {', '.join(operations_desc)}",
+                                            description=f"Extract date components from '{source_col}': {', '.join(operations_desc)}",
                                             function="extract_date_components",
                                             columns=[source_col],
-                                            params={"components": [op.split('.dt.')[1].strip() for op in operations if '.dt.' in op]}
+                                            params={"operations": operations_desc}
                                         )
                                     else:
-                                        st.warning(f"Couldn't identify date components to extract in: {code_action}")
+                                        st.error(f"Could not identify date components to extract in: {code_action}")
                                         continue
                                 else:
-                                    st.warning(f"Couldn't identify source date column in: {code_action}")
+                                    st.error(f"Could not identify source date column in: {code_action}")
                                     continue
                             except Exception as e:
-                                st.warning(f"Error processing date extraction: {str(e)}")
+                                st.error(f"Error processing date extraction: {str(e)}")
                                 continue
+                            
+
                                 
                         else:
                             st.warning(f"Unknown transformation: {code_action}")
