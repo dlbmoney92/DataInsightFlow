@@ -129,17 +129,26 @@ with tab1:
         
         for i in range(max_suggestions):
             suggestion = suggestions_list[i]
-            st.markdown(f"### {suggestion.get('title', f'Suggestion {i+1}')}")
-            st.markdown(suggestion.get('description', ''))
-            
-            # Create visualization from suggestion
-            from utils.visualization import create_visualization_from_suggestion
-            fig = create_visualization_from_suggestion(df, suggestion)
-            
-            if fig:
-                st.plotly_chart(fig, use_container_width=True, key=f"ai_suggestion_{i}")
+            # Check if suggestion is a dictionary
+            if isinstance(suggestion, dict):
+                st.markdown(f"### {suggestion.get('title', f'Suggestion {i+1}')}")
+                st.markdown(suggestion.get('description', ''))
             else:
-                st.error("Could not create this visualization. Some columns may be incompatible.")
+                # If it's not a dictionary (e.g., a string), handle it differently
+                st.markdown(f"### Suggestion {i+1}")
+                st.markdown(str(suggestion) if suggestion else "")
+            
+            # Create visualization from suggestion only if it's a dictionary
+            if isinstance(suggestion, dict):
+                from utils.visualization import create_visualization_from_suggestion
+                fig = create_visualization_from_suggestion(df, suggestion)
+                
+                if fig:
+                    st.plotly_chart(fig, use_container_width=True, key=f"ai_suggestion_{i}")
+                else:
+                    st.error("Could not create this visualization. Some columns may be incompatible.")
+            else:
+                st.warning("Visualization not available for this suggestion format.")
     else:
         st.info("No visualization suggestions available.")
 

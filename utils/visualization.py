@@ -356,14 +356,30 @@ def create_visualization_from_suggestion(df, suggestion):
     if df is None or df.empty or not suggestion:
         return None
     
-    chart_type = suggestion.get('chart_type', '').lower()
+    # Get chart type and ensure it's a string
+    chart_type = suggestion.get('chart_type', '')
+    chart_type = chart_type.lower() if isinstance(chart_type, str) else ''
+    
+    # Ensure columns is a list
     columns = suggestion.get('columns', [])
+    if not isinstance(columns, list):
+        # Convert to list if it's a string or other type
+        columns = [columns] if columns else []
+    
     title = suggestion.get('title', 'Visualization')
     
     # Verify that all columns exist
+    valid_columns = []
     for col in columns:
-        if col not in df.columns:
-            return None
+        if isinstance(col, str) and col in df.columns:
+            valid_columns.append(col)
+    
+    # If we lost all valid columns, return None
+    if not valid_columns and columns:
+        return None
+        
+    # Replace with validated columns
+    columns = valid_columns
     
     # Create visualization based on chart type
     if chart_type == 'histogram' and len(columns) >= 1:

@@ -128,8 +128,26 @@ def generate_dataset_insights(df):
             max_tokens=1500
         )
         
+        # Parse the API response
         result = json.loads(response.choices[0].message.content)
-        return result.get('insights', []) if isinstance(result, dict) and 'insights' in result else result
+        
+        # Check for different possible response formats
+        if isinstance(result, dict):
+            # If the response is a dictionary with an 'insights' key, return that
+            if 'insights' in result:
+                return result['insights']
+            # If it's a dictionary but doesn't have an insights key, check if it looks like a single insight
+            elif all(key in result for key in ['type', 'title', 'description']):
+                return [result]  # Return as a list of one insight
+            # Otherwise return the whole dict
+            else:
+                return [result]
+        elif isinstance(result, list):
+            # If it's already a list, return it directly
+            return result
+        else:
+            # If it's something unexpected, return empty list
+            return []
     except Exception as e:
         st.error(f"Error generating dataset insights: {str(e)}")
         return []
@@ -199,8 +217,26 @@ def suggest_visualizations(df):
             max_tokens=1200
         )
         
+        # Parse the API response
         result = json.loads(response.choices[0].message.content)
-        return result.get('visualizations', []) if isinstance(result, dict) and 'visualizations' in result else result
+        
+        # Check for different possible response formats
+        if isinstance(result, dict):
+            # If the response is a dictionary with a 'visualizations' key, return that
+            if 'visualizations' in result:
+                return result['visualizations']
+            # If it's a dict but doesn't have visualizations key, it might be a single visualization suggestion
+            elif 'chart_type' in result:
+                return [result]
+            # Otherwise return the whole dict
+            else:
+                return [result]
+        elif isinstance(result, list):
+            # If it's already a list, return it
+            return result
+        else:
+            # If it's something unexpected, return an empty list
+            return []
     except Exception as e:
         st.error(f"Error generating visualization suggestions: {str(e)}")
         return []
@@ -264,7 +300,38 @@ def answer_data_question(df, question):
             max_tokens=1000
         )
         
-        return json.loads(response.choices[0].message.content)
+        # Parse the API response
+        result = json.loads(response.choices[0].message.content)
+        
+        # Ensure we have the expected keys
+        required_keys = ['answer', 'confidence', 'relevant_columns']
+        if isinstance(result, dict):
+            # Add default values for any missing required keys
+            for key in required_keys:
+                if key not in result:
+                    if key == 'answer':
+                        result[key] = "Unable to determine answer from the data."
+                    elif key == 'confidence':
+                        result[key] = 0.0
+                    elif key == 'relevant_columns':
+                        result[key] = []
+            
+            # Ensure confidence is within valid range
+            if 'confidence' in result:
+                try:
+                    confidence = float(result['confidence'])
+                    result['confidence'] = max(0.0, min(1.0, confidence))
+                except:
+                    result['confidence'] = 0.0
+                    
+            return result
+        else:
+            # Return a default response if we didn't get a dict
+            return {
+                "answer": "Error: Unexpected response format from AI service.",
+                "confidence": 0,
+                "relevant_columns": []
+            }
     except Exception as e:
         st.error(f"Error answering data question: {str(e)}")
         return {"answer": f"Error processing question: {str(e)}", "confidence": 0, "relevant_columns": []}
