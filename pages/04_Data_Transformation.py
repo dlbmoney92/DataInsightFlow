@@ -106,11 +106,27 @@ with tab1:
                     column_suggestions = generate_column_cleaning_suggestions(df, column, column_type)
                     
                     if column_suggestions:
-                        # Add column name to each suggestion
+                        # Make sure we have a list of dictionaries, not strings
+                        valid_suggestions = []
                         for suggestion in column_suggestions:
-                            suggestion['column'] = column
+                            # If suggestion is already a dictionary
+                            if isinstance(suggestion, dict):
+                                # Add column name to the suggestion
+                                suggestion_copy = suggestion.copy()  # Create a copy to avoid modifying the original
+                                suggestion_copy['column'] = column
+                                valid_suggestions.append(suggestion_copy)
+                            # If suggestion is a string (unexpected format)
+                            elif isinstance(suggestion, str):
+                                # Create a basic suggestion dictionary
+                                valid_suggestions.append({
+                                    'operation': 'unknown',
+                                    'description': suggestion,
+                                    'rationale': 'No rationale provided',
+                                    'code_action': '',
+                                    'column': column
+                                })
                         
-                        st.session_state.ai_suggestions.extend(column_suggestions)
+                        st.session_state.ai_suggestions.extend(valid_suggestions)
     
     # Display AI suggestions
     if 'ai_suggestions' in st.session_state and st.session_state.ai_suggestions:
@@ -261,7 +277,7 @@ with tab1:
                                         # For numeric columns, show distribution and stats
                                         fig_before = create_distribution_plot(df_before, column, 'histogram')
                                         if fig_before:
-                                            st.plotly_chart(fig_before, use_container_width=True)
+                                            st.plotly_chart(fig_before, use_container_width=True, key=f"before_dist_{column}_{i}")
                                         
                                         # Show statistics
                                         stats_before = df_before[column].describe()
@@ -270,7 +286,7 @@ with tab1:
                                         # For categorical columns, show value counts
                                         fig_before = create_categorical_plot(df_before, column, 'bar')
                                         if fig_before:
-                                            st.plotly_chart(fig_before, use_container_width=True)
+                                            st.plotly_chart(fig_before, use_container_width=True, key=f"before_cat_{column}_{i}")
                                         
                                         # Show top values
                                         st.write(df_before[column].value_counts().head(5))
