@@ -41,14 +41,14 @@ def generate_column_cleaning_suggestions(df, column_name, column_type):
     - rationale: why this operation would benefit the data
     - code_action: the transformation code reference (will be linked to actual transformation functions)
     
-    Return a JSON array of recommendations like this:
+    Return a JSON array of recommendations with this structure:
     [
-        {
+        {{
             "operation": "string",
             "description": "string",
             "rationale": "string",
             "code_action": "string"
-        }
+        }}
     ]
     """
     

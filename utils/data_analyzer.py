@@ -6,8 +6,6 @@ import plotly.graph_objects as go
 from scipy import stats
 import json
 from datetime import datetime
-import pandas_profiling
-from pandas_profiling import ProfileReport
 import io
 import base64
 
@@ -143,19 +141,220 @@ def detect_outliers(df):
     return outliers
 
 def generate_quick_eda_report(df):
-    """Generate a quick EDA report using pandas-profiling."""
+    """Generate a quick EDA report with custom HTML."""
     if df is None or df.empty:
         return None
     
     try:
-        # Create profile report with minimal configuration
-        profile = ProfileReport(df, minimal=True, explorative=True, title="Dataset Profile Report")
+        # Generate summary statistics
+        summary_stats = generate_summary_stats(df)
         
-        # Export to HTML
-        report_html = profile.to_html()
+        # Get correlation information
+        correlations = analyze_column_correlations(df)
+        
+        # Get outlier information
+        outliers = detect_outliers(df)
+        
+        # Get skewness information
+        skewness = detect_skewness(df)
+        
+        # Get categorical distributions
+        cat_distributions = analyze_categorical_distributions(df)
+        
+        # Create HTML report
+        html = f"""
+        <html>
+        <head>
+            <title>Dataset Profile Report</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                h1, h2, h3 {{ color: #2c3e50; }}
+                .section {{ margin-bottom: 30px; }}
+                table {{ border-collapse: collapse; width: 100%; }}
+                th, td {{ text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }}
+                th {{ background-color: #f2f2f2; }}
+                tr:hover {{ background-color: #f5f5f5; }}
+                .stat-card {{ 
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    background-color: #f9f9f9;
+                }}
+            </style>
+        </head>
+        <body>
+            <h1>Dataset Profile Report</h1>
+            
+            <div class="section">
+                <h2>Dataset Overview</h2>
+                <div class="stat-card">
+                    <p><strong>Rows:</strong> {summary_stats['basic_info']['rows']}</p>
+                    <p><strong>Columns:</strong> {summary_stats['basic_info']['columns']}</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Column Types</h2>
+                <table>
+                    <tr>
+                        <th>Column</th>
+                        <th>Type</th>
+                        <th>Missing Values</th>
+                        <th>Missing %</th>
+                    </tr>
+        """
+        
+        # Add column type information
+        for col, dtype in summary_stats['column_types'].items():
+            missing_count = summary_stats['missing_values'][col]['count']
+            missing_percent = summary_stats['missing_values'][col]['percent']
+            html += f"""
+                    <tr>
+                        <td>{col}</td>
+                        <td>{dtype}</td>
+                        <td>{missing_count}</td>
+                        <td>{missing_percent:.2f}%</td>
+                    </tr>
+            """
+        
+        html += """
+                </table>
+            </div>
+        """
+        
+        # Add numeric statistics if available
+        if summary_stats['numeric_stats']:
+            html += """
+            <div class="section">
+                <h2>Numeric Columns Statistics</h2>
+                <table>
+                    <tr>
+                        <th>Column</th>
+                        <th>Mean</th>
+                        <th>Median</th>
+                        <th>Std</th>
+                        <th>Min</th>
+                        <th>Max</th>
+                    </tr>
+            """
+            
+            for col in summary_stats['numeric_stats'].get('mean', {}).keys():
+                mean = summary_stats['numeric_stats']['mean'].get(col, 'N/A')
+                median = summary_stats['numeric_stats']['median'].get(col, 'N/A')
+                std = summary_stats['numeric_stats']['std'].get(col, 'N/A')
+                min_val = summary_stats['numeric_stats']['min'].get(col, 'N/A')
+                max_val = summary_stats['numeric_stats']['max'].get(col, 'N/A')
+                
+                html += f"""
+                        <tr>
+                            <td>{col}</td>
+                            <td>{mean:.2f if isinstance(mean, (int, float)) else mean}</td>
+                            <td>{median:.2f if isinstance(median, (int, float)) else median}</td>
+                            <td>{std:.2f if isinstance(std, (int, float)) else std}</td>
+                            <td>{min_val:.2f if isinstance(min_val, (int, float)) else min_val}</td>
+                            <td>{max_val:.2f if isinstance(max_val, (int, float)) else max_val}</td>
+                        </tr>
+                """
+            
+            html += """
+                </table>
+            </div>
+            """
+        
+        # Add correlation information if available
+        if correlations and correlations.get('strong_correlations'):
+            html += """
+            <div class="section">
+                <h2>Strong Correlations</h2>
+                <table>
+                    <tr>
+                        <th>Column 1</th>
+                        <th>Column 2</th>
+                        <th>Correlation</th>
+                        <th>Strength</th>
+                    </tr>
+            """
+            
+            for corr in correlations['strong_correlations']:
+                html += f"""
+                        <tr>
+                            <td>{corr['column1']}</td>
+                            <td>{corr['column2']}</td>
+                            <td>{corr['correlation']:.3f}</td>
+                            <td>{corr['strength']}</td>
+                        </tr>
+                """
+            
+            html += """
+                </table>
+            </div>
+            """
+        
+        # Add outlier information if available
+        if outliers:
+            html += """
+            <div class="section">
+                <h2>Outliers</h2>
+                <table>
+                    <tr>
+                        <th>Column</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                    </tr>
+            """
+            
+            for col, details in outliers.items():
+                html += f"""
+                        <tr>
+                            <td>{col}</td>
+                            <td>{details['count']}</td>
+                            <td>{details['percent']:.2f}%</td>
+                        </tr>
+                """
+            
+            html += """
+                </table>
+            </div>
+            """
+        
+        # Add skewness information if available
+        if skewness:
+            html += """
+            <div class="section">
+                <h2>Skewed Distributions</h2>
+                <table>
+                    <tr>
+                        <th>Column</th>
+                        <th>Skewness Value</th>
+                        <th>Direction</th>
+                        <th>Severity</th>
+                    </tr>
+            """
+            
+            for col, details in skewness.items():
+                html += f"""
+                        <tr>
+                            <td>{col}</td>
+                            <td>{details['skewness']:.3f}</td>
+                            <td>{details['direction']}</td>
+                            <td>{details['severity']}</td>
+                        </tr>
+                """
+            
+            html += """
+                </table>
+            </div>
+            """
+        
+        # Close the HTML document
+        html += """
+        </body>
+        </html>
+        """
         
         # Convert to base64 for embedding
-        report_base64 = base64.b64encode(report_html.encode()).decode()
+        report_base64 = base64.b64encode(html.encode()).decode()
         
         return report_base64
     except Exception as e:
