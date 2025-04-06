@@ -193,6 +193,60 @@ with tab1:
                                 if 'new_column_name=' in code_action:
                                     new_col = code_action.split('new_column_name=')[1].split(')')[0].replace("'", "")
                                 df_after = create_bins(df, column, num_bins, new_col)
+                            # Handle special case for date component extraction
+                            elif 'df[' in code_action and '.dt.' in code_action:
+                                # This is likely a date extraction operation like: 
+                                # df['Year'] = df['Date'].dt.year; df['Month'] = df['Date'].dt.month; df['Day'] = df['Date'].dt.day
+                                
+                                # First identify the source date column
+                                try:
+                                    # Find the source date column (should be after df[')
+                                    parts = code_action.split('.dt.')
+                                    if len(parts) > 0:
+                                        source_col = parts[0].split("df['")[1].split("']")[0]
+                                        
+                                        # Make a copy to avoid SettingWithCopyWarning
+                                        df_after = df.copy()
+                                        
+                                        # Split by semicolon to process each operation
+                                        operations = code_action.split(';')
+                                        affected_columns = []
+                                        
+                                        for op in operations:
+                                            if '=' in op and '.dt.' in op:
+                                                # Extract target column and date component
+                                                target_col = op.split("df['")[1].split("']")[0]
+                                                date_component = op.split('.dt.')[1].strip()
+                                                
+                                                # Apply transformation based on the date component
+                                                if 'year' in date_component:
+                                                    df_after[target_col] = pd.to_datetime(df_after[source_col]).dt.year
+                                                elif 'month' in date_component:
+                                                    df_after[target_col] = pd.to_datetime(df_after[source_col]).dt.month
+                                                elif 'day' in date_component:
+                                                    df_after[target_col] = pd.to_datetime(df_after[source_col]).dt.day
+                                                elif 'quarter' in date_component:
+                                                    df_after[target_col] = pd.to_datetime(df_after[source_col]).dt.quarter
+                                                elif 'weekday' in date_component:
+                                                    df_after[target_col] = pd.to_datetime(df_after[source_col]).dt.weekday
+                                                elif 'week' in date_component:
+                                                    df_after[target_col] = pd.to_datetime(df_after[source_col]).dt.isocalendar().week
+                                                
+                                                affected_columns.append(target_col)
+                                        
+                                        # If we successfully processed at least one operation
+                                        if affected_columns:
+                                            # All good, we have the transformed dataframe
+                                            pass
+                                        else:
+                                            st.warning(f"Couldn't identify date components to extract in: {code_action}")
+                                            continue
+                                    else:
+                                        st.warning(f"Couldn't identify source date column in: {code_action}")
+                                        continue
+                                except Exception as e:
+                                    st.warning(f"Error processing date extraction: {str(e)}")
+                                    continue
                             else:
                                 st.warning(f"Unknown transformation: {code_action}")
                                 continue
@@ -468,6 +522,77 @@ with tab1:
                                 params={"num_bins": num_bins, "new_column_name": new_col}
                             )
                             
+                        # Handle special case for date component extraction
+                        elif 'df[' in code_action and '.dt.' in code_action:
+                            # This is likely a date extraction operation like: 
+                            # df['Year'] = df['Date'].dt.year; df['Month'] = df['Date'].dt.month; df['Day'] = df['Date'].dt.day
+                            
+                            try:
+                                # Find the source date column
+                                parts = code_action.split('.dt.')
+                                if len(parts) > 0:
+                                    source_col = parts[0].split("df['")[1].split("']")[0]
+                                    
+                                    # Make a copy to avoid SettingWithCopyWarning
+                                    df_transformed = df.copy()
+                                    
+                                    # Split by semicolon to process each operation
+                                    operations = code_action.split(';')
+                                    affected_columns = []
+                                    operations_desc = []
+                                    
+                                    for op in operations:
+                                        if '=' in op and '.dt.' in op:
+                                            # Extract target column and date component
+                                            target_col = op.split("df['")[1].split("']")[0]
+                                            date_component = op.split('.dt.')[1].strip()
+                                            
+                                            component_desc = None
+                                            # Apply transformation based on the date component
+                                            if 'year' in date_component:
+                                                df_transformed[target_col] = pd.to_datetime(df_transformed[source_col]).dt.year
+                                                component_desc = "year"
+                                            elif 'month' in date_component:
+                                                df_transformed[target_col] = pd.to_datetime(df_transformed[source_col]).dt.month
+                                                component_desc = "month"
+                                            elif 'day' in date_component:
+                                                df_transformed[target_col] = pd.to_datetime(df_transformed[source_col]).dt.day
+                                                component_desc = "day"
+                                            elif 'quarter' in date_component:
+                                                df_transformed[target_col] = pd.to_datetime(df_transformed[source_col]).dt.quarter
+                                                component_desc = "quarter"
+                                            elif 'weekday' in date_component:
+                                                df_transformed[target_col] = pd.to_datetime(df_transformed[source_col]).dt.weekday
+                                                component_desc = "weekday"
+                                            elif 'week' in date_component:
+                                                df_transformed[target_col] = pd.to_datetime(df_transformed[source_col]).dt.isocalendar().week
+                                                component_desc = "week"
+                                            
+                                            if component_desc:
+                                                affected_columns.append(target_col)
+                                                operations_desc.append(f"extracted {component_desc} into '{target_col}'")
+                                    
+                                    # If we successfully processed at least one operation
+                                    if affected_columns:
+                                        # Register the transformation
+                                        register_transformation(
+                                            df,
+                                            name="Extract Date Components",
+                                            description=f"From date column '{source_col}': {', '.join(operations_desc)}",
+                                            function="extract_date_components",
+                                            columns=[source_col],
+                                            params={"components": [op.split('.dt.')[1].strip() for op in operations if '.dt.' in op]}
+                                        )
+                                    else:
+                                        st.warning(f"Couldn't identify date components to extract in: {code_action}")
+                                        continue
+                                else:
+                                    st.warning(f"Couldn't identify source date column in: {code_action}")
+                                    continue
+                            except Exception as e:
+                                st.warning(f"Error processing date extraction: {str(e)}")
+                                continue
+                                
                         else:
                             st.warning(f"Unknown transformation: {code_action}")
                             continue
