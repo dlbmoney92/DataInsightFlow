@@ -1,20 +1,30 @@
 import os
 import json
 import datetime
+import time
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, LargeBinary, MetaData, Table, inspect
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.pool import QueuePool
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 import base64
 import io
 
 # Get database URL from environment variables
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-# Create SQLAlchemy engine
+# Create SQLAlchemy engine with connection pooling
 if DATABASE_URL:
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(
+        DATABASE_URL,
+        pool_size=5,  # Number of connections to keep open
+        max_overflow=10,  # Max number of connections to create when pool is full
+        pool_timeout=30,  # Timeout for getting connection from pool
+        pool_recycle=1800,  # Recycle connections after 30 minutes
+        pool_pre_ping=True  # Test connections with a ping before using
+    )
 else:
     # Provide a fallback for development/testing
     st.warning("Database URL not found. Using in-memory SQLite database for testing.")
@@ -95,8 +105,28 @@ def initialize_database():
         return True
     return False
 
-# Session factory
-Session = sessionmaker(bind=engine)
+# Session factory with connection pooling and thread safety
+session_factory = sessionmaker(bind=engine)
+Session = scoped_session(session_factory)
+
+# Helper function for database operations with retry logic
+def execute_with_retry(operation, max_retries=3, retry_delay=1):
+    """Execute a database operation with retry logic."""
+    retries = 0
+    while retries < max_retries:
+        try:
+            return operation()
+        except (OperationalError, SQLAlchemyError) as e:
+            retries += 1
+            if "SSL connection has been closed unexpectedly" in str(e) and retries < max_retries:
+                # SSL connection error, wait and retry
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+                st.warning(f"Database connection lost. Retrying... ({retries}/{max_retries})")
+            else:
+                if retries == max_retries:
+                    st.error(f"Database error after {max_retries} retries: {str(e)}")
+                raise
 
 # DataFrame serialization/deserialization
 def serialize_dataframe(df):
@@ -161,62 +191,78 @@ def save_dataset(name, description, file_name, file_type, df, column_types):
         session.close()
 
 def get_dataset(dataset_id):
-    """Retrieve a dataset from the database."""
-    session = Session()
-    try:
-        result = session.query(datasets).filter(datasets.c.id == dataset_id).first()
-        
-        if result:
-            df = deserialize_dataframe(result.data)
-            column_types = json.loads(result.column_types)
+    """Retrieve a dataset from the database with retry logic."""
+    def _get_dataset_operation():
+        session = Session()
+        try:
+            result = session.query(datasets).filter(datasets.c.id == dataset_id).first()
             
-            return {
-                'id': result.id,
-                'name': result.name,
-                'description': result.description,
-                'file_name': result.file_name,
-                'file_type': result.file_type,
-                'created_at': result.created_at,
-                'updated_at': result.updated_at,
-                'dataset': df,
-                'column_types': column_types,
-                'row_count': result.row_count,
-                'column_count': result.column_count
-            }
-        return None
+            if result:
+                df = deserialize_dataframe(result.data)
+                column_types = json.loads(result.column_types)
+                
+                return {
+                    'id': result.id,
+                    'name': result.name,
+                    'description': result.description,
+                    'file_name': result.file_name,
+                    'file_type': result.file_type,
+                    'created_at': result.created_at,
+                    'updated_at': result.updated_at,
+                    'dataset': df,
+                    'column_types': column_types,
+                    'row_count': result.row_count,
+                    'column_count': result.column_count
+                }
+            return None
+        except Exception as e:
+            if not isinstance(e, (OperationalError, SQLAlchemyError)):
+                st.error(f"Error retrieving dataset: {str(e)}")
+            raise
+        finally:
+            session.close()
+    
+    try:
+        return execute_with_retry(_get_dataset_operation)
     except Exception as e:
-        st.error(f"Error retrieving dataset: {str(e)}")
+        st.error(f"Failed to retrieve dataset after retries: {str(e)}")
         return None
-    finally:
-        session.close()
 
 def list_datasets():
-    """List all datasets in the database."""
-    session = Session()
+    """List all datasets in the database with retry logic."""
+    def _list_datasets_operation():
+        session = Session()
+        try:
+            results = session.query(datasets).all()
+            
+            dataset_list = [
+                {
+                    'id': row.id,
+                    'name': row.name,
+                    'description': row.description,
+                    'file_name': row.file_name,
+                    'file_type': row.file_type,
+                    'created_at': row.created_at,
+                    'updated_at': row.updated_at,
+                    'row_count': row.row_count,
+                    'column_count': row.column_count
+                }
+                for row in results
+            ]
+            
+            return dataset_list
+        except Exception as e:
+            if not isinstance(e, (OperationalError, SQLAlchemyError)):
+                st.error(f"Error listing datasets: {str(e)}")
+            raise
+        finally:
+            session.close()
+    
     try:
-        results = session.query(datasets).all()
-        
-        dataset_list = [
-            {
-                'id': row.id,
-                'name': row.name,
-                'description': row.description,
-                'file_name': row.file_name,
-                'file_type': row.file_type,
-                'created_at': row.created_at,
-                'updated_at': row.updated_at,
-                'row_count': row.row_count,
-                'column_count': row.column_count
-            }
-            for row in results
-        ]
-        
-        return dataset_list
+        return execute_with_retry(_list_datasets_operation)
     except Exception as e:
-        st.error(f"Error listing datasets: {str(e)}")
+        st.error(f"Failed to list datasets after retries: {str(e)}")
         return []
-    finally:
-        session.close()
 
 def delete_dataset(dataset_id):
     """Delete a dataset and all related records."""
@@ -267,29 +313,37 @@ def save_transformation(dataset_id, name, description, transformation_details, a
         session.close()
 
 def get_transformations(dataset_id):
-    """Get all transformations for a dataset."""
-    session = Session()
+    """Get all transformations for a dataset with retry logic."""
+    def _get_transformations_operation():
+        session = Session()
+        try:
+            results = session.query(transformations).filter(transformations.c.dataset_id == dataset_id).all()
+            
+            transformation_list = [
+                {
+                    'id': row.id,
+                    'name': row.name,
+                    'description': row.description,
+                    'created_at': row.created_at,
+                    'details': json.loads(row.transformation_json),
+                    'affected_columns': json.loads(row.affected_columns)
+                }
+                for row in results
+            ]
+            
+            return transformation_list
+        except Exception as e:
+            if not isinstance(e, (OperationalError, SQLAlchemyError)):
+                st.error(f"Error retrieving transformations: {str(e)}")
+            raise
+        finally:
+            session.close()
+    
     try:
-        results = session.query(transformations).filter(transformations.c.dataset_id == dataset_id).all()
-        
-        transformation_list = [
-            {
-                'id': row.id,
-                'name': row.name,
-                'description': row.description,
-                'created_at': row.created_at,
-                'details': json.loads(row.transformation_json),
-                'affected_columns': json.loads(row.affected_columns)
-            }
-            for row in results
-        ]
-        
-        return transformation_list
+        return execute_with_retry(_get_transformations_operation)
     except Exception as e:
-        st.error(f"Error retrieving transformations: {str(e)}")
+        st.error(f"Failed to retrieve transformations after retries: {str(e)}")
         return []
-    finally:
-        session.close()
 
 # Version operations
 def save_version(dataset_id, version_number, name, description, df, transformations_applied):
@@ -322,60 +376,76 @@ def save_version(dataset_id, version_number, name, description, df, transformati
         session.close()
 
 def get_version(version_id):
-    """Get a specific version."""
-    session = Session()
-    try:
-        result = session.query(versions).filter(versions.c.id == version_id).first()
-        
-        if result:
-            df = deserialize_dataframe(result.data)
-            transformations_applied = json.loads(result.transformations_applied)
+    """Get a specific version with retry logic."""
+    def _get_version_operation():
+        session = Session()
+        try:
+            result = session.query(versions).filter(versions.c.id == version_id).first()
             
-            return {
-                'id': result.id,
-                'dataset_id': result.dataset_id,
-                'version_number': result.version_number,
-                'name': result.name,
-                'description': result.description,
-                'created_at': result.created_at,
-                'dataset': df,
-                'transformations_applied': transformations_applied,
-                'row_count': result.row_count,
-                'column_count': result.column_count
-            }
-        return None
+            if result:
+                df = deserialize_dataframe(result.data)
+                transformations_applied = json.loads(result.transformations_applied)
+                
+                return {
+                    'id': result.id,
+                    'dataset_id': result.dataset_id,
+                    'version_number': result.version_number,
+                    'name': result.name,
+                    'description': result.description,
+                    'created_at': result.created_at,
+                    'dataset': df,
+                    'transformations_applied': transformations_applied,
+                    'row_count': result.row_count,
+                    'column_count': result.column_count
+                }
+            return None
+        except Exception as e:
+            if not isinstance(e, (OperationalError, SQLAlchemyError)):
+                st.error(f"Error retrieving version: {str(e)}")
+            raise
+        finally:
+            session.close()
+            
+    try:
+        return execute_with_retry(_get_version_operation)
     except Exception as e:
-        st.error(f"Error retrieving version: {str(e)}")
+        st.error(f"Failed to retrieve version after retries: {str(e)}")
         return None
-    finally:
-        session.close()
 
 def get_versions(dataset_id):
-    """Get all versions for a dataset."""
-    session = Session()
+    """Get all versions for a dataset with retry logic."""
+    def _get_versions_operation():
+        session = Session()
+        try:
+            results = session.query(versions).filter(versions.c.dataset_id == dataset_id).all()
+            
+            version_list = [
+                {
+                    'id': row.id,
+                    'version_number': row.version_number,
+                    'name': row.name,
+                    'description': row.description,
+                    'created_at': row.created_at,
+                    'row_count': row.row_count,
+                    'column_count': row.column_count,
+                    'transformations_count': len(json.loads(row.transformations_applied))
+                }
+                for row in results
+            ]
+            
+            return version_list
+        except Exception as e:
+            if not isinstance(e, (OperationalError, SQLAlchemyError)):
+                st.error(f"Error retrieving versions: {str(e)}")
+            raise
+        finally:
+            session.close()
+    
     try:
-        results = session.query(versions).filter(versions.c.dataset_id == dataset_id).all()
-        
-        version_list = [
-            {
-                'id': row.id,
-                'version_number': row.version_number,
-                'name': row.name,
-                'description': row.description,
-                'created_at': row.created_at,
-                'row_count': row.row_count,
-                'column_count': row.column_count,
-                'transformations_count': len(json.loads(row.transformations_applied))
-            }
-            for row in results
-        ]
-        
-        return version_list
+        return execute_with_retry(_get_versions_operation)
     except Exception as e:
-        st.error(f"Error retrieving versions: {str(e)}")
+        st.error(f"Failed to retrieve versions after retries: {str(e)}")
         return []
-    finally:
-        session.close()
 
 # Insight operations
 def save_insight(dataset_id, name, insight_type, insight_details, importance=None, version_id=None):
@@ -405,31 +475,39 @@ def save_insight(dataset_id, name, insight_type, insight_details, importance=Non
         session.close()
 
 def get_insights(dataset_id, version_id=None):
-    """Get insights for a dataset, optionally filtered by version."""
-    session = Session()
+    """Get insights for a dataset, optionally filtered by version, with retry logic."""
+    def _get_insights_operation():
+        session = Session()
+        try:
+            query = session.query(insights).filter(insights.c.dataset_id == dataset_id)
+            
+            if version_id is not None:
+                query = query.filter(insights.c.version_id == version_id)
+            
+            results = query.all()
+            
+            insight_list = [
+                {
+                    'id': row.id,
+                    'name': row.name,
+                    'type': row.type,
+                    'created_at': row.created_at,
+                    'details': json.loads(row.insight_json),
+                    'importance': row.importance
+                }
+                for row in results
+            ]
+            
+            return insight_list
+        except Exception as e:
+            if not isinstance(e, (OperationalError, SQLAlchemyError)):
+                st.error(f"Error retrieving insights: {str(e)}")
+            raise
+        finally:
+            session.close()
+    
     try:
-        query = session.query(insights).filter(insights.c.dataset_id == dataset_id)
-        
-        if version_id is not None:
-            query = query.filter(insights.c.version_id == version_id)
-        
-        results = query.all()
-        
-        insight_list = [
-            {
-                'id': row.id,
-                'name': row.name,
-                'type': row.type,
-                'created_at': row.created_at,
-                'details': json.loads(row.insight_json),
-                'importance': row.importance
-            }
-            for row in results
-        ]
-        
-        return insight_list
+        return execute_with_retry(_get_insights_operation)
     except Exception as e:
-        st.error(f"Error retrieving insights: {str(e)}")
+        st.error(f"Failed to retrieve insights after retries: {str(e)}")
         return []
-    finally:
-        session.close()
