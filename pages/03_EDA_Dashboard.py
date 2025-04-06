@@ -82,7 +82,7 @@ with tab1:
     st.subheader("Missing Values Heatmap")
     missing_fig = create_missing_values_heatmap(df)
     if missing_fig:
-        st.plotly_chart(missing_fig, use_container_width=True)
+        st.plotly_chart(missing_fig, use_container_width=True, key="missing_values_heatmap")
     else:
         st.info("No missing values to display.")
     
@@ -109,7 +109,7 @@ with tab1:
     )
     
     fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="column_types_pie")
     
     # AI-suggested visualizations
     st.subheader("AI-Suggested Visualizations")
@@ -132,7 +132,7 @@ with tab1:
             fig = create_visualization_from_suggestion(df, suggestion)
             
             if fig:
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key=f"ai_suggestion_{i}")
             else:
                 st.error("Could not create this visualization. Some columns may be incompatible.")
     else:
@@ -159,7 +159,7 @@ with tab2:
             # Create distribution plot
             num_fig = create_distribution_plot(df, selected_num_col, dist_plot_type)
             if num_fig:
-                st.plotly_chart(num_fig, use_container_width=True)
+                st.plotly_chart(num_fig, use_container_width=True, key=f"num_dist_{selected_num_col}_{dist_plot_type}")
             
             # Show statistics for the selected column
             if selected_num_col in numeric_cols:
@@ -193,7 +193,7 @@ with tab2:
             # Create categorical plot
             cat_fig = create_categorical_plot(df, selected_cat_col, cat_plot_type)
             if cat_fig:
-                st.plotly_chart(cat_fig, use_container_width=True)
+                st.plotly_chart(cat_fig, use_container_width=True, key=f"cat_plot_{selected_cat_col}_{cat_plot_type}")
             
             # Show value counts for the selected column
             if selected_cat_col in cat_cols:
@@ -247,7 +247,7 @@ with tab2:
                     color_discrete_sequence=['#4F8BF9']
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key=f"outlier_box_{selected_outlier_col}")
                 
                 # Display the actual outlier values
                 outlier_values = outliers[selected_outlier_col]['values']
@@ -275,7 +275,7 @@ with tab3:
         # Create correlation heatmap
         corr_fig = create_correlation_heatmap(df)
         if corr_fig:
-            st.plotly_chart(corr_fig, use_container_width=True)
+            st.plotly_chart(corr_fig, use_container_width=True, key="correlation_heatmap")
         
         # Analyze correlations for strong relationships
         correlation_analysis = analyze_column_correlations(df)
@@ -332,7 +332,7 @@ with tab3:
                     )
                     
                     if scatter_fig:
-                        st.plotly_chart(scatter_fig, use_container_width=True)
+                        st.plotly_chart(scatter_fig, use_container_width=True, key=f"scatter_{scatter_x}_{scatter_y}")
                         
                         # Calculate and display correlation coefficient
                         corr_val = df[[scatter_x, scatter_y]].corr().iloc[0, 1]
@@ -385,7 +385,7 @@ with tab3:
                 )
                 
                 if pair_fig:
-                    st.plotly_chart(pair_fig, use_container_width=True)
+                    st.plotly_chart(pair_fig, use_container_width=True, key="pair_plot")
         else:
             st.info("Please select at least 2 columns for the pair plot.")
 
@@ -442,7 +442,7 @@ with tab4:
             )
             
             if ts_fig:
-                st.plotly_chart(ts_fig, use_container_width=True)
+                st.plotly_chart(ts_fig, use_container_width=True, key=f"timeseries_{selected_date_col}_{selected_value_col}")
                 
                 # Time trends analysis
                 st.subheader("Time Trends Analysis")
@@ -494,7 +494,7 @@ with tab4:
                         height=400
                     )
                     
-                    st.plotly_chart(trend_fig, use_container_width=True)
+                    st.plotly_chart(trend_fig, use_container_width=True, key=f"trend_{selected_value_col}_{window_size}")
                     
                     # Check for seasonality if enough data points
                     if len(df_copy) > 30:
@@ -569,7 +569,7 @@ with tab4:
                 )
                 
                 cat_dist_fig.update_layout(height=400)
-                st.plotly_chart(cat_dist_fig, use_container_width=True)
+                st.plotly_chart(cat_dist_fig, use_container_width=True, key=f"cat_dist_{selected_cat_col}")
                 
                 # Cross-tabulation with another categorical column
                 if len(cat_cols) > 1:
@@ -598,7 +598,7 @@ with tab4:
                         )
                         
                         cross_tab_fig.update_layout(height=500)
-                        st.plotly_chart(cross_tab_fig, use_container_width=True)
+                        st.plotly_chart(cross_tab_fig, use_container_width=True, key=f"crosstab_{selected_cat_col}_{cross_tab_col}")
                         
                         # Chi-square test for independence
                         from scipy.stats import chi2_contingency
