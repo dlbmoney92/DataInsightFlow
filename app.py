@@ -19,6 +19,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Hide the default Streamlit navigation
+hide_streamlit_nav = """
+<style>
+    [data-testid="stSidebarNavItems"] {
+        display: none !important;
+    }
+</style>
+"""
+st.markdown(hide_streamlit_nav, unsafe_allow_html=True)
+
 # Initialize navigation
 initialize_navigation()
 
