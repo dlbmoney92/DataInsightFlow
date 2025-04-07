@@ -1,424 +1,195 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import os
-import json
-from datetime import datetime
-from utils.file_processor import supported_file_types
-from utils.database import initialize_database
-from utils.access_control import check_and_handle_trial_expiration
-from utils.subscription import SUBSCRIPTION_TIERS, format_price, get_trial_days_remaining
-import uuid
-
-# Set page configuration
-st.set_page_config(
-    page_title="Analytics Assist",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Initialize database
-initialize_database()
-
-# Initialize session state variables if they don't exist
-if 'dataset' not in st.session_state:
-    st.session_state.dataset = None
-if 'file_name' not in st.session_state:
-    st.session_state.file_name = None
-if 'column_types' not in st.session_state:
-    st.session_state.column_types = {}
-if 'transformations' not in st.session_state:
-    st.session_state.transformations = []
-if 'transformation_history' not in st.session_state:
-    st.session_state.transformation_history = []
-if 'insights' not in st.session_state:
-    st.session_state.insights = []
-if 'session_id' not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
-if 'projects' not in st.session_state:
-    st.session_state.projects = []
-if 'current_project' not in st.session_state:
-    st.session_state.current_project = None
-if 'ai_suggestions' not in st.session_state:
-    st.session_state.ai_suggestions = []
-if 'dataset_id' not in st.session_state:
-    st.session_state.dataset_id = None
-
-# Sidebar for navigation and user info
-with st.sidebar:
-    st.title("Analytics Assist")
+# Splash screen for anonymous users
+    # First add the CSS styles
+    st.markdown(
+        """
+        <style>
+        .splash-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .splash-logo {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .splash-tagline {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: #4a4a4a;
+        }
+        .splash-steps {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        .step-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            width: 220px;
+            margin: 1rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .step-card:hover {
+            transform: translateY(-5px);
+        }
+        .step-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .step-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .main-cta {
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .main-cta:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
+        }
+        .secondary-cta {
+            background: white;
+            color: #3a7bd5;
+            border: 2px solid #3a7bd5;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .secondary-cta:hover {
+            background: #f0f7ff;
+            transform: scale(1.05);
+        }
+        .or-divider {
+            display: flex;
+            align-items: center;
+            color: #777;
+            margin: 1.5rem 0;
+        }
+        .or-divider::before, .or-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+            margin: 0 10px;
+        }
+        </style>
+        """, 
+        unsafe_allow_html=True
+    )
     
-    # Create CSS to handle collapsed/expanded sidebar behavior
-    st.markdown("""
-    <style>
-    /* Default styles for sidebar - expanded state */
-    .icon-buttons { display: none; }
-    .text-buttons { display: block; }
+    # Then create the splash container
+    st.markdown(
+        """
+        <div class="splash-container">
+            <div class="splash-logo">Analytics Assist</div>
+            <div class="splash-tagline">Transform your data into actionable insights with AI</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
-    /* Collapsed sidebar styles */
-    [data-collapsed="true"] .icon-buttons { display: block; }
-    [data-collapsed="true"] .text-buttons { display: none; }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # User authentication section
-    if "logged_in" in st.session_state and st.session_state.logged_in:
-        # Check if trial has expired
-        check_and_handle_trial_expiration()
-        
-        # Icon-only display for collapsed sidebar
-        with st.container(class_="icon-buttons"):
-            st.write("👤")
-        
-        # Text-only display for expanded sidebar
-        with st.container(class_="text-buttons"):
-            # Display user info
-            st.write(f"Welcome, {st.session_state.user['full_name']}")
-            
-            # Show current plan
-            current_tier = st.session_state.subscription_tier
-            plan_name = SUBSCRIPTION_TIERS[current_tier]["name"]
-            st.write(f"Plan: {plan_name}")
-            
-            # Show trial info if applicable
-            if st.session_state.user["is_trial"]:
-                trial_end = st.session_state.user["trial_end_date"]
-                if trial_end:
-                    days_left = get_trial_days_remaining(trial_end)
-                    if days_left > 0:
-                        st.info(f"Trial: {days_left} days left")
-            
-            # Account and logout buttons
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Account", use_container_width=True):
-                    st.switch_page("pages/account.py")
-            with col2:
-                if st.button("Logout", use_container_width=True):
-                    # Clear session state for user
-                    for key in ['user', 'logged_in', 'user_id', 'subscription_tier']:
-                        if key in st.session_state:
-                            del st.session_state[key]
-                    st.rerun()
-    else:
-        # Icon-only display for collapsed sidebar
-        with st.container(class_="icon-buttons"):
-            if st.button("👤", key="login_icon_top"):
-                st.switch_page("pages/login.py")
-            if st.button("➕", key="signup_icon_top"):
-                st.switch_page("pages/signup.py")
-        
-        # Text-only display for expanded sidebar
-        with st.container(class_="text-buttons"):
-            # Login/signup buttons
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Login", use_container_width=True):
-                    st.switch_page("pages/login.py")
-            with col2:
-                if st.button("Sign Up", use_container_width=True):
-                    st.switch_page("pages/signup.py")
-    
-    st.divider()
-    
-    # Navigation menu
-    st.header("Navigation")
-    
-    # Icons only (visible when collapsed)
-    with st.container(class_="icon-buttons"):
-        if st.button("📁", key="upload_icon", help="Upload Data"):
-            st.switch_page("pages/01_Upload_Data.py")
-        if st.button("🔍", key="preview_icon", help="Data Preview"):
-            st.switch_page("pages/02_Data_Preview.py")
-        if st.button("📊", key="eda_icon", help="EDA Dashboard"):
-            st.switch_page("pages/03_EDA_Dashboard.py")
-        if st.button("🧹", key="transform_icon", help="Transformations"):
-            st.switch_page("pages/04_Data_Transformation.py")
-        if st.button("💡", key="insights_icon", help="Insights"):
-            st.switch_page("pages/05_Insights_Dashboard.py")
-        if st.button("📤", key="export_icon", help="Export Reports"):
-            st.switch_page("pages/06_Export_Reports.py")
-        if st.button("📜", key="version_icon", help="Version History"):
-            st.switch_page("pages/07_Version_History.py")
-        if st.button("🧠", key="ai_learning_icon", help="AI Learning"):
-            st.switch_page("pages/08_AI_Learning.py")
-        if st.button("💼", key="subscription_icon", help="Subscription Plans"):
-            st.switch_page("pages/subscription.py")
-    
-    # Text-only buttons (visible when expanded)
-    with st.container(class_="text-buttons"):
-        with st.container():
-            st.subheader("Data Management")
-            if st.button("Upload Data", key="upload_text", use_container_width=True):
-                st.switch_page("pages/01_Upload_Data.py")
-            if st.button("Data Preview", key="preview_text", use_container_width=True):
-                st.switch_page("pages/02_Data_Preview.py")
-        
-        with st.container():
-            st.subheader("Analysis")
-            if st.button("EDA Dashboard", key="eda_text", use_container_width=True):
-                st.switch_page("pages/03_EDA_Dashboard.py")
-            if st.button("Transformations", key="transform_text", use_container_width=True):
-                st.switch_page("pages/04_Data_Transformation.py")
-            if st.button("Insights", key="insights_text", use_container_width=True):
-                st.switch_page("pages/05_Insights_Dashboard.py")
-        
-        with st.container():
-            st.subheader("Export & History")
-            if st.button("Export Reports", key="export_text", use_container_width=True):
-                st.switch_page("pages/06_Export_Reports.py")
-            if st.button("Version History", key="version_text", use_container_width=True):
-                st.switch_page("pages/07_Version_History.py")
-        
-        with st.container():
-            st.subheader("AI & Learning")
-            if st.button("AI Learning", key="ai_learning_text", use_container_width=True):
-                st.switch_page("pages/08_AI_Learning.py")
-        
-        st.divider()
-        
-        if st.button("Subscription Plans", key="subscription_text", use_container_width=True):
-            st.switch_page("pages/subscription.py")
-    
-    # Hidden developer access (only in expanded mode)
-    with st.container(class_="text-buttons"):
-        if "show_dev_panel" not in st.session_state:
-            st.session_state.show_dev_panel = False
-        
-        if st.button("···", key="dev_toggle", help="Developer Access"):
-            st.session_state.show_dev_panel = not st.session_state.show_dev_panel
-        
-        if st.session_state.show_dev_panel:
-            st.divider()
-            st.subheader("👨‍💻 Developer Access")
-            
-            # Developer options
-            dev_options = ["Stripe Webhook", "Payment Success"]
-            dev_pages = {
-                "Stripe Webhook": "pages/stripe_webhook.py",
-                "Payment Success": "pages/payment_success.py"
-            }
-            
-            selected_dev_page = st.selectbox("Select Developer Page", dev_options, key="dev_page_selector")
-            
-            if st.button("Go To Page", key="dev_page_button", use_container_width=True):
-                st.switch_page(dev_pages[selected_dev_page])
-
-# Main content
-# Check if user is logged in
-if "logged_in" in st.session_state and st.session_state.logged_in:
-    # Personalized dashboard for logged-in users
-    st.title(f"Welcome, {st.session_state.user['full_name']}!")
-    st.subheader("Your AI-powered data analysis co-pilot")
-    
-    # Dashboard layout
-    col1, col2 = st.columns([2, 1])
+    # Add the step cards
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.markdown("""
-        ## Your Analytics Dashboard 📊
-        
-        Analytics Assist helps you understand your data and discover insights with AI assistance.
-        """)
-        
-        # Stats overview
-        stats_col1, stats_col2, stats_col3 = st.columns(3)
-        
-        with stats_col1:
-            current_dataset = "None" if st.session_state.dataset is None else st.session_state.current_project.get('name', 'Unnamed dataset')
-            st.metric("Current Dataset", current_dataset)
-        
-        with stats_col2:
-            if st.session_state.dataset is not None:
-                rows = st.session_state.dataset.shape[0]
-                st.metric("Rows", rows)
-            else:
-                st.metric("Rows", 0)
-        
-        with stats_col3:
-            transformations_count = len(st.session_state.transformations)
-            st.metric("Transformations", transformations_count)
-        
-        st.markdown("### Getting Started")
-        st.markdown("""
-        1. 📁 **Upload Data**: Start by uploading your dataset in the Upload Data page
-        2. 🔍 **Preview & Validate**: Review and validate the detected schema
-        3. 📊 **Explore**: Get automatic visualizations and statistics
-        4. 🧹 **Transform**: Apply AI-suggested transformations to clean your data
-        5. 💡 **Discover Insights**: Review AI-generated insights about your data
-        6. 📤 **Export**: Export your findings as reports or download transformed data
-        """)
-        
-        # Supported file types
-        with st.expander("Supported File Types"):
-            file_types_cols = st.columns(3)
-            for i, file_type in enumerate(supported_file_types):
-                file_types_cols[i % 3].markdown(f"- {file_type}")
+        st.markdown(
+            """
+            <div class="step-card">
+                <div class="step-icon">📤</div>
+                <div class="step-title">Upload</div>
+                <p>Upload any data source with our smart importer</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
     
     with col2:
-        st.markdown("### Current Project")
-        
-        if st.session_state.current_project:
-            st.success(f"Working on: {st.session_state.current_project['name']}")
-            
-            # Display project stats
-            if st.session_state.dataset is not None:
-                rows, cols = st.session_state.dataset.shape
-                st.metric("Columns", cols)
-                st.write(f"Last modified: {st.session_state.current_project.get('updated_at', 'Unknown')}")
-        else:
-            st.info("No active project. Start by uploading data.")
-        
-        # Recent activity
-        st.markdown("### Recent Activity")
-        if st.session_state.transformation_history:
-            for i, history in enumerate(reversed(st.session_state.transformation_history[-3:])):
-                st.text(f"{history['timestamp']}: {history['action']}")
-        else:
-            st.text("No recent activity")
-        
-        # Subscription info
-        st.markdown("### Your Subscription")
-        current_tier = st.session_state.subscription_tier
-        tier_info = SUBSCRIPTION_TIERS[current_tier]
-        
-        st.write(f"Current plan: **{tier_info['name']}**")
-        
-        # Trial information
-        if st.session_state.user["is_trial"]:
-            trial_end = st.session_state.user["trial_end_date"]
-            if trial_end:
-                days_left = get_trial_days_remaining(trial_end)
-                if days_left > 0:
-                    st.info(f"Your Pro trial ends in {days_left} days.")
-                    if st.button("Upgrade Now"):
-                        st.switch_page("pages/subscription.py")
+        st.markdown(
+            """
+            <div class="step-card">
+                <div class="step-icon">🧹</div>
+                <div class="step-title">Transform</div>
+                <p>Clean and prepare your data with AI assistance</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
     
-    # Quick access buttons
-    st.markdown("---")
-    st.markdown("## Quick Actions")
+    with col3:
+        st.markdown(
+            """
+            <div class="step-card">
+                <div class="step-icon">📊</div>
+                <div class="step-title">Visualize</div>
+                <p>Create beautiful, insightful visualizations</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
     
-    quick_cols = st.columns(4)
-    with quick_cols[0]:
-        if st.button("📤 Upload New Data", use_container_width=True):
-            st.switch_page("pages/01_Upload_Data.py")
+    with col4:
+        st.markdown(
+            """
+            <div class="step-card">
+                <div class="step-icon">💡</div>
+                <div class="step-title">Discover</div>
+                <p>Gain valuable insights from your data</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
     
-    with quick_cols[1]:
-        if st.button("🔍 Explore Current Data", use_container_width=True):
-            st.switch_page("pages/03_EDA_Dashboard.py")
+    # Add the example analytics section
+    st.subheader("Example Analytics")
     
-    with quick_cols[2]:
-        if st.button("🧹 Transform Data", use_container_width=True):
-            st.switch_page("pages/04_Data_Transformation.py")
+    # Use columns for the example analytics cards
+    col1, col2, col3 = st.columns(3)
     
-    with quick_cols[3]:
-        if st.button("💡 Generate Insights", use_container_width=True):
-            st.switch_page("pages/05_Insights_Dashboard.py")
-
-else:
-    # Landing page for anonymous users
-    st.title("Analytics Assist")
-    st.subheader("Your AI-powered data analysis co-pilot")
+    with col1:
+        st.image("https://miro.medium.com/max/1400/1*S8Escq5DgEZC9Mdxm0inNw.webp", caption="Correlation Analysis")
+        st.markdown("**Discover relationships between variables**")
     
-    # Hero section
-    st.markdown("""
-    ## Transform Your Data into Actionable Insights 🚀
+    with col2:
+        st.image("https://miro.medium.com/max/1400/1*WWcU-RT5UgPvdTpZyB6iCQ.webp", caption="Sales Performance")
+        st.markdown("**Track sales trends and forecasts**")
     
-    Analytics Assist is a powerful AI-driven platform that helps you:
-    - **Explore** and understand your data
-    - **Clean** and transform your datasets with ease
-    - **Discover** valuable insights automatically
-    - **Visualize** your findings with beautiful charts
-    - **Learn** and improve with AI that adapts to your feedback
-    - **Share** your results with customizable reports
-    """)
+    with col3:
+        st.image("https://miro.medium.com/max/1400/1*oO0KGH7sQGkGEH9lLNGlEg.webp", caption="Anomaly Detection")
+        st.markdown("**Automatically find outliers in your data**")
     
-    # Call to action
-    cta_col1, cta_col2 = st.columns(2)
-    with cta_col1:
-        if st.button("Sign Up Free", use_container_width=True):
-            st.switch_page("pages/signup.py")
-    with cta_col2:
-        if st.button("Start 7-Day Pro Trial", use_container_width=True):
-            st.switch_page("pages/signup.py")
-    
-    # Features showcase
-    st.markdown("---")
-    st.markdown("## Key Features")
-    
-    feature_cols = st.columns(3)
-    
-    with feature_cols[0]:
-        st.markdown("### 🤖 AI-Powered Analysis")
-        st.markdown("""
-        Leverage the power of AI to:
-        - Get intelligent data cleaning suggestions
-        - Automatically detect patterns and anomalies
-        - Generate natural language insights
-        - Learn from your feedback and interactions
-        - Receive personalized recommendations
-        """)
-    
-    with feature_cols[1]:
-        st.markdown("### 📊 Powerful Visualizations")
-        st.markdown("""
-        Create insightful visualizations:
-        - Interactive charts and graphs
-        - Correlation analysis
-        - Distribution plots
-        - Time series analysis
-        - Automated dashboard generation
-        """)
-    
-    with feature_cols[2]:
-        st.markdown("### 🧩 No-Code Experience")
-        st.markdown("""
-        Designed for users of all skill levels:
-        - Intuitive drag-and-drop interface
-        - Guided data transformation workflows
-        - Human-readable explanations
-        - Export in multiple formats
-        - Share insights with your team
-        """)
-    
-    # Pricing section
-    st.markdown("---")
-    st.markdown("## Subscription Plans")
-    
-    pricing_cols = st.columns(3)
-    
-    with pricing_cols[0]:
-        st.markdown("### Free")
-        st.markdown(f"**{format_price(SUBSCRIPTION_TIERS['free']['price_monthly'])}**/month")
-        for feature in SUBSCRIPTION_TIERS['free']['features']:
-            st.markdown(f"✓ {feature}")
-        if st.button("Sign Up Free", key="pricing_free", use_container_width=True):
-            st.switch_page("pages/signup.py")
-    
-    with pricing_cols[1]:
-        st.markdown("### Basic")
-        st.markdown(f"**{format_price(SUBSCRIPTION_TIERS['basic']['price_monthly'])}**/month")
-        for feature in SUBSCRIPTION_TIERS['basic']['features']:
-            st.markdown(f"✓ {feature}")
-        if st.button("Choose Basic", key="pricing_basic", use_container_width=True):
-            st.switch_page("pages/signup.py")
-    
-    with pricing_cols[2]:
-        st.markdown("### Pro")
-        st.markdown(f"**{format_price(SUBSCRIPTION_TIERS['pro']['price_monthly'])}**/month")
-        for feature in SUBSCRIPTION_TIERS['pro']['features']:
-            st.markdown(f"✓ {feature}")
-        if st.button("Start 7-Day Trial", key="pricing_pro", use_container_width=True):
-            st.switch_page("pages/signup.py")
-
-# Footer
-st.markdown("---")
-st.markdown(
-    """
-    <div style="text-align:center">
-        <p>Analytics Assist v1.0.0 | Made with ❤️ for data enthusiasts</p>
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
+    # Add the platform description
+    st.markdown("### All Your Data Tools in One Platform")
+    st.markdown("Analytics Assist combines powerful data analysis with an AI assistant to help you make better decisions.")
+    st.markdown("Get started today and join thousands of users who trust Analytics Assist with their data needs.")

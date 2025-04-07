@@ -49,168 +49,135 @@ if 'dataset_id' not in st.session_state:
 with st.sidebar:
     st.title("Analytics Assist")
     
+    # Create CSS to handle collapsed/expanded sidebar behavior
+    st.markdown("""
+    <style>
+    /* Default styles for sidebar - expanded state */
+    div[data-testid="stSidebarUserContent"] > div:nth-of-type(1) { display: none; }
+    div[data-testid="stSidebarUserContent"] > div:nth-of-type(2) { display: block; }
+    
+    /* Collapsed sidebar styles */
+    [data-collapsed="true"] div[data-testid="stSidebarUserContent"] > div:nth-of-type(1) { display: block; }
+    [data-collapsed="true"] div[data-testid="stSidebarUserContent"] > div:nth-of-type(2) { display: none; }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # User authentication section
     if "logged_in" in st.session_state and st.session_state.logged_in:
         # Check if trial has expired
         check_and_handle_trial_expiration()
         
-        # Display user info
-        st.write(f"Welcome, {st.session_state.user['full_name']}")
+        # Icon-only display for collapsed sidebar (first div)
+        with st.container():
+            st.write("👤")
         
-        # Show current plan
-        current_tier = st.session_state.subscription_tier
-        plan_name = SUBSCRIPTION_TIERS[current_tier]["name"]
-        st.write(f"Plan: {plan_name}")
-        
-        # Show trial info if applicable
-        if st.session_state.user["is_trial"]:
-            trial_end = st.session_state.user["trial_end_date"]
-            if trial_end:
-                days_left = get_trial_days_remaining(trial_end)
-                if days_left > 0:
-                    st.info(f"Trial: {days_left} days left")
-        
-        # Account and logout buttons
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Account", use_container_width=True):
-                st.switch_page("pages/account.py")
-        with col2:
-            if st.button("Logout", use_container_width=True):
-                # Clear session state for user
-                for key in ['user', 'logged_in', 'user_id', 'subscription_tier']:
-                    if key in st.session_state:
-                        del st.session_state[key]
-                st.rerun()
+        # Text-only display for expanded sidebar (second div)
+        with st.container():
+            # Display user info
+            st.write(f"Welcome, {st.session_state.user['full_name']}")
+            
+            # Show current plan
+            current_tier = st.session_state.subscription_tier
+            plan_name = SUBSCRIPTION_TIERS[current_tier]["name"]
+            st.write(f"Plan: {plan_name}")
+            
+            # Show trial info if applicable
+            if st.session_state.user["is_trial"]:
+                trial_end = st.session_state.user["trial_end_date"]
+                if trial_end:
+                    days_left = get_trial_days_remaining(trial_end)
+                    if days_left > 0:
+                        st.info(f"Trial: {days_left} days left")
+            
+            # Account and logout buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Account", use_container_width=True):
+                    st.switch_page("pages/account.py")
+            with col2:
+                if st.button("Logout", use_container_width=True):
+                    # Clear session state for user
+                    for key in ['user', 'logged_in', 'user_id', 'subscription_tier']:
+                        if key in st.session_state:
+                            del st.session_state[key]
+                    st.rerun()
     else:
-        # Login/signup buttons
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Login", use_container_width=True):
+        # Icon-only display for collapsed sidebar (first div)
+        with st.container():
+            if st.button("👤", key="login_icon_top"):
                 st.switch_page("pages/login.py")
-        with col2:
-            if st.button("Sign Up", use_container_width=True):
+            if st.button("➕", key="signup_icon_top"):
                 st.switch_page("pages/signup.py")
+        
+        # Text-only display for expanded sidebar (second div)
+        with st.container():
+            # Login/signup buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Login", use_container_width=True):
+                    st.switch_page("pages/login.py")
+            with col2:
+                if st.button("Sign Up", use_container_width=True):
+                    st.switch_page("pages/signup.py")
     
     st.divider()
     
     # Navigation menu
     st.header("Navigation")
     
-    # Check if sidebar is collapsed
-    if "sidebar_state" not in st.session_state:
-        st.session_state.sidebar_state = "expanded"
-    
-    # Detect if sidebar state changed by checking width
-    # This is a bit of a hack since Streamlit doesn't provide a direct way to detect sidebar state
-    sidebar_width = st.empty()
-    
-    # Create CSS to inject
-    st.markdown("""
-    <style>
-    /* Adjust button display based on sidebar state */
-    .nav-button-icon-only {
-        display: none;
-    }
-    
-    [data-collapsed="true"] .nav-button-icon-text {
-        display: none;
-    }
-    
-    [data-collapsed="true"] .nav-button-icon-only {
-        display: inline-block;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Data Management section
+    # Icons only (visible when collapsed) - first div
     with st.container():
-        st.subheader("Data Management")
-        
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.button("📁", key="upload_icon", help="Upload Data"):
-                st.switch_page("pages/01_Upload_Data.py")
-        with col2:
-            if st.button("Upload Data", key="upload_text", use_container_width=True):
-                st.switch_page("pages/01_Upload_Data.py")
-        
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.button("🔍", key="preview_icon", help="Data Preview"):
-                st.switch_page("pages/02_Data_Preview.py")
-        with col2:
-            if st.button("Data Preview", key="preview_text", use_container_width=True):
-                st.switch_page("pages/02_Data_Preview.py")
-    
-    # Analysis section
-    with st.container():
-        st.subheader("Analysis")
-        
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.button("📊", key="eda_icon", help="EDA Dashboard"):
-                st.switch_page("pages/03_EDA_Dashboard.py")
-        with col2:
-            if st.button("EDA Dashboard", key="eda_text", use_container_width=True):
-                st.switch_page("pages/03_EDA_Dashboard.py")
-        
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.button("🧹", key="transform_icon", help="Transformations"):
-                st.switch_page("pages/04_Data_Transformation.py")
-        with col2:
-            if st.button("Transformations", key="transform_text", use_container_width=True):
-                st.switch_page("pages/04_Data_Transformation.py")
-        
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.button("💡", key="insights_icon", help="Insights"):
-                st.switch_page("pages/05_Insights_Dashboard.py")
-        with col2:
-            if st.button("Insights", key="insights_text", use_container_width=True):
-                st.switch_page("pages/05_Insights_Dashboard.py")
-    
-    # Export & History section
-    with st.container():
-        st.subheader("Export & History")
-        
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.button("📤", key="export_icon", help="Export Reports"):
-                st.switch_page("pages/06_Export_Reports.py")
-        with col2:
-            if st.button("Export Reports", key="export_text", use_container_width=True):
-                st.switch_page("pages/06_Export_Reports.py")
-        
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.button("📜", key="version_icon", help="Version History"):
-                st.switch_page("pages/07_Version_History.py")
-        with col2:
-            if st.button("Version History", key="version_text", use_container_width=True):
-                st.switch_page("pages/07_Version_History.py")
-    
-    # AI Learning (moved from developer options to main navigation)
-    with st.container():
-        st.subheader("AI & Learning")
-        
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.button("🧠", key="ai_learning_icon", help="AI Learning"):
-                st.switch_page("pages/08_AI_Learning.py")
-        with col2:
-            if st.button("AI Learning", key="ai_learning_text", use_container_width=True):
-                st.switch_page("pages/08_AI_Learning.py")
-    
-    st.divider()
-    
-    # Subscription
-    col1, col2 = st.columns([1, 4])
-    with col1:
+        if st.button("📁", key="upload_icon", help="Upload Data"):
+            st.switch_page("pages/01_Upload_Data.py")
+        if st.button("🔍", key="preview_icon", help="Data Preview"):
+            st.switch_page("pages/02_Data_Preview.py")
+        if st.button("📊", key="eda_icon", help="EDA Dashboard"):
+            st.switch_page("pages/03_EDA_Dashboard.py")
+        if st.button("🧹", key="transform_icon", help="Transformations"):
+            st.switch_page("pages/04_Data_Transformation.py")
+        if st.button("💡", key="insights_icon", help="Insights"):
+            st.switch_page("pages/05_Insights_Dashboard.py")
+        if st.button("📤", key="export_icon", help="Export Reports"):
+            st.switch_page("pages/06_Export_Reports.py")
+        if st.button("📜", key="version_icon", help="Version History"):
+            st.switch_page("pages/07_Version_History.py")
+        if st.button("🧠", key="ai_learning_icon", help="AI Learning"):
+            st.switch_page("pages/08_AI_Learning.py")
         if st.button("💼", key="subscription_icon", help="Subscription Plans"):
             st.switch_page("pages/subscription.py")
-    with col2:
+    
+    # Text-only buttons (visible when expanded) - second div
+    with st.container():
+        with st.container():
+            st.subheader("Data Management")
+            if st.button("Upload Data", key="upload_text", use_container_width=True):
+                st.switch_page("pages/01_Upload_Data.py")
+            if st.button("Data Preview", key="preview_text", use_container_width=True):
+                st.switch_page("pages/02_Data_Preview.py")
+        
+        with st.container():
+            st.subheader("Analysis")
+            if st.button("EDA Dashboard", key="eda_text", use_container_width=True):
+                st.switch_page("pages/03_EDA_Dashboard.py")
+            if st.button("Transformations", key="transform_text", use_container_width=True):
+                st.switch_page("pages/04_Data_Transformation.py")
+            if st.button("Insights", key="insights_text", use_container_width=True):
+                st.switch_page("pages/05_Insights_Dashboard.py")
+        
+        with st.container():
+            st.subheader("Export & History")
+            if st.button("Export Reports", key="export_text", use_container_width=True):
+                st.switch_page("pages/06_Export_Reports.py")
+            if st.button("Version History", key="version_text", use_container_width=True):
+                st.switch_page("pages/07_Version_History.py")
+        
+        with st.container():
+            st.subheader("AI & Learning")
+            if st.button("AI Learning", key="ai_learning_text", use_container_width=True):
+                st.switch_page("pages/08_AI_Learning.py")
+        
+        st.divider()
+        
         if st.button("Subscription Plans", key="subscription_text", use_container_width=True):
             st.switch_page("pages/subscription.py")
     
@@ -218,26 +185,44 @@ with st.sidebar:
     if "show_dev_panel" not in st.session_state:
         st.session_state.show_dev_panel = False
     
-    # Small clickable button that looks like part of the UI but toggles developer panel
-    if st.button("···", key="dev_toggle", help="Developer Access"):
-        st.session_state.show_dev_panel = not st.session_state.show_dev_panel
+    # Icon-only version (visible when collapsed) - first div
+    with st.container():
+        if st.button("⚙️", key="dev_toggle_icon", help="Developer Access"):
+            st.session_state.show_dev_panel = not st.session_state.show_dev_panel
+    
+    # Text version (visible when expanded) - second div
+    with st.container():
+        # Small clickable button that looks like part of the UI but toggles developer panel
+        if st.button("···", key="dev_toggle", help="Developer Access"):
+            st.session_state.show_dev_panel = not st.session_state.show_dev_panel
     
     # Developer panel - hidden by default
     if st.session_state.show_dev_panel:
-        st.divider()
-        st.subheader("👨‍💻 Developer Access")
+        # For collapsed sidebar (first div)
+        with st.container():
+            st.write("👨‍💻")
+            # Simplified dev options for collapsed state
+            if st.button("🔄", key="webhook_icon", help="Stripe Webhook"):
+                st.switch_page("pages/stripe_webhook.py")
+            if st.button("💰", key="payment_icon", help="Payment Success"):
+                st.switch_page("pages/payment_success.py")
         
-        # Developer options
-        dev_options = ["Stripe Webhook", "Payment Success"]
-        dev_pages = {
-            "Stripe Webhook": "pages/stripe_webhook.py",
-            "Payment Success": "pages/payment_success.py"
-        }
-        
-        selected_dev_page = st.selectbox("Select Developer Page", dev_options, key="dev_page_selector")
-        
-        if st.button("Go To Page", key="dev_page_button", use_container_width=True):
-            st.switch_page(dev_pages[selected_dev_page])
+        # For expanded sidebar (second div)
+        with st.container():
+            st.divider()
+            st.subheader("👨‍💻 Developer Access")
+            
+            # Developer options
+            dev_options = ["Stripe Webhook", "Payment Success"]
+            dev_pages = {
+                "Stripe Webhook": "pages/stripe_webhook.py",
+                "Payment Success": "pages/payment_success.py"
+            }
+            
+            selected_dev_page = st.selectbox("Select Developer Page", dev_options, key="dev_page_selector")
+            
+            if st.button("Go To Page", key="dev_page_button", use_container_width=True):
+                st.switch_page(dev_pages[selected_dev_page])
 
 # Main content
 # Check if user is logged in
@@ -351,100 +336,299 @@ if "logged_in" in st.session_state and st.session_state.logged_in:
             st.switch_page("pages/05_Insights_Dashboard.py")
 
 else:
-    # Landing page for anonymous users
-    st.title("Analytics Assist")
-    st.subheader("Your AI-powered data analysis co-pilot")
+    # Splash screen for anonymous users
+    st.markdown(
+        """
+        <style>
+        .splash-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .splash-logo {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .splash-tagline {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: #4a4a4a;
+        }
+        .splash-steps {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        .step-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            width: 220px;
+            margin: 1rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .step-card:hover {
+            transform: translateY(-5px);
+        }
+        .step-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .step-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .main-cta {
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .main-cta:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
+        }
+        .secondary-cta {
+            background: white;
+            color: #3a7bd5;
+            border: 2px solid #3a7bd5;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .secondary-cta:hover {
+            background: #f0f7ff;
+            transform: scale(1.05);
+        }
+        .or-divider {
+            display: flex;
+            align-items: center;
+            color: #777;
+            margin: 1.5rem 0;
+        }
+        .or-divider::before, .or-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+            margin: 0 10px;
+        }
+        </style>
+        
+        <div class="splash-container">
+            <div class="splash-logo">Analytics Assist</div>
+            <div class="splash-tagline">Transform your data into actionable insights with AI</div>
+            
+            <div class="splash-steps">
+                <div class="step-card">
+                    <div class="step-icon">📤</div>
+                    <div class="step-title">Upload</div>
+                    <p>Upload any data source with our smart importer</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">🧹</div>
+                    <div class="step-title">Transform</div>
+                    <p>Clean and prepare your data with AI assistance</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">📊</div>
+                    <div class="step-title">Visualize</div>
+                    <p>Create beautiful, insightful visualizations</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">💡</div>
+                    <div class="step-title">Discover</div>
+                    <p>Gain valuable insights from your data</p>
+                </div>
+            </div>
+            
+            <h3>Example Analytics</h3>
+            <div style="display: flex; justify-content: space-around; margin: 20px 0; flex-wrap: wrap;">
+                <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; margin: 10px; overflow: hidden;">
+                    <img src="https://miro.medium.com/max/1400/1*S8Escq5DgEZC9Mdxm0inNw.webp" style="width: 100%; height: 120px; object-fit: cover;" alt="Correlation Heatmap">
+                    <div style="padding: 10px;">
+                        <div style="font-weight: bold;">Correlation Analysis</div>
+                        <p style="font-size: 12px;">Discover relationships between variables</p>
+                    </div>
+                </div>
+                <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; margin: 10px; overflow: hidden;">
+                    <img src="https://miro.medium.com/max/1400/1*WWcU-RT5UgPvdTpZyB6iCQ.webp" style="width: 100%; height: 120px; object-fit: cover;" alt="Sales Dashboard">
+                    <div style="padding: 10px;">
+                        <div style="font-weight: bold;">Sales Performance</div>
+                        <p style="font-size: 12px;">Track sales trends and forecasts</p>
+                    </div>
+                </div>
+                <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; margin: 10px; overflow: hidden;">
+                    <img src="https://miro.medium.com/max/1400/1*oO0KGH7sQGkGEH9lLNGlEg.webp" style="width: 100%; height: 120px; object-fit: cover;" alt="Anomaly Detection">
+                    <div style="padding: 10px;">
+                        <div style="font-weight: bold;">Anomaly Detection</div>
+                        <p style="font-size: 12px;">Automatically find outliers in your data</p>
+                    </div>
+                </div>
+            </div>
+            
+            <h3>All Your Data Tools in One Platform</h3>
+            <p>Analytics Assist combines powerful data analysis with an AI assistant to help you make better decisions.</p>
+            <p>Get started today and join thousands of users who trust Analytics Assist with their data needs.</p>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
     
-    # Hero section
-    st.markdown("""
-    ## Transform Your Data into Actionable Insights 🚀
+    # Sign-up container
+    st.markdown(
+        """
+        <style>
+        .signup-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        </style>
+        <div class="signup-container">
+            <h2>Start Your Analytics Journey Today</h2>
+            <p>Create an account to access all features and begin analyzing your data</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
-    Analytics Assist is a powerful AI-driven platform that helps you:
-    - **Explore** and understand your data
-    - **Clean** and transform your datasets with ease
-    - **Discover** valuable insights automatically
-    - **Visualize** your findings with beautiful charts
-    - **Learn** and improve with AI that adapts to your feedback
-    - **Share** your results with customizable reports
-    """)
-    
-    # Call to action
-    cta_col1, cta_col2 = st.columns(2)
-    with cta_col1:
-        if st.button("Sign Up Free", use_container_width=True):
+    # Sign-up buttons
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        if st.button("Create an Account", use_container_width=True, key="main_signup"):
             st.switch_page("pages/signup.py")
-    with cta_col2:
-        if st.button("Start 7-Day Pro Trial", use_container_width=True):
-            st.switch_page("pages/signup.py")
+        
+        st.markdown("<div class='or-divider'>OR</div>", unsafe_allow_html=True)
+        
+        google_btn = st.button("Sign in with Google", use_container_width=True, key="google_signin")
+        if google_btn:
+            st.warning("Google authentication will be integrated with your OAuth credentials")
+            st.info("To complete the Google Sign-in setup, you'll need to register your app with Google Cloud Console and obtain OAuth credentials")
     
-    # Features showcase
+    # Feature highlights
     st.markdown("---")
-    st.markdown("## Key Features")
+    st.markdown("## Why Choose Analytics Assist")
     
     feature_cols = st.columns(3)
     
     with feature_cols[0]:
         st.markdown("### 🤖 AI-Powered Analysis")
         st.markdown("""
-        Leverage the power of AI to:
         - Get intelligent data cleaning suggestions
         - Automatically detect patterns and anomalies
         - Generate natural language insights
-        - Learn from your feedback and interactions
+        - Learn from your feedback
         - Receive personalized recommendations
         """)
     
     with feature_cols[1]:
-        st.markdown("### 📊 Powerful Visualizations")
+        st.markdown("### 🔒 Secure & Private")
         st.markdown("""
-        Create insightful visualizations:
-        - Interactive charts and graphs
-        - Correlation analysis
-        - Distribution plots
-        - Time series analysis
-        - Automated dashboard generation
+        - Your data stays private and secure
+        - Role-based access controls
+        - Compliant with data protection standards
+        - Fine-grained permission management
+        - Complete audit trail
         """)
     
     with feature_cols[2]:
-        st.markdown("### 🧩 No-Code Experience")
+        st.markdown("### 🚀 Enterprise Ready")
         st.markdown("""
-        Designed for users of all skill levels:
-        - Intuitive drag-and-drop interface
-        - Guided data transformation workflows
-        - Human-readable explanations
-        - Export in multiple formats
-        - Share insights with your team
+        - Scales to handle large datasets
+        - Integration with existing systems
+        - Collaboration features for teams
+        - Custom reporting options
+        - Priority support available
         """)
     
     # Pricing section
     st.markdown("---")
-    st.markdown("## Subscription Plans")
+    st.markdown("## Choose Your Plan")
     
     pricing_cols = st.columns(3)
     
     with pricing_cols[0]:
-        st.markdown("### Free")
-        st.markdown(f"**{format_price(SUBSCRIPTION_TIERS['free']['price_monthly'])}**/month")
+        st.markdown(
+            """
+            <div style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; height: 100%;">
+                <h3>Free</h3>
+                <div style="font-size: 1.8rem; margin: 1rem 0;">$0<span style="font-size: 1rem;">/month</span></div>
+                <ul style="list-style-type: none; padding-left: 0;">
+            """, 
+            unsafe_allow_html=True
+        )
         for feature in SUBSCRIPTION_TIERS['free']['features']:
-            st.markdown(f"✓ {feature}")
-        if st.button("Sign Up Free", key="pricing_free", use_container_width=True):
+            st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
+        st.markdown("</ul>", unsafe_allow_html=True)
+        if st.button("Get Started Free", key="pricing_free", use_container_width=True):
             st.switch_page("pages/signup.py")
+        st.markdown("</div>", unsafe_allow_html=True)
     
     with pricing_cols[1]:
-        st.markdown("### Basic")
-        st.markdown(f"**{format_price(SUBSCRIPTION_TIERS['basic']['price_monthly'])}**/month")
+        st.markdown(
+            """
+            <div style="padding: 1.5rem; border: 1px solid #3a7bd5; border-radius: 8px; box-shadow: 0 4px 12px rgba(58, 123, 213, 0.2); height: 100%;">
+                <h3>Basic</h3>
+                <div style="font-size: 1.8rem; margin: 1rem 0;">$9.99<span style="font-size: 1rem;">/month</span></div>
+                <ul style="list-style-type: none; padding-left: 0;">
+            """, 
+            unsafe_allow_html=True
+        )
         for feature in SUBSCRIPTION_TIERS['basic']['features']:
-            st.markdown(f"✓ {feature}")
+            st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
+        st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Choose Basic", key="pricing_basic", use_container_width=True):
             st.switch_page("pages/signup.py")
+        st.markdown("</div>", unsafe_allow_html=True)
     
     with pricing_cols[2]:
-        st.markdown("### Pro")
-        st.markdown(f"**{format_price(SUBSCRIPTION_TIERS['pro']['price_monthly'])}**/month")
+        st.markdown(
+            """
+            <div style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; height: 100%;">
+                <h3>Pro</h3>
+                <div style="font-size: 1.8rem; margin: 1rem 0;">$29.99<span style="font-size: 1rem;">/month</span></div>
+                <ul style="list-style-type: none; padding-left: 0;">
+            """, 
+            unsafe_allow_html=True
+        )
         for feature in SUBSCRIPTION_TIERS['pro']['features']:
-            st.markdown(f"✓ {feature}")
+            st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
+        st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Start 7-Day Trial", key="pricing_pro", use_container_width=True):
             st.switch_page("pages/signup.py")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")

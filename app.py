@@ -337,6 +337,7 @@ if "logged_in" in st.session_state and st.session_state.logged_in:
 
 else:
     # Splash screen for anonymous users
+    # First add the CSS styles
     st.markdown(
         """
         <style>
@@ -364,35 +365,6 @@ else:
             font-size: 1.5rem;
             margin-bottom: 2rem;
             color: #4a4a4a;
-        }
-        .splash-steps {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-            margin: 2rem 0;
-            flex-wrap: wrap;
-        }
-        .step-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            width: 220px;
-            margin: 1rem;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-        .step-card:hover {
-            transform: translateY(-5px);
-        }
-        .step-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-        .step-title {
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-            color: #333;
         }
         .cta-buttons {
             display: flex;
@@ -442,66 +414,94 @@ else:
             margin: 0 10px;
         }
         </style>
-        
-        <div class="splash-container">
-            <div class="splash-logo">Analytics Assist</div>
-            <div class="splash-tagline">Transform your data into actionable insights with AI</div>
-            
-            <div class="splash-steps">
-                <div class="step-card">
-                    <div class="step-icon">📤</div>
-                    <div class="step-title">Upload</div>
-                    <p>Upload any data source with our smart importer</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-icon">🧹</div>
-                    <div class="step-title">Transform</div>
-                    <p>Clean and prepare your data with AI assistance</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-icon">📊</div>
-                    <div class="step-title">Visualize</div>
-                    <p>Create beautiful, insightful visualizations</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-icon">💡</div>
-                    <div class="step-title">Discover</div>
-                    <p>Gain valuable insights from your data</p>
-                </div>
-            </div>
-            
-            <h3>Example Analytics</h3>
-            <div style="display: flex; justify-content: space-around; margin: 20px 0; flex-wrap: wrap;">
-                <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; margin: 10px; overflow: hidden;">
-                    <img src="https://miro.medium.com/max/1400/1*S8Escq5DgEZC9Mdxm0inNw.webp" style="width: 100%; height: 120px; object-fit: cover;" alt="Correlation Heatmap">
-                    <div style="padding: 10px;">
-                        <div style="font-weight: bold;">Correlation Analysis</div>
-                        <p style="font-size: 12px;">Discover relationships between variables</p>
-                    </div>
-                </div>
-                <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; margin: 10px; overflow: hidden;">
-                    <img src="https://miro.medium.com/max/1400/1*WWcU-RT5UgPvdTpZyB6iCQ.webp" style="width: 100%; height: 120px; object-fit: cover;" alt="Sales Dashboard">
-                    <div style="padding: 10px;">
-                        <div style="font-weight: bold;">Sales Performance</div>
-                        <p style="font-size: 12px;">Track sales trends and forecasts</p>
-                    </div>
-                </div>
-                <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; margin: 10px; overflow: hidden;">
-                    <img src="https://miro.medium.com/max/1400/1*oO0KGH7sQGkGEH9lLNGlEg.webp" style="width: 100%; height: 120px; object-fit: cover;" alt="Anomaly Detection">
-                    <div style="padding: 10px;">
-                        <div style="font-weight: bold;">Anomaly Detection</div>
-                        <p style="font-size: 12px;">Automatically find outliers in your data</p>
-                    </div>
-                </div>
-            </div>
-            
-            <h3>All Your Data Tools in One Platform</h3>
-            <p>Analytics Assist combines powerful data analysis with an AI assistant to help you make better decisions.</p>
-            <p>Get started today and join thousands of users who trust Analytics Assist with their data needs.</p>
-        </div>
         """, 
         unsafe_allow_html=True
     )
+    
+    # Then create the splash container
+    st.markdown(
+        """
+        <div class="splash-container">
+            <div class="splash-logo">Analytics Assist</div>
+            <div class="splash-tagline">Transform your data into actionable insights with AI</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Add the step cards
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown(
+            """
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
+                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📤</div>
+                <div style="font-weight: bold; margin-bottom: 0.5rem;">Upload</div>
+                <p>Upload any data source with our smart importer</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+    
+    with col2:
+        st.markdown(
+            """
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
+                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🧹</div>
+                <div style="font-weight: bold; margin-bottom: 0.5rem;">Transform</div>
+                <p>Clean and prepare your data with AI assistance</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+    
+    with col3:
+        st.markdown(
+            """
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
+                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
+                <div style="font-weight: bold; margin-bottom: 0.5rem;">Visualize</div>
+                <p>Create beautiful, insightful visualizations</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+    
+    with col4:
+        st.markdown(
+            """
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
+                <div style="font-size: 2.5rem; margin-bottom: 1rem;">💡</div>
+                <div style="font-weight: bold; margin-bottom: 0.5rem;">Discover</div>
+                <p>Gain valuable insights from your data</p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+    
+    # Add the example analytics section
+    st.subheader("Example Analytics")
+    
+    # Use columns for the example analytics cards
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.image("https://miro.medium.com/max/1400/1*S8Escq5DgEZC9Mdxm0inNw.webp", caption="Correlation Analysis")
+        st.markdown("**Discover relationships between variables**")
+    
+    with col2:
+        st.image("https://miro.medium.com/max/1400/1*WWcU-RT5UgPvdTpZyB6iCQ.webp", caption="Sales Performance")
+        st.markdown("**Track sales trends and forecasts**")
+    
+    with col3:
+        st.image("https://miro.medium.com/max/1400/1*oO0KGH7sQGkGEH9lLNGlEg.webp", caption="Anomaly Detection")
+        st.markdown("**Automatically find outliers in your data**")
+    
+    # Add the platform description
+    st.markdown("### All Your Data Tools in One Platform")
+    st.markdown("Analytics Assist combines powerful data analysis with an AI assistant to help you make better decisions.")
+    st.markdown("Get started today and join thousands of users who trust Analytics Assist with their data needs.")
     
     # Sign-up container
     st.markdown(
