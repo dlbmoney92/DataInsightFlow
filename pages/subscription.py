@@ -12,6 +12,38 @@ def app():
         st.button("Go to Login", on_click=lambda: st.switch_page("pages/login.py"))
         return
     
+    # Check for query parameters
+    query_params = st.experimental_get_query_params()
+    
+    # Handle success redirect from Stripe
+    if "success" in query_params and query_params["success"][0] == "true":
+        tier = query_params.get("tier", [""])[0]
+        st.success(f"Thank you for your subscription! Your {tier.capitalize()} plan is now active.")
+        
+        # Clear query parameters after handling
+        st.experimental_set_query_params()
+        
+        # Update user information
+        user = get_user_by_id(st.session_state.user_id)
+        st.session_state.user = user
+        st.session_state.subscription_tier = user["subscription_tier"]
+        
+        # Add a small delay to refresh the page
+        st.markdown("""
+        <script>
+        setTimeout(function() {
+            window.location.href = window.location.pathname;
+        }, 3000);
+        </script>
+        """, unsafe_allow_html=True)
+    
+    # Handle cancelled checkout
+    elif "cancelled" in query_params and query_params["cancelled"][0] == "true":
+        st.warning("Your subscription process was cancelled. You can try again when you're ready.")
+        
+        # Clear query parameters after handling
+        st.experimental_set_query_params()
+    
     # Get current user information
     user = st.session_state.user
     current_tier = user["subscription_tier"]
@@ -135,35 +167,32 @@ def display_plan(tier, current_tier):
                         st.rerun()
 
 def upgrade_subscription(tier, billing_cycle):
-    """Upgrade user subscription to a higher tier."""
-    # In a real application, this would connect to a payment processor
-    # For now, we'll simulate a successful payment and upgrade
+    """Upgrade user subscription to a higher tier using Stripe."""
+    from utils.payment import get_stripe_checkout_session
     
-    now = datetime.datetime.utcnow()
+    # Set success and cancel URLs
+    success_url = f"{st.experimental_get_query_params().get('url', [st.get_url()])[0]}subscription?success=true&tier={tier}"
+    cancel_url = f"{st.experimental_get_query_params().get('url', [st.get_url()])[0]}subscription?cancelled=true"
     
-    # Set subscription end date based on billing cycle
-    if billing_cycle == "monthly":
-        end_date = now + datetime.timedelta(days=30)
-    else:  # yearly
-        end_date = now + datetime.timedelta(days=365)
-    
-    # Update user subscription in database
-    success = update_user_subscription(
-        st.session_state.user_id,
-        tier,
-        now,
-        end_date
+    # Create checkout session
+    checkout_result = get_stripe_checkout_session(
+        user_id=st.session_state.user_id,
+        tier=tier,
+        billing_cycle=billing_cycle,
+        success_url=success_url,
+        cancel_url=cancel_url
     )
     
-    if success:
-        # Update session state
-        user = get_user_by_id(st.session_state.user_id)
-        st.session_state.user = user
-        st.session_state.subscription_tier = tier
-        
+    if checkout_result["success"]:
+        # Redirect to Stripe checkout
+        checkout_url = checkout_result["checkout_url"]
+        st.markdown(f'<meta http-equiv="refresh" content="0;url={checkout_url}">', unsafe_allow_html=True)
+        st.info("Redirecting to secure payment page...")
+        st.markdown(f"If you are not redirected automatically, [click here]({checkout_url})")
         return True
-    
-    return False
+    else:
+        st.error(f"Error creating checkout session: {checkout_result.get('message', 'Unknown error')}")
+        return False
 
 def downgrade_subscription(tier):
     """Downgrade user subscription to a lower tier."""
