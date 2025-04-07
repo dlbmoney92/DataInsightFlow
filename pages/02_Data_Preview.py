@@ -3,12 +3,27 @@ import pandas as pd
 import numpy as np
 from utils.file_processor import apply_column_types
 from utils.auth_redirect import require_auth
+from utils.custom_navigation import render_navigation, render_developer_login, logout_developer, initialize_navigation
 
 st.set_page_config(
     page_title="Data Preview | Analytics Assist",
     page_icon="🔍",
     layout="wide"
 )
+
+# Initialize navigation
+initialize_navigation()
+
+# Render custom navigation bar
+render_navigation()
+
+# Sidebar extras
+with st.sidebar:
+    # Developer login form
+    render_developer_login()
+    
+    # Logout from developer mode if active
+    logout_developer()
 
 # Check authentication first
 if not require_auth():

@@ -12,12 +12,27 @@ from utils.file_processor import (
 )
 from utils.database import save_dataset, list_datasets, get_dataset
 from utils.access_control import check_access
+from utils.custom_navigation import render_navigation, render_developer_login, logout_developer, initialize_navigation
 
 st.set_page_config(
     page_title="Upload Data | Analytics Assist",
     page_icon="📁",
     layout="wide"
 )
+
+# Initialize navigation
+initialize_navigation()
+
+# Render custom navigation bar
+render_navigation()
+
+# Sidebar extras
+with st.sidebar:
+    # Developer login form
+    render_developer_login()
+    
+    # Logout from developer mode if active
+    logout_developer()
 
 # Authentication check
 if "logged_in" not in st.session_state or not st.session_state.logged_in:

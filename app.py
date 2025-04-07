@@ -8,6 +8,7 @@ from utils.file_processor import supported_file_types
 from utils.database import initialize_database
 from utils.access_control import check_and_handle_trial_expiration
 from utils.subscription import SUBSCRIPTION_TIERS, format_price, get_trial_days_remaining
+from utils.custom_navigation import render_navigation, render_developer_login, logout_developer, initialize_navigation
 import uuid
 
 # Set page configuration
@@ -17,6 +18,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Initialize navigation
+initialize_navigation()
 
 # Initialize database
 initialize_database()
@@ -44,10 +48,21 @@ if 'ai_suggestions' not in st.session_state:
     st.session_state.ai_suggestions = []
 if 'dataset_id' not in st.session_state:
     st.session_state.dataset_id = None
+if 'user_role' not in st.session_state:
+    st.session_state.user_role = "user"
+
+# Render navigation bar
+render_navigation()
 
 # Sidebar for navigation and user info
 with st.sidebar:
     st.title("Analytics Assist")
+    
+    # Developer login form
+    render_developer_login()
+    
+    # Logout from developer mode if active
+    logout_developer()
     
     # Create CSS to handle collapsed/expanded sidebar behavior
     st.markdown("""
