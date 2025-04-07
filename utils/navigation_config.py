@@ -88,6 +88,22 @@ def get_navigation_items():
         }
     ]
     
+    # Legal pages - accessible to everyone
+    legal_items = [
+        {
+            "name": "Terms of Service",
+            "url": "/pages/terms_of_service.py",
+            "icon": "📜",
+            "require_auth": False
+        },
+        {
+            "name": "Privacy Policy",
+            "url": "/pages/privacy_policy.py",
+            "icon": "🔒",
+            "require_auth": False
+        }
+    ]
+    
     # Developer-specific navigation items
     developer_items = [
         {
@@ -116,6 +132,9 @@ def get_navigation_items():
     # Add user account items if logged in
     if "logged_in" in st.session_state and st.session_state.logged_in:
         combined_items.extend(user_account_items)
+    
+    # Always add legal pages
+    combined_items.extend(legal_items)
     
     # Add developer items if in developer mode
     if is_developer_mode():

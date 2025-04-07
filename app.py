@@ -707,7 +707,12 @@ st.markdown("---")
 st.markdown(
     """
     <div style="text-align:center">
-        <p>Analytics Assist v1.0.0 | Made with ❤️ for data enthusiasts</p>
+        <p>
+            Analytics Assist v1.0.0 | Made with ❤️ for data enthusiasts<br/>
+            <a href="/pages/terms_of_service.py" target="_self" style="color: #4361ee; text-decoration: none; margin: 0 10px;">Terms of Service</a> | 
+            <a href="/pages/privacy_policy.py" target="_self" style="color: #4361ee; text-decoration: none; margin: 0 10px;">Privacy Policy</a>
+        </p>
+        <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">© 2025 Analytics Assist. All rights reserved.</p>
     </div>
     """, 
     unsafe_allow_html=True
