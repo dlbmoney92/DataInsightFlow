@@ -97,39 +97,122 @@ with st.sidebar:
     # Navigation menu
     st.header("Navigation")
     
-    # Main user-facing pages with grouped layout
+    # Check if sidebar is collapsed
+    if "sidebar_state" not in st.session_state:
+        st.session_state.sidebar_state = "expanded"
+    
+    # Detect if sidebar state changed by checking width
+    # This is a bit of a hack since Streamlit doesn't provide a direct way to detect sidebar state
+    sidebar_width = st.empty()
+    
+    # Create CSS to inject
+    st.markdown("""
+    <style>
+    /* Adjust button display based on sidebar state */
+    .nav-button-icon-only {
+        display: none;
+    }
+    
+    [data-collapsed="true"] .nav-button-icon-text {
+        display: none;
+    }
+    
+    [data-collapsed="true"] .nav-button-icon-only {
+        display: inline-block;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Data Management section
     with st.container():
         st.subheader("Data Management")
-        if st.button("📁 Upload Data", use_container_width=True):
-            st.switch_page("pages/01_Upload_Data.py")
         
-        if st.button("🔍 Data Preview", use_container_width=True):
-            st.switch_page("pages/02_Data_Preview.py")
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("📁", key="upload_icon", help="Upload Data"):
+                st.switch_page("pages/01_Upload_Data.py")
+        with col2:
+            if st.button("Upload Data", key="upload_text", use_container_width=True):
+                st.switch_page("pages/01_Upload_Data.py")
+        
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("🔍", key="preview_icon", help="Data Preview"):
+                st.switch_page("pages/02_Data_Preview.py")
+        with col2:
+            if st.button("Data Preview", key="preview_text", use_container_width=True):
+                st.switch_page("pages/02_Data_Preview.py")
     
+    # Analysis section
     with st.container():
         st.subheader("Analysis")
-        if st.button("📊 EDA Dashboard", use_container_width=True):
-            st.switch_page("pages/03_EDA_Dashboard.py")
         
-        if st.button("🧹 Transformations", use_container_width=True):
-            st.switch_page("pages/04_Data_Transformation.py")
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("📊", key="eda_icon", help="EDA Dashboard"):
+                st.switch_page("pages/03_EDA_Dashboard.py")
+        with col2:
+            if st.button("EDA Dashboard", key="eda_text", use_container_width=True):
+                st.switch_page("pages/03_EDA_Dashboard.py")
         
-        if st.button("💡 Insights", use_container_width=True):
-            st.switch_page("pages/05_Insights_Dashboard.py")
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("🧹", key="transform_icon", help="Transformations"):
+                st.switch_page("pages/04_Data_Transformation.py")
+        with col2:
+            if st.button("Transformations", key="transform_text", use_container_width=True):
+                st.switch_page("pages/04_Data_Transformation.py")
+        
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("💡", key="insights_icon", help="Insights"):
+                st.switch_page("pages/05_Insights_Dashboard.py")
+        with col2:
+            if st.button("Insights", key="insights_text", use_container_width=True):
+                st.switch_page("pages/05_Insights_Dashboard.py")
     
+    # Export & History section
     with st.container():
         st.subheader("Export & History")
-        if st.button("📤 Export Reports", use_container_width=True):
-            st.switch_page("pages/06_Export_Reports.py")
         
-        if st.button("📜 Version History", use_container_width=True):
-            st.switch_page("pages/07_Version_History.py")
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("📤", key="export_icon", help="Export Reports"):
+                st.switch_page("pages/06_Export_Reports.py")
+        with col2:
+            if st.button("Export Reports", key="export_text", use_container_width=True):
+                st.switch_page("pages/06_Export_Reports.py")
+        
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("📜", key="version_icon", help="Version History"):
+                st.switch_page("pages/07_Version_History.py")
+        with col2:
+            if st.button("Version History", key="version_text", use_container_width=True):
+                st.switch_page("pages/07_Version_History.py")
+    
+    # AI Learning (moved from developer options to main navigation)
+    with st.container():
+        st.subheader("AI & Learning")
+        
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("🧠", key="ai_learning_icon", help="AI Learning"):
+                st.switch_page("pages/08_AI_Learning.py")
+        with col2:
+            if st.button("AI Learning", key="ai_learning_text", use_container_width=True):
+                st.switch_page("pages/08_AI_Learning.py")
     
     st.divider()
     
     # Subscription
-    if st.button("💼 Subscription Plans", use_container_width=True):
-        st.switch_page("pages/subscription.py")
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        if st.button("💼", key="subscription_icon", help="Subscription Plans"):
+            st.switch_page("pages/subscription.py")
+    with col2:
+        if st.button("Subscription Plans", key="subscription_text", use_container_width=True):
+            st.switch_page("pages/subscription.py")
     
     # Hidden developer access - only shows when clicking the footer
     if "show_dev_panel" not in st.session_state:
@@ -145,9 +228,8 @@ with st.sidebar:
         st.subheader("👨‍💻 Developer Access")
         
         # Developer options
-        dev_options = ["AI Learning", "Stripe Webhook", "Payment Success"]
+        dev_options = ["Stripe Webhook", "Payment Success"]
         dev_pages = {
-            "AI Learning": "pages/08_AI_Learning.py",
             "Stripe Webhook": "pages/stripe_webhook.py",
             "Payment Success": "pages/payment_success.py"
         }
