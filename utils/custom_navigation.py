@@ -149,7 +149,7 @@ def render_navigation():
         # Actual form in a hidden container
         with st.container():
             st.write("")  # Placeholder to ensure container exists
-            render_developer_login()
+            render_developer_login(form_id="sidebar")
     
     # Navigation Items
     st.sidebar.markdown("""
@@ -268,16 +268,20 @@ def render_navigation():
         if st.sidebar.button("Exit Developer Mode", key="exit_dev_mode"):
             logout_developer()
 
-def render_developer_login():
-    """Render the developer login form."""
+def render_developer_login(form_id="main"):
+    """Render the developer login form.
+    
+    Args:
+        form_id: A unique identifier for the form to avoid duplicate keys
+    """
     # Check if already in developer mode
     if is_developer_mode():
         return
     
     # Use a unique key for the form
-    with st.form(key="dev_login_form"):
-        dev_username = st.text_input("Username", key="dev_username")
-        dev_password = st.text_input("Password", type="password", key="dev_password")
+    with st.form(key=f"dev_login_form_{form_id}"):
+        dev_username = st.text_input("Username", key=f"dev_username_{form_id}")
+        dev_password = st.text_input("Password", type="password", key=f"dev_password_{form_id}")
         
         submit_button = st.form_submit_button("Login")
         

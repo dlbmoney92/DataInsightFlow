@@ -90,7 +90,7 @@ render_navigation()
 # Developer login form and logout
 with st.sidebar:
     # Developer login form 
-    render_developer_login()
+    render_developer_login(form_id="app")
     
     # Logout from developer mode if active
     logout_developer()
