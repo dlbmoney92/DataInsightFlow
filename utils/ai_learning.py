@@ -218,7 +218,15 @@ def get_user_preferences():
             result = conn.execute(text(query), params)
             preferences = {}
             for row in result:
-                preferences[row[0]] = json.loads(row[1])
+                # Check if row[1] is already a dictionary
+                if isinstance(row[1], dict):
+                    preferences[row[0]] = row[1]
+                else:
+                    try:
+                        preferences[row[0]] = json.loads(row[1])
+                    except (TypeError, json.JSONDecodeError):
+                        # If there's an error, store as-is or an empty dict
+                        preferences[row[0]] = {} if row[1] is None else row[1]
             return preferences
     
     # Execute the get operation with retry
