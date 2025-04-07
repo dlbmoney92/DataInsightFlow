@@ -88,14 +88,16 @@ with st.sidebar:
 render_navigation()
 
 # Developer login form and logout
+# Commenting out developer login functionality for now
+# with st.sidebar:
+#     # Developer login form 
+#     render_developer_login(form_id="app")
+#     
+#     # Logout from developer mode if active
+#     logout_developer()
+
+# Add CSS needed for sidebar behavior - the rest is handled by custom_navigation.py
 with st.sidebar:
-    # Developer login form 
-    render_developer_login(form_id="app")
-    
-    # Logout from developer mode if active
-    logout_developer()
-    
-    # Add CSS needed for sidebar behavior - the rest is handled by custom_navigation.py
     st.markdown("""
     <style>
     /* Default styles for sidebar - expanded state */
