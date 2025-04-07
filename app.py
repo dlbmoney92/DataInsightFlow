@@ -257,6 +257,12 @@ with st.sidebar:
 # Main content
 # Check if user is logged in
 if "logged_in" in st.session_state and st.session_state.logged_in:
+    # Check for login message
+    if "login_message" in st.session_state:
+        st.success(st.session_state.login_message)
+        # Remove the message after displaying it once
+        del st.session_state.login_message
+        
     # Personalized dashboard for logged-in users
     st.title(f"Welcome, {st.session_state.user['full_name']}!")
     st.subheader("Your AI-powered data analysis co-pilot")

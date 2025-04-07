@@ -32,6 +32,9 @@ def app():
         st.session_state.login_success = False
         # Clear query params before redirecting
         st.query_params.clear()
+        # Add success message for UX purposes
+        st.session_state.login_message = "Successfully logged in with Google!"
+        # Redirect to home page
         st.switch_page("app.py")
 
 if __name__ == "__main__":

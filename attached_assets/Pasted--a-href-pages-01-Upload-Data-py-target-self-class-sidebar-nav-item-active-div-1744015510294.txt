@@ -1,0 +1,47 @@
+<a href="/pages/01_Upload_Data.py" target="_self" class="sidebar-nav-item active">
+            <div class="sidebar-nav-icon">📁</div>
+            <div class="sidebar-nav-label">Upload Data</div>
+        </a>
+
+        <a href="/pages/02_Data_Preview.py" target="_self" class="sidebar-nav-item ">
+            <div class="sidebar-nav-icon">🔍</div>
+            <div class="sidebar-nav-label">Data Preview</div>
+        </a>
+
+        <a href="/pages/03_EDA_Dashboard.py" target="_self" class="sidebar-nav-item ">
+            <div class="sidebar-nav-icon">📊</div>
+            <div class="sidebar-nav-label">EDA Dashboard</div>
+        </a>
+
+        <a href="/pages/04_Data_Transformation.py" target="_self" class="sidebar-nav-item ">
+            <div class="sidebar-nav-icon">🧹</div>
+            <div class="sidebar-nav-label">Transformations</div>
+        </a>
+
+        <a href="/pages/05_Insights_Dashboard.py" target="_self" class="sidebar-nav-item ">
+            <div class="sidebar-nav-icon">💡</div>
+            <div class="sidebar-nav-label">Insights</div>
+        </a>
+
+        <a href="/pages/06_Export_Reports.py" target="_self" class="sidebar-nav-item ">
+            <div class="sidebar-nav-icon">📤</div>
+            <div class="sidebar-nav-label">Export</div>
+        </a>
+
+        <a href="/pages/07_Version_History.py" target="_self" class="sidebar-nav-item ">
+            <div class="sidebar-nav-icon">📜</div>
+            <div class="sidebar-nav-label">Version History</div>
+        </a>
+
+        <a href="/pages/08_AI_Learning.py" target="_self" class="sidebar-nav-item ">
+            <div class="sidebar-nav-icon">🧠</div>
+            <div class="sidebar-nav-label">AI Learning</div>
+        </a>
+
+        <a href="/pages/subscription.py" target="_self" class="sidebar-nav-item ">
+            <div class="sidebar-nav-icon">💼</div>
+            <div class="sidebar-nav-label">Subscription</div>
+        </a>
+
+        <a href="/pages/account.py" target="_self" class="sidebar-nav-item ">
+            <div class="sidebar-nav-icon">👤</div>

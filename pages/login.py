@@ -56,7 +56,9 @@ def app():
                         
                         # Set a flag to redirect after successful login
                         st.session_state.login_success = True
+                        st.session_state.login_message = "Login successful!"
                         st.success("Login successful!")
+                        st.rerun()  # Force a rerun to handle the redirection
                     else:
                         st.error("Invalid email or password. Please try again.")
                 else:
@@ -160,6 +162,7 @@ def app():
                             
                             # Set a flag to redirect after successful login
                             st.session_state.login_success = True
+                            st.session_state.login_message = "Google login successful!"
                             st.success("Google login successful!")
                             st.rerun()
                 
