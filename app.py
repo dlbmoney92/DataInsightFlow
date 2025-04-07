@@ -97,36 +97,65 @@ with st.sidebar:
     # Navigation menu
     st.header("Navigation")
     
-    # Main pages
-    if st.button("📁 Upload Data", use_container_width=True):
-        st.switch_page("pages/01_Upload_Data.py")
-    
-    if st.button("🔍 Data Preview", use_container_width=True):
-        st.switch_page("pages/02_Data_Preview.py")
-    
-    if st.button("📊 EDA Dashboard", use_container_width=True):
-        st.switch_page("pages/03_EDA_Dashboard.py")
-    
-    if st.button("🧹 Transformations", use_container_width=True):
-        st.switch_page("pages/04_Data_Transformation.py")
-    
-    if st.button("💡 Insights", use_container_width=True):
-        st.switch_page("pages/05_Insights_Dashboard.py")
-    
-    if st.button("📤 Export Reports", use_container_width=True):
-        st.switch_page("pages/06_Export_Reports.py")
-    
-    if st.button("📜 Version History", use_container_width=True):
-        st.switch_page("pages/07_Version_History.py")
+    # Main user-facing pages with grouped layout
+    with st.container():
+        st.subheader("Data Management")
+        if st.button("📁 Upload Data", use_container_width=True):
+            st.switch_page("pages/01_Upload_Data.py")
         
-    if st.button("🧠 AI Learning", use_container_width=True):
-        st.switch_page("pages/08_AI_Learning.py")
+        if st.button("🔍 Data Preview", use_container_width=True):
+            st.switch_page("pages/02_Data_Preview.py")
+    
+    with st.container():
+        st.subheader("Analysis")
+        if st.button("📊 EDA Dashboard", use_container_width=True):
+            st.switch_page("pages/03_EDA_Dashboard.py")
+        
+        if st.button("🧹 Transformations", use_container_width=True):
+            st.switch_page("pages/04_Data_Transformation.py")
+        
+        if st.button("💡 Insights", use_container_width=True):
+            st.switch_page("pages/05_Insights_Dashboard.py")
+    
+    with st.container():
+        st.subheader("Export & History")
+        if st.button("📤 Export Reports", use_container_width=True):
+            st.switch_page("pages/06_Export_Reports.py")
+        
+        if st.button("📜 Version History", use_container_width=True):
+            st.switch_page("pages/07_Version_History.py")
     
     st.divider()
     
     # Subscription
     if st.button("💼 Subscription Plans", use_container_width=True):
         st.switch_page("pages/subscription.py")
+    
+    # Hidden developer access - only shows when clicking the footer
+    if "show_dev_panel" not in st.session_state:
+        st.session_state.show_dev_panel = False
+    
+    # Small clickable button that looks like part of the UI but toggles developer panel
+    if st.button("···", key="dev_toggle", help="Developer Access"):
+        st.session_state.show_dev_panel = not st.session_state.show_dev_panel
+    
+    # Developer panel - hidden by default
+    if st.session_state.show_dev_panel:
+        st.divider()
+        st.subheader("👨‍💻 Developer Access")
+        
+        # Developer options
+        dev_options = ["AI Learning", "Stripe Webhook", "Payment Success"]
+        dev_pages = {
+            "AI Learning": "pages/08_AI_Learning.py",
+            "Stripe Webhook": "pages/stripe_webhook.py",
+            "Payment Success": "pages/payment_success.py"
+        }
+        
+        selected_dev_page = st.selectbox("Select Developer Page", dev_options, key="dev_page_selector")
+        
+        if st.button("Go To Page", key="dev_page_button", use_container_width=True):
+            st.switch_page(dev_pages[selected_dev_page])
 
 # Main content
 # Check if user is logged in
