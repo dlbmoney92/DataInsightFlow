@@ -73,19 +73,20 @@ def format_price(price):
         return "Free"
     return f"${price:.2f}"
 
-def get_trial_days_remaining():
+def get_trial_days_remaining(trial_end_date_str=None):
     """Get the number of days remaining in the trial."""
-    if "user" not in st.session_state or not st.session_state.get("logged_in", False):
-        return 0
-    
-    # Check if user is on a trial
-    if not st.session_state.user.get("is_trial", False):
-        return 0
-    
-    # Get trial end date
-    trial_end_date_str = st.session_state.user.get("subscription_end_date")
     if not trial_end_date_str:
-        return 0
+        if "user" not in st.session_state or not st.session_state.get("logged_in", False):
+            return 0
+        
+        # Check if user is on a trial
+        if not st.session_state.user.get("is_trial", False):
+            return 0
+        
+        # Get trial end date from session state
+        trial_end_date_str = st.session_state.user.get("subscription_end_date")
+        if not trial_end_date_str:
+            return 0
     
     # Parse date string to datetime
     try:
@@ -97,4 +98,27 @@ def get_trial_days_remaining():
         return max(0, days_left)
     except Exception as e:
         print(f"Error calculating trial days: {e}")
+        return 0
+
+def get_subscription_expires_in_days(subscription_end_date_str=None):
+    """Get the number of days remaining until subscription expires."""
+    if not subscription_end_date_str:
+        if "user" not in st.session_state or not st.session_state.get("logged_in", False):
+            return 0
+        
+        # Get subscription end date from session state
+        subscription_end_date_str = st.session_state.user.get("subscription_end_date")
+        if not subscription_end_date_str:
+            return 0
+    
+    # Parse date string to datetime
+    try:
+        subscription_end_date = datetime.datetime.fromisoformat(subscription_end_date_str.replace('Z', '+00:00'))
+        today = datetime.datetime.now(datetime.timezone.utc)
+        
+        # Calculate days difference
+        days_left = (subscription_end_date - today).days
+        return max(0, days_left)
+    except Exception as e:
+        print(f"Error calculating subscription days: {e}")
         return 0

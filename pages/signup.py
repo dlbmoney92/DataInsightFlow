@@ -188,6 +188,13 @@ def app():
                 """,
                 unsafe_allow_html=True
             )
+            
+            # Store a session state variable that checks if the Google button was clicked
+            # This is detected when the page is reloaded with Google auth parameters
+            if 'code' in st.query_params:
+                st.session_state.google_clicked = True
+            else:
+                st.session_state.google_clicked = False
         else:
             # If terms not accepted, show a disabled button
             st.markdown(
@@ -213,6 +220,12 @@ def app():
                 unsafe_allow_html=True
             )
             st.warning("Please accept the terms and conditions to continue with Google Sign-up")
+        
+        # Initialize google_clicked if not in session_state
+        if 'google_clicked' not in st.session_state:
+            st.session_state.google_clicked = False
+            
+        google_clicked = st.session_state.google_clicked
         
         if google_clicked:
             if not terms_accepted_google:

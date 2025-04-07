@@ -35,8 +35,9 @@ if not st.session_state.get("user_role") == "developer":
     """
     st.markdown(hide_streamlit_nav, unsafe_allow_html=True)
 
-# Initialize navigation
+# Initialize navigation with extra debugging
 initialize_navigation()
+print(f"Current page in session state after initialization: {st.session_state.get('current_page', 'Not set')}")
 
 # Initialize database
 initialize_database()

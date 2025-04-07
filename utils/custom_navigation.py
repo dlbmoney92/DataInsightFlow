@@ -14,6 +14,10 @@ def render_navigation():
     # Current page from session state
     current_page = st.session_state.get("current_page", "/")
     
+    # Debug info
+    print(f"Rendering navigation with current page: {current_page}")
+    print(f"Navigation items: {[item.get('url', '#') for item in nav_items]}")
+    
     # App title with gradient
     st.sidebar.markdown(
         """
@@ -306,6 +310,14 @@ def initialize_navigation():
     # Get the current page from the URL
     current_url = os.environ.get("STREAMLIT_SERVER_BASE_PATH_INFO", "/")
     
+    # For the root page, use "/"
+    if current_url == "" or current_url is None:
+        current_url = "/"
+    
+    # Print for debugging
+    print(f"Current URL detected: {current_url}")
+    
     # Store in session state
     if "current_page" not in st.session_state or st.session_state.current_page != current_url:
         st.session_state.current_page = current_url
+        print(f"Set current_page to: {current_url}")
