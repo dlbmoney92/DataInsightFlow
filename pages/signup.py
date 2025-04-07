@@ -81,11 +81,16 @@ def app():
                 else:
                     st.success("Your account has been created successfully!")
                 
-                # Redirect to login
-                st.button("Go to Login", on_click=lambda: st.switch_page("pages/login.py"))
+                # Store a flag to redirect after form
+                st.session_state.redirect_to_login = True
             else:
                 st.error(f"Error creating account: {result['message']}")
     
+    # Check if we need to redirect to login page after successful signup
+    if "redirect_to_login" in st.session_state and st.session_state.redirect_to_login:
+        st.session_state.redirect_to_login = False
+        st.switch_page("pages/login.py")
+        
     st.markdown("---")
     st.markdown("Already have an account? [Log in here](/login)")
     st.button("Log In", on_click=lambda: st.switch_page("pages/login.py"))

@@ -156,8 +156,8 @@ def display_payment_button(tier, billing_cycle, button_text="Subscribe"):
 
 def handle_payment_success():
     """Handle successful payment redirect from Stripe."""
-    query_params = st.experimental_get_query_params()
-    session_id = query_params.get("session_id", [None])[0]
+    query_params = st.query_params
+    session_id = query_params.get("session_id", None)
     
     if session_id:
         try:

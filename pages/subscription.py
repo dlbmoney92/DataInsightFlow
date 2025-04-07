@@ -12,16 +12,16 @@ def app():
         st.button("Go to Login", on_click=lambda: st.switch_page("pages/login.py"))
         return
     
-    # Check for query parameters
-    query_params = st.experimental_get_query_params()
+    # Check for query parameters using non-experimental API
+    query_params = st.query_params
     
     # Handle success redirect from Stripe
-    if "success" in query_params and query_params["success"][0] == "true":
-        tier = query_params.get("tier", [""])[0]
+    if "success" in query_params and query_params["success"] == "true":
+        tier = query_params.get("tier", "")
         st.success(f"Thank you for your subscription! Your {tier.capitalize()} plan is now active.")
         
         # Clear query parameters after handling
-        st.experimental_set_query_params()
+        query_params.clear()
         
         # Update user information
         user = get_user_by_id(st.session_state.user_id)
@@ -38,11 +38,11 @@ def app():
         """, unsafe_allow_html=True)
     
     # Handle cancelled checkout
-    elif "cancelled" in query_params and query_params["cancelled"][0] == "true":
+    elif "cancelled" in query_params and query_params["cancelled"] == "true":
         st.warning("Your subscription process was cancelled. You can try again when you're ready.")
         
         # Clear query parameters after handling
-        st.experimental_set_query_params()
+        query_params.clear()
     
     # Get current user information
     user = st.session_state.user
@@ -171,8 +171,9 @@ def upgrade_subscription(tier, billing_cycle):
     from utils.payment import get_stripe_checkout_session
     
     # Set success and cancel URLs
-    success_url = f"{st.experimental_get_query_params().get('url', [st.get_url()])[0]}subscription?success=true&tier={tier}"
-    cancel_url = f"{st.experimental_get_query_params().get('url', [st.get_url()])[0]}subscription?cancelled=true"
+    current_url = st.get_url()
+    success_url = f"{current_url}subscription?success=true&tier={tier}"
+    cancel_url = f"{current_url}subscription?cancelled=true"
     
     # Create checkout session
     checkout_result = get_stripe_checkout_session(
