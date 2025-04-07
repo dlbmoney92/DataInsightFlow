@@ -13,6 +13,7 @@ from utils.file_processor import (
 from utils.database import save_dataset, list_datasets, get_dataset
 from utils.access_control import check_access
 from utils.custom_navigation import render_navigation, render_developer_login, logout_developer, initialize_navigation
+from utils.auth_redirect import require_auth
 
 st.set_page_config(
     page_title="Upload Data | Analytics Assist",
@@ -25,6 +26,10 @@ initialize_navigation()
 
 # Render custom navigation bar
 render_navigation()
+
+# Check authentication
+if not require_auth():
+    st.stop()
 
 # Sidebar extras
 with st.sidebar:
@@ -97,7 +102,7 @@ with col2:
     from utils.access_control import get_dataset_count
     
     # Get user's current dataset count and limit
-    current_count = get_dataset_count(st.session_state.user_id)
+    current_count = get_dataset_count(st.session_state.get("user_id", None))
     dataset_limit = check_access("dataset_count")
     
     # Show dataset usage information

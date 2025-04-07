@@ -51,35 +51,14 @@ if 'dataset_id' not in st.session_state:
 if 'user_role' not in st.session_state:
     st.session_state.user_role = "user"
 
-# Using Streamlit's native navigation instead of custom navigation
-# We'll just add the app title to the sidebar
-with st.sidebar:
-    st.markdown("""
-    <style>
-    .app-title {
-        color: #4361ee;
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin-bottom: 20px;
-        background: -webkit-linear-gradient(45deg, #4361ee, #7239ea);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    </style>
-    <h1 class="app-title">Analytics Assist</h1>
-    """, unsafe_allow_html=True)
+# Use custom navigation in the sidebar
+from utils.custom_navigation import render_navigation, initialize_navigation
 
-# Logout button for logged in users
-if st.session_state.get("logged_in", False):
-    with st.sidebar:
-        if st.button("Logout", key="sidebar_logout"):
-            # Clear session state
-            for key in list(st.session_state.keys()):
-                if key != "current_page":  # Keep current page for redirect
-                    del st.session_state[key]
-            
-            st.sidebar.success("Logged out successfully")
-            st.rerun()
+# Initialize navigation
+initialize_navigation()
+
+# Render custom navigation bar
+render_navigation()
 
 # Add CSS for sidebar behavior
 with st.sidebar:

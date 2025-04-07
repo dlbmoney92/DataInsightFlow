@@ -6,6 +6,15 @@ from datetime import datetime
 from utils.navigation_config import get_navigation_items, authenticate_developer, is_developer_mode, set_developer_mode
 from utils.subscription import get_trial_days_remaining
 
+# Hide Streamlit’s default multipage navigation menu
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 def render_navigation():
     """Render the navigation bar in the sidebar."""
     # Get navigation items based on role
