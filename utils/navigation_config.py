@@ -14,7 +14,7 @@ def get_navigation_items():
     base_items = [
         {
             "name": "Home",
-            "url": "/",
+            "url": "app.py",
             "icon": "🏠",
             "require_auth": False
         }
@@ -24,49 +24,49 @@ def get_navigation_items():
     core_app_items = [
         {
             "name": "Upload Data",
-            "url": "/pages/01_Upload_Data.py",
+            "url": "pages/01_Upload_Data.py",
             "icon": "📁",
             "require_auth": False  # Show in nav but auth check is done in the page
         },
         {
             "name": "Data Preview",
-            "url": "/pages/02_Data_Preview.py",
+            "url": "pages/02_Data_Preview.py",
             "icon": "🔍",
             "require_auth": False  # Show in nav but auth check is done in the page
         },
         {
             "name": "EDA Dashboard",
-            "url": "/pages/03_EDA_Dashboard.py",
+            "url": "pages/03_EDA_Dashboard.py",
             "icon": "📊",
             "require_auth": False  # Show in nav but auth check is done in the page
         },
         {
             "name": "Transformations",
-            "url": "/pages/04_Data_Transformation.py",
+            "url": "pages/04_Data_Transformation.py",
             "icon": "🧹",
             "require_auth": False  # Show in nav but auth check is done in the page
         },
         {
             "name": "Insights",
-            "url": "/pages/05_Insights_Dashboard.py",
+            "url": "pages/05_Insights_Dashboard.py",
             "icon": "💡",
             "require_auth": False  # Show in nav but auth check is done in the page
         },
         {
             "name": "Export",
-            "url": "/pages/06_Export_Reports.py",
+            "url": "pages/06_Export_Reports.py",
             "icon": "📤",
             "require_auth": False  # Show in nav but auth check is done in the page
         },
         {
             "name": "Version History",
-            "url": "/pages/07_Version_History.py",
+            "url": "pages/07_Version_History.py",
             "icon": "📜",
             "require_auth": False  # Show in nav but auth check is done in the page
         },
         {
             "name": "AI Learning",
-            "url": "/pages/08_AI_Learning.py",
+            "url": "pages/08_AI_Learning.py",
             "icon": "🧠",
             "require_auth": False  # Show in nav but auth check is done in the page
         }
@@ -76,13 +76,13 @@ def get_navigation_items():
     user_account_items = [
         {
             "name": "Subscription",
-            "url": "/pages/subscription.py",
+            "url": "pages/subscription.py",
             "icon": "💼",
             "require_auth": True  # Only show if logged in
         },
         {
             "name": "Account",
-            "url": "/pages/account.py",
+            "url": "pages/account.py",
             "icon": "👤",
             "require_auth": True  # Only show if logged in
         }
@@ -92,13 +92,13 @@ def get_navigation_items():
     legal_items = [
         {
             "name": "Terms of Service",
-            "url": "/pages/terms_of_service.py",
+            "url": "pages/terms_of_service.py",
             "icon": "📜",
             "require_auth": False
         },
         {
             "name": "Privacy Policy",
-            "url": "/pages/privacy_policy.py",
+            "url": "pages/privacy_policy.py",
             "icon": "🔒",
             "require_auth": False
         }
@@ -108,19 +108,19 @@ def get_navigation_items():
     developer_items = [
         {
             "name": "Stripe Webhook",
-            "url": "/pages/stripe_webhook.py",
+            "url": "pages/stripe_webhook.py",
             "icon": "🔄",
             "require_auth": True
         },
         {
             "name": "Payment Success",
-            "url": "/pages/payment_success.py",
+            "url": "pages/payment_success.py",
             "icon": "💰",
             "require_auth": True
         },
         {
             "name": "OAuth Callback",
-            "url": "/pages/oauth_callback.py",
+            "url": "pages/oauth_callback.py",
             "icon": "🔐",
             "require_auth": True
         }
