@@ -103,6 +103,7 @@ def get_navigation_items():
         # Developer mode has been removed
     else:
         # No navigation items for non-logged in users (only home)
+        pass
     
     return nav_items
 

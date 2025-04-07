@@ -443,12 +443,7 @@ else:
         if st.button("Create an Account", use_container_width=True, key="main_signup"):
             st.switch_page("pages/signup.py")
         
-        st.markdown("<div class='or-divider'>OR</div>", unsafe_allow_html=True)
-        
-        google_btn = st.button("Sign in with Google", use_container_width=True, key="google_signin")
-        if google_btn:
-            st.warning("Google authentication will be integrated with your OAuth credentials")
-            st.info("To complete the Google Sign-in setup, you'll need to register your app with Google Cloud Console and obtain OAuth credentials")
+
     
     # Feature highlights
     st.markdown("---")
