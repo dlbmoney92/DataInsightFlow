@@ -15,6 +15,7 @@ SIGNUP_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -9
 USER_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm246-164q-59 0-99.5-40.5T340-580q0-59 40.5-99.5T480-720q59 0 99.5 40.5T620-580q0 59-40.5 99.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q53 0 100-15.5t86-44.5q-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160Zm0-360q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm0-60Zm0 360Z"/></svg>'
 ADMIN_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M680-280q25 0 42.5-17.5T740-340q0-25-17.5-42.5T680-400q-25 0-42.5 17.5T620-340q0 25 17.5 42.5T680-280Zm0 120q31 0 57-14.5t42-38.5q-22-13-47-20t-52-7q-27 0-52 7t-47 20q16 24 42 38.5t57 14.5ZM480-80q-139-35-229.5-159.5T160-516v-284l320-120 320 120v189q-14-7-28.5-12T740-630v-148l-260-96-260 96v264q0 118 75 212.5T480-180q7 16 17 30.5T517-120q-8 3-17 5t-20 2v33Zm200-200q-83 0-141.5 58.5T480-80q0 83 58.5 141.5T680-280q83 0 141.5-58.5T880-480q0-83-58.5-141.5T680-680q-83 0-141.5 58.5T480-480q0 83 58.5 141.5T680-280Zm0-80Zm-67 210Z"/></svg>'
 PAYMENT_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M280-240q-33 0-56.5-23.5T200-320v-320q0-33 23.5-56.5T280-720h400q33 0 56.5 23.5T760-640v320q0 33-23.5 56.5T680-240H280Zm0-80h400v-320H280v320Zm200 0q25 0 42.5-17.5T540-380q0-25-17.5-42.5T480-440q-25 0-42.5 17.5T420-380q0 25 17.5 42.5T480-320ZM280-560h400v-80H280v80Zm0 0v-80 80Zm0 240v-320 320Z"/></svg>'
+CONTACT_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200Zm-320 80v0 400-400Z"/></svg>'
 
 # Developer mode functionality has been removed
 def is_developer_mode():
@@ -98,6 +99,13 @@ def get_navigation_items():
             "name": "Subscription",
             "url": "/pages/subscription.py",
             "icon": PAYMENT_ICON,
+        })
+        
+        # Add contact us page
+        nav_items.append({
+            "name": "Contact Us",
+            "url": "/pages/contact_us.py",
+            "icon": CONTACT_ICON,
         })
         
         # Developer mode has been removed

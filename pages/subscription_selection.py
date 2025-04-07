@@ -13,8 +13,20 @@ def app():
     if not require_auth():
         return
     
-    st.title("Select Your Plan")
-    st.subheader("Choose the Analytics Assist subscription that fits your needs")
+    # Create a modal-like container
+    with st.container():
+        st.markdown('<div class="modal-container">', unsafe_allow_html=True)
+        
+        # Modal header
+        st.markdown('''
+        <div class="modal-header">
+            <h2 class="modal-title">Select Your Plan</h2>
+            <a href="/" class="modal-close">×</a>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        st.markdown('<div class="modal-body">', unsafe_allow_html=True)
+        st.subheader("Choose the Analytics Assist subscription that fits your needs")
     
     # Get access level from query parameters if available
     query_params = st.query_params
@@ -141,13 +153,24 @@ def app():
     st.markdown("<div style='text-align: center;'>Not ready to decide?</div>", unsafe_allow_html=True)
     if st.button("Continue with Free Plan", use_container_width=False, key="skip"):
         st.switch_page("app.py")
+        
+    # Close the modal body and container divs
+    st.markdown('</div>', unsafe_allow_html=True)  # Close modal-body
+    
+    # Modal footer
+    st.markdown('''
+    <div class="modal-footer">
+        <a href="/" class="btn">Cancel</a>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)  # Close modal-container
 
 def redirect_to_payment(tier, billing_cycle):
     """Redirect to Stripe payment for the selected plan."""
-    # Set success and cancel URLs
-    current_url = st.get_url()
-    success_url = f"{current_url}subscription?success=true&tier={tier}"
-    cancel_url = f"{current_url}subscription_selection"
+    # Set success and cancel URLs - using hardcoded URLs instead of st.get_url()
+    success_url = f"/pages/payment_success.py?success=true&tier={tier}"
+    cancel_url = f"/pages/subscription_selection.py?cancelled=true"
     
     # Create checkout session
     checkout_result = get_stripe_checkout_session(

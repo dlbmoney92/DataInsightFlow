@@ -173,6 +173,54 @@ def apply_global_css():
             button:hover {
                 opacity: 0.9;
             }
+            
+            /* Modal-like popup styles */
+            .modal-container {
+                max-width: 800px;
+                margin: 2rem auto;
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+                padding: 2rem;
+                position: relative;
+            }
+            
+            .modal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+            }
+            
+            .modal-title {
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: #1E3A8A;
+                margin: 0;
+            }
+            
+            .modal-close {
+                font-size: 1.5rem;
+                border: none;
+                background: none;
+                cursor: pointer;
+                color: #6B7280;
+            }
+            
+            .modal-body {
+                margin-bottom: 1.5rem;
+            }
+            
+            .modal-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 1rem;
+            }
+            
+            /* Hide replit domain url in stStatusWidget */
+            [data-testid="stStatusWidget"] {
+                display: none !important;
+            }
         </style>
     """, unsafe_allow_html=True)
 

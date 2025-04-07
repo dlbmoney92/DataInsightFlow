@@ -140,6 +140,11 @@ def render_navigation():
             div[data-testid="stSidebarNavItems"] a div svg {
                 margin-right: 0.75rem;
             }
+            
+            /* Hide replit domain url in stStatusWidget */
+            [data-testid="stStatusWidget"] {
+                display: none !important;
+            }
         </style>
     """, unsafe_allow_html=True)
     

@@ -175,10 +175,9 @@ def upgrade_subscription(tier, billing_cycle):
     """Upgrade user subscription to a higher tier using Stripe."""
     from utils.payment import get_stripe_checkout_session
     
-    # Set success and cancel URLs
-    current_url = st.get_url()
-    success_url = f"{current_url}subscription?success=true&tier={tier}"
-    cancel_url = f"{current_url}subscription?cancelled=true"
+    # Set success and cancel URLs - using hardcoded URLs instead of st.get_url()
+    success_url = f"/pages/payment_success.py?success=true&tier={tier}"
+    cancel_url = f"/pages/subscription.py?cancelled=true"
     
     # Create checkout session
     checkout_result = get_stripe_checkout_session(

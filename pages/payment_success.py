@@ -24,8 +24,19 @@ def app():
                 new_params[param] = query_params[param]
         st.query_params.update(new_params)
     
-    # Display success message
-    st.title("Payment Successful!")
+    # Create a modal-like container
+    with st.container():
+        st.markdown('<div class="modal-container">', unsafe_allow_html=True)
+        
+        # Modal header
+        st.markdown('''
+        <div class="modal-header">
+            <h2 class="modal-title">Payment Successful!</h2>
+            <a href="/" class="modal-close">×</a>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        st.markdown('<div class="modal-body">', unsafe_allow_html=True)
     
     # Show different messages based on the tier
     if tier == "basic":
@@ -72,6 +83,18 @@ def app():
     # Button to upload data
     if st.button("Upload Data", use_container_width=True):
         st.switch_page("pages/01_Upload_Data.py")
+        
+    # Close the modal body and container divs
+    st.markdown('</div>', unsafe_allow_html=True)  # Close modal-body
+    
+    # Modal footer
+    st.markdown('''
+    <div class="modal-footer">
+        <a href="/" class="btn">Return to Home</a>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)  # Close modal-container
 
 if __name__ == "__main__":
     app()
