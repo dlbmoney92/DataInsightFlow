@@ -158,15 +158,25 @@ def deserialize_dataframe(data):
     return pd.read_parquet(io.BytesIO(data))
 
 # Dataset operations
-def save_dataset(name, description, file_name, file_type, df, column_types):
+def save_dataset(name, description, file_name, file_type, df, column_types, user_id=None):
     """Save a dataset to the database."""
     session = Session()
     try:
         serialized_data = serialize_dataframe(df)
         column_types_json = json.dumps(column_types)
         
+        # Get user_id from session state if not provided
+        if user_id is None and "user_id" in st.session_state:
+            user_id = st.session_state.user_id
+        
         # Check if dataset with same name exists
-        existing = session.query(datasets).filter(datasets.c.name == name).first()
+        existing = session.query(datasets).filter(datasets.c.name == name)
+        
+        # Filter by user_id if available
+        if user_id:
+            existing = existing.filter(datasets.c.user_id == user_id)
+            
+        existing = existing.first()
         
         if existing:
             # Update existing dataset
@@ -179,7 +189,8 @@ def save_dataset(name, description, file_name, file_type, df, column_types):
                     data=serialized_data,
                     column_types=column_types_json,
                     row_count=df.shape[0],
-                    column_count=df.shape[1]
+                    column_count=df.shape[1],
+                    user_id=user_id
                 )
             )
             dataset_id = existing.id
@@ -194,7 +205,8 @@ def save_dataset(name, description, file_name, file_type, df, column_types):
                     data=serialized_data,
                     column_types=column_types_json,
                     row_count=df.shape[0],
-                    column_count=df.shape[1]
+                    column_count=df.shape[1],
+                    user_id=user_id
                 )
             )
             dataset_id = result.inserted_primary_key[0]
@@ -208,12 +220,25 @@ def save_dataset(name, description, file_name, file_type, df, column_types):
     finally:
         session.close()
 
-def get_dataset(dataset_id):
+def get_dataset(dataset_id, user_id=None):
     """Retrieve a dataset from the database with retry logic."""
     def _get_dataset_operation():
         session = Session()
         try:
-            result = session.query(datasets).filter(datasets.c.id == dataset_id).first()
+            # Get user_id from session state if not provided
+            if user_id is None and "user_id" in st.session_state:
+                current_user_id = st.session_state.user_id
+            else:
+                current_user_id = user_id
+                
+            # Build the query
+            query = session.query(datasets).filter(datasets.c.id == dataset_id)
+            
+            # Apply user_id filter if provided
+            if current_user_id:
+                query = query.filter(datasets.c.user_id == current_user_id)
+            
+            result = query.first()
             
             if result:
                 df = deserialize_dataframe(result.data)
@@ -230,7 +255,8 @@ def get_dataset(dataset_id):
                     'dataset': df,
                     'column_types': column_types,
                     'row_count': result.row_count,
-                    'column_count': result.column_count
+                    'column_count': result.column_count,
+                    'user_id': result.user_id
                 }
             return None
         except Exception as e:
@@ -246,12 +272,21 @@ def get_dataset(dataset_id):
         st.error(f"Failed to retrieve dataset after retries: {str(e)}")
         return None
 
-def list_datasets():
-    """List all datasets in the database with retry logic."""
+def list_datasets(user_id=None):
+    """List datasets in the database with retry logic, filtered by user_id if provided."""
     def _list_datasets_operation():
         session = Session()
         try:
-            results = session.query(datasets).all()
+            query = session.query(datasets)
+            
+            # Filter by user_id if provided or available in session state
+            if user_id is None and "user_id" in st.session_state:
+                user_id = st.session_state.user_id
+                
+            if user_id:
+                query = query.filter(datasets.c.user_id == user_id)
+                
+            results = query.all()
             
             dataset_list = [
                 {
@@ -263,7 +298,8 @@ def list_datasets():
                     'created_at': row.created_at,
                     'updated_at': row.updated_at,
                     'row_count': row.row_count,
-                    'column_count': row.column_count
+                    'column_count': row.column_count,
+                    'user_id': row.user_id
                 }
                 for row in results
             ]
@@ -282,10 +318,25 @@ def list_datasets():
         st.error(f"Failed to list datasets after retries: {str(e)}")
         return []
 
-def delete_dataset(dataset_id):
-    """Delete a dataset and all related records."""
+def delete_dataset(dataset_id, user_id=None):
+    """Delete a dataset and all related records, with optional user_id check."""
     session = Session()
     try:
+        # Get user_id from session state if not provided
+        if user_id is None and "user_id" in st.session_state:
+            user_id = st.session_state.user_id
+            
+        # Check if dataset exists and belongs to the user
+        dataset = None
+        if user_id:
+            dataset = session.query(datasets).filter(datasets.c.id == dataset_id, datasets.c.user_id == user_id).first()
+        else:
+            dataset = session.query(datasets).filter(datasets.c.id == dataset_id).first()
+            
+        if not dataset:
+            st.error(f"Dataset not found or you don't have permission to delete it.")
+            return False
+            
         # Delete related records first
         session.execute(transformations.delete().where(transformations.c.dataset_id == dataset_id))
         session.execute(versions.delete().where(versions.c.dataset_id == dataset_id))
