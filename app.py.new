@@ -53,12 +53,12 @@ with st.sidebar:
     st.markdown("""
     <style>
     /* Default styles for sidebar - expanded state */
-    div[data-testid="stSidebarUserContent"] > div:nth-of-type(1) { display: none; }
-    div[data-testid="stSidebarUserContent"] > div:nth-of-type(2) { display: block; }
+    .icon-buttons { display: none; }
+    .text-buttons { display: block; }
     
     /* Collapsed sidebar styles */
-    [data-collapsed="true"] div[data-testid="stSidebarUserContent"] > div:nth-of-type(1) { display: block; }
-    [data-collapsed="true"] div[data-testid="stSidebarUserContent"] > div:nth-of-type(2) { display: none; }
+    [data-collapsed="true"] .icon-buttons { display: block; }
+    [data-collapsed="true"] .text-buttons { display: none; }
     </style>
     """, unsafe_allow_html=True)
     
@@ -67,12 +67,12 @@ with st.sidebar:
         # Check if trial has expired
         check_and_handle_trial_expiration()
         
-        # Icon-only display for collapsed sidebar (first div)
-        with st.container():
+        # Icon-only display for collapsed sidebar
+        with st.container(class_="icon-buttons"):
             st.write("👤")
         
-        # Text-only display for expanded sidebar (second div)
-        with st.container():
+        # Text-only display for expanded sidebar
+        with st.container(class_="text-buttons"):
             # Display user info
             st.write(f"Welcome, {st.session_state.user['full_name']}")
             
@@ -102,15 +102,15 @@ with st.sidebar:
                             del st.session_state[key]
                     st.rerun()
     else:
-        # Icon-only display for collapsed sidebar (first div)
-        with st.container():
+        # Icon-only display for collapsed sidebar
+        with st.container(class_="icon-buttons"):
             if st.button("👤", key="login_icon_top"):
                 st.switch_page("pages/login.py")
             if st.button("➕", key="signup_icon_top"):
                 st.switch_page("pages/signup.py")
         
-        # Text-only display for expanded sidebar (second div)
-        with st.container():
+        # Text-only display for expanded sidebar
+        with st.container(class_="text-buttons"):
             # Login/signup buttons
             col1, col2 = st.columns(2)
             with col1:
@@ -125,8 +125,8 @@ with st.sidebar:
     # Navigation menu
     st.header("Navigation")
     
-    # Icons only (visible when collapsed) - first div
-    with st.container():
+    # Icons only (visible when collapsed)
+    with st.container(class_="icon-buttons"):
         if st.button("📁", key="upload_icon", help="Upload Data"):
             st.switch_page("pages/01_Upload_Data.py")
         if st.button("🔍", key="preview_icon", help="Data Preview"):
@@ -146,8 +146,8 @@ with st.sidebar:
         if st.button("💼", key="subscription_icon", help="Subscription Plans"):
             st.switch_page("pages/subscription.py")
     
-    # Text-only buttons (visible when expanded) - second div
-    with st.container():
+    # Text-only buttons (visible when expanded)
+    with st.container(class_="text-buttons"):
         with st.container():
             st.subheader("Data Management")
             if st.button("Upload Data", key="upload_text", use_container_width=True):
@@ -181,34 +181,15 @@ with st.sidebar:
         if st.button("Subscription Plans", key="subscription_text", use_container_width=True):
             st.switch_page("pages/subscription.py")
     
-    # Hidden developer access - only shows when clicking the footer
-    if "show_dev_panel" not in st.session_state:
-        st.session_state.show_dev_panel = False
-    
-    # Icon-only version (visible when collapsed) - first div
-    with st.container():
-        if st.button("⚙️", key="dev_toggle_icon", help="Developer Access"):
-            st.session_state.show_dev_panel = not st.session_state.show_dev_panel
-    
-    # Text version (visible when expanded) - second div
-    with st.container():
-        # Small clickable button that looks like part of the UI but toggles developer panel
+    # Hidden developer access (only in expanded mode)
+    with st.container(class_="text-buttons"):
+        if "show_dev_panel" not in st.session_state:
+            st.session_state.show_dev_panel = False
+        
         if st.button("···", key="dev_toggle", help="Developer Access"):
             st.session_state.show_dev_panel = not st.session_state.show_dev_panel
-    
-    # Developer panel - hidden by default
-    if st.session_state.show_dev_panel:
-        # For collapsed sidebar (first div)
-        with st.container():
-            st.write("👨‍💻")
-            # Simplified dev options for collapsed state
-            if st.button("🔄", key="webhook_icon", help="Stripe Webhook"):
-                st.switch_page("pages/stripe_webhook.py")
-            if st.button("💰", key="payment_icon", help="Payment Success"):
-                st.switch_page("pages/payment_success.py")
         
-        # For expanded sidebar (second div)
-        with st.container():
+        if st.session_state.show_dev_panel:
             st.divider()
             st.subheader("👨‍💻 Developer Access")
             
