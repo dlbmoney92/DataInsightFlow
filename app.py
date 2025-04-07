@@ -24,16 +24,8 @@ st.set_page_config(
 # Apply global CSS including hiding default Streamlit navigation
 apply_global_css()
 
-# Additional conditional CSS for developer mode
-if not st.session_state.get("user_role") == "developer":
-    hide_streamlit_nav = """
-    <style>
-        [data-testid="stSidebarNavItems"] {
-            display: none !important;
-        }
-    </style>
-    """
-    st.markdown(hide_streamlit_nav, unsafe_allow_html=True)
+# Remove the hiding of navigation items to make them visible for all users
+# We'll still apply custom styling to them with our custom navigation
 
 # Initialize navigation with extra debugging
 initialize_navigation()

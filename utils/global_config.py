@@ -2,13 +2,12 @@ import streamlit as st
 
 def apply_global_css():
     """Apply global CSS styles to all pages."""
-    # Hide Streamlit's default header, footer, and menu
+    # Apply custom styling without hiding Streamlit's navigation elements
     st.markdown("""
         <style>
-            /* Hide Streamlit's default elements */
+            /* Hide only footer and hamburger menu, keep the navigation items visible */
             #MainMenu {visibility: hidden;}
             footer {visibility: hidden;}
-            header {visibility: hidden;}
             
             /* Custom styling for the whole app */
             .main .block-container {

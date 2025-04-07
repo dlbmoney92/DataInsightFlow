@@ -111,49 +111,7 @@ def render_navigation():
             unsafe_allow_html=True
         )
     
-    # Developer mode toggle at the top corner
-    # (Hidden button that appears on double-click)
-    st.sidebar.markdown("""
-        <div id="dev-toggle-corner" style="
-            position: absolute; 
-            top: 5px; 
-            right: 5px; 
-            width: 15px; 
-            height: 15px; 
-            border-radius: 50%;
-            cursor: pointer;
-        "></div>
-        <script>
-            const devToggle = document.getElementById('dev-toggle-corner');
-            devToggle.addEventListener('dblclick', function() {
-                const devLogin = document.getElementById('dev-login-section');
-                if (devLogin) {
-                    devLogin.style.display = devLogin.style.display === 'none' ? 'block' : 'none';
-                }
-            });
-        </script>
-    """, unsafe_allow_html=True)
-    
-    # Developer login section (hidden by default)
-    with st.sidebar.container():
-        st.markdown("""
-            <div id="dev-login-section" style="display: none; margin-bottom: 20px;">
-                <div style="
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 8px;
-                    padding: 15px;
-                    border: 1px solid rgba(0, 0, 0, 0.05);
-                ">
-                    <h4 style="margin-top: 0;">Developer Access</h4>
-                    <div id="dev-login-form"></div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Actual form in a hidden container
-        with st.container():
-            st.write("")  # Placeholder to ensure container exists
-            render_developer_login(form_id="sidebar")
+    # Developer mode has been removed as requested
     
     # Navigation Items
     st.sidebar.markdown("""
@@ -252,58 +210,16 @@ def render_navigation():
         </div>
     """, unsafe_allow_html=True)
     
-    # If in developer mode, show a label
-    if is_developer_mode():
-        st.sidebar.markdown("""
-            <div style="
-                position: fixed;
-                bottom: 10px;
-                left: 10px;
-                background-color: #FF5722;
-                color: white;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 10px;
-                z-index: 1000;
-            ">DEVELOPER MODE</div>
-        """, unsafe_allow_html=True)
-        
-        # Developer logout button
-        if st.sidebar.button("Exit Developer Mode", key="exit_dev_mode"):
-            logout_developer()
+    # Developer mode indicators have been removed
 
+# Developer login functionality has been removed as requested
 def render_developer_login(form_id="main"):
-    """Render the developer login form.
-    
-    Args:
-        form_id: A unique identifier for the form to avoid duplicate keys
-    """
-    # Check if already in developer mode
-    if is_developer_mode():
-        return
-    
-    # Use a unique key for the form
-    with st.form(key=f"dev_login_form_{form_id}"):
-        dev_username = st.text_input("Username", key=f"dev_username_{form_id}")
-        dev_password = st.text_input("Password", type="password", key=f"dev_password_{form_id}")
-        
-        submit_button = st.form_submit_button("Login")
-        
-        if submit_button:
-            if authenticate_developer(dev_username, dev_password):
-                set_developer_mode(True)
-                st.success("Developer mode activated")
-                st.rerun()
-            else:
-                st.error("Invalid credentials")
+    """Function stub kept for backward compatibility."""
+    pass
 
 def logout_developer():
-    """Logout from developer mode."""
-    set_developer_mode(False)
-    st.success("Exited developer mode")
-    
-    # Redirect to home
-    st.switch_page("app.py")
+    """Function stub kept for backward compatibility."""
+    pass
 
 def initialize_navigation():
     """Initialize the navigation by determining the current page."""

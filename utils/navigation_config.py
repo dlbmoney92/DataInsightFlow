@@ -16,13 +16,14 @@ USER_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960
 ADMIN_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M680-280q25 0 42.5-17.5T740-340q0-25-17.5-42.5T680-400q-25 0-42.5 17.5T620-340q0 25 17.5 42.5T680-280Zm0 120q31 0 57-14.5t42-38.5q-22-13-47-20t-52-7q-27 0-52 7t-47 20q16 24 42 38.5t57 14.5ZM480-80q-139-35-229.5-159.5T160-516v-284l320-120 320 120v189q-14-7-28.5-12T740-630v-148l-260-96-260 96v264q0 118 75 212.5T480-180q7 16 17 30.5T517-120q-8 3-17 5t-20 2v33Zm200-200q-83 0-141.5 58.5T480-80q0 83 58.5 141.5T680-280q83 0 141.5-58.5T880-480q0-83-58.5-141.5T680-680q-83 0-141.5 58.5T480-480q0 83 58.5 141.5T680-280Zm0-80Zm-67 210Z"/></svg>'
 PAYMENT_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M280-240q-33 0-56.5-23.5T200-320v-320q0-33 23.5-56.5T280-720h400q33 0 56.5 23.5T760-640v320q0 33-23.5 56.5T680-240H280Zm0-80h400v-320H280v320Zm200 0q25 0 42.5-17.5T540-380q0-25-17.5-42.5T480-440q-25 0-42.5 17.5T420-380q0 25 17.5 42.5T480-320ZM280-560h400v-80H280v80Zm0 0v-80 80Zm0 240v-320 320Z"/></svg>'
 
+# Developer mode functionality has been removed
 def is_developer_mode():
-    """Check if the app is in developer mode."""
-    return st.session_state.get("developer_mode", False)
+    """Developer mode has been disabled."""
+    return False
 
 def set_developer_mode(enabled=True):
-    """Set the developer mode status."""
-    st.session_state.developer_mode = enabled
+    """Developer mode has been disabled."""
+    pass
 
 def get_navigation_items():
     """Get the appropriate navigation items based on user role."""
@@ -99,34 +100,7 @@ def get_navigation_items():
             "icon": PAYMENT_ICON,
         })
         
-        # Developer-only navigation items
-        if is_developer_mode():
-            dev_items = [
-                {
-                    "name": "Developer Dashboard",
-                    "url": "/pages/dev_dashboard.py",
-                    "icon": ADMIN_ICON,
-                },
-                {
-                    "name": "User Management",
-                    "url": "/pages/user_management.py",
-                    "icon": ADMIN_ICON,
-                },
-                {
-                    "name": "System Settings",
-                    "url": "/pages/system_settings.py",
-                    "icon": ADMIN_ICON,
-                },
-            ]
-            
-            # Add a separator
-            nav_items.append({
-                "name": "--- Developer Tools ---",
-                "url": "#",
-                "icon": ""
-            })
-            
-            nav_items.extend(dev_items)
+        # Developer mode has been removed
     else:
         # Items for not logged in users
         auth_items = [
@@ -146,10 +120,7 @@ def get_navigation_items():
     
     return nav_items
 
+# Developer authentication has been removed
 def authenticate_developer(username, password):
-    """Authenticate a developer login."""
-    # In a real application, this would check against a secure credential store
-    # For demo, we're using hardcoded credentials (not secure!)
-    if username == "admin" and password == "analytics2025":
-        return True
+    """Developer authentication has been disabled."""
     return False
