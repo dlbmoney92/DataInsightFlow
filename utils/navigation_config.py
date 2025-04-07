@@ -102,21 +102,7 @@ def get_navigation_items():
         
         # Developer mode has been removed
     else:
-        # Items for not logged in users
-        auth_items = [
-            {
-                "name": "Login",
-                "url": "/pages/login.py",
-                "icon": LOGIN_ICON,
-            },
-            {
-                "name": "Sign Up",
-                "url": "/pages/signup.py",
-                "icon": SIGNUP_ICON,
-            },
-        ]
-        
-        nav_items.extend(auth_items)
+        # No navigation items for non-logged in users (only home)
     
     return nav_items
 
