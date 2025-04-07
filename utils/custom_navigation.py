@@ -14,55 +14,39 @@ def render_navigation():
     # Create styled navigation CSS
     st.markdown("""
     <style>
-    /* Modern Navigation Styles */
-    .sidebar-nav-container {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding: 12px 4px;
-        margin-bottom: 20px;
-    }
-    
-    .sidebar-nav-item {
+    /* Navigation Button Styles */
+    div[data-testid="stButton"] > button {
         display: flex;
         align-items: center;
         padding: 12px 16px;
         border-radius: 12px;
-        text-decoration: none;
         color: #444;
         transition: all 0.2s ease;
-        background-color: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background-color: rgba(255, 255, 255, 0.3);
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        font-size: 0.92rem;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+        margin-bottom: 6px;
     }
     
-    .sidebar-nav-item:hover {
+    div[data-testid="stButton"] > button:hover {
         background-color: rgba(144, 175, 255, 0.15);
         color: #4361ee;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
     }
     
-    .sidebar-nav-item.active {
-        background: linear-gradient(135deg, rgba(67, 97, 238, 0.15) 0%, rgba(47, 73, 175, 0.2) 100%);
-        border-left: 3px solid #4361ee;
-        color: #4361ee;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
+    div[data-testid="stButton"] > button:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 3px rgba(67, 97, 238, 0.2);
     }
     
-    .sidebar-nav-icon {
-        font-size: 1.25rem;
-        margin-right: 12px;
-        width: 28px;
-        text-align: center;
-        opacity: 0.9;
-    }
-    
-    .sidebar-nav-label {
-        font-size: 0.92rem;
-        letter-spacing: 0.2px;
+    /* Active navigation button style will be applied via dynamic CSS */
+    div.nav-button-container {
+        margin-bottom: 6px;
     }
     
     /* User Profile Section */
@@ -238,28 +222,39 @@ def render_navigation():
         st.markdown("---")
         st.markdown("<h2 class='sidebar-heading'>Navigation</h2>", unsafe_allow_html=True)
         
-        # Create navigation HTML
-        nav_html = '<div class="sidebar-nav-container">'
-        
-        for item in navigation_items:
-            # Skip items that require auth if not authenticated
-            if item["require_auth"] and "user" not in st.session_state:
-                continue
+        # Create a container for sidebar navigation
+        with st.container():
+            # Display each navigation item as buttons that switch pages
+            for item in navigation_items:
+                # Skip items that require auth if not authenticated
+                if item["require_auth"] and "user" not in st.session_state:
+                    continue
+                    
+                # Determine if this is the active page
+                is_active = item["url"] == current_page
                 
-            # Mark the current page as active
-            active_class = "active" if item["url"] == current_page else ""
-            
-            nav_html += f'''
-            <a href="{item['url']}" target="_self" class="sidebar-nav-item {active_class}">
-                <div class="sidebar-nav-icon">{item['icon']}</div>
-                <div class="sidebar-nav-label">{item['name']}</div>
-            </a>
-            '''
-        
-        nav_html += '</div>'
-        
-        # Render the navigation
-        st.markdown(nav_html, unsafe_allow_html=True)
+                # Create a unique key for each button to avoid duplicates
+                button_key = f"nav_{item['name'].lower().replace(' ', '_')}"
+                
+                # Style the button based on whether it's active or not
+                if is_active:
+                    btn_style = f"""
+                    <style>
+                    div[data-testid="stButton"] button[kind="secondary"][aria-label="{button_key}"] {{
+                        background: linear-gradient(135deg, rgba(67, 97, 238, 0.15) 0%, rgba(47, 73, 175, 0.2) 100%);
+                        border-left: 3px solid #4361ee;
+                        color: #4361ee;
+                        font-weight: 600;
+                        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
+                    }}
+                    </style>
+                    """
+                    st.markdown(btn_style, unsafe_allow_html=True)
+                
+                # Create a button with the icon and name
+                if st.button(f"{item['icon']} {item['name']}", key=button_key, 
+                              use_container_width=True):
+                    st.switch_page(item["url"])
         
 def render_developer_login():
     """Render the developer login form."""
