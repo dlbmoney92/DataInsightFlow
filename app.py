@@ -51,14 +51,16 @@ if 'dataset_id' not in st.session_state:
 if 'user_role' not in st.session_state:
     st.session_state.user_role = "user"
 
-# Render navigation bar
-render_navigation()
-
-# Sidebar for navigation and user info
+# Sidebar title and navigation
 with st.sidebar:
     st.title("Analytics Assist")
     
-    # Developer login form
+# Render navigation
+render_navigation()
+
+# Developer login form and logout
+with st.sidebar:
+    # Developer login form 
     render_developer_login()
     
     # Logout from developer mode if active

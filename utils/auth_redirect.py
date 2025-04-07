@@ -10,10 +10,10 @@ def require_auth():
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Log In", use_container_width=True):
+            if st.button("Log In", key="auth_login_btn", use_container_width=True):
                 st.switch_page("pages/login.py")
         with col2:
-            if st.button("Sign Up", use_container_width=True):
+            if st.button("Sign Up", key="auth_signup_btn", use_container_width=True):
                 st.switch_page("pages/signup.py")
                 
         # Preview message
