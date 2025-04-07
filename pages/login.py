@@ -1,189 +1,132 @@
 import streamlit as st
 import hashlib
-import json
-import os
-from utils.database import check_valid_credentials, update_last_login, get_user_by_email, create_user
-from utils.oauth import initialize_google_oauth, get_google_auth_url
+import datetime
+from utils.database import get_user_by_email, check_valid_credentials, update_last_login
+from utils.oauth import get_google_auth_url
+from utils.global_config import apply_global_css, render_footer
+from utils.custom_navigation import initialize_navigation, render_navigation
 
 def app():
-    st.title("Login to Analytics Assist")
+    # Apply global CSS
+    apply_global_css()
     
-    # Check if we need to redirect after successful login
-    if "login_success" in st.session_state and st.session_state.login_success:
-        st.session_state.login_success = False
-        st.switch_page("app.py")
+    # Initialize and render navigation
+    initialize_navigation()
+    render_navigation()
+    
+    # Main content area
+    st.title("Welcome Back")
+    
+    # Check if already logged in
+    if st.session_state.get("logged_in", False):
+        st.success("You are already logged in!")
         
-    # If already logged in, redirect to home
-    if "logged_in" in st.session_state and st.session_state.logged_in:
-        st.info("You are already logged in.")
-        if st.button("Go to Home"):
-            st.session_state.go_to_home = True
-            st.rerun()
+        # Check if there's a redirect after login
+        if "redirect_after_login" in st.session_state:
+            redirect_page = st.session_state.pop("redirect_after_login")
+            st.markdown(f"Redirecting to {redirect_page.split('/')[-1].replace('.py', '')}...")
+            st.switch_page(redirect_page)
         
-        # Handle navigation to home
-        if "go_to_home" in st.session_state and st.session_state.go_to_home:
-            st.session_state.go_to_home = False
+        # Otherwise show a button to go to the main page
+        if st.button("Go to Dashboard"):
             st.switch_page("app.py")
             
         return
     
-    # Create a modern login UI with two tabs
-    tab1, tab2 = st.tabs(["Login with Email", "Social Login"])
+    # Login form
+    col1, col2 = st.columns([3, 2])
     
-    with tab1:
+    with col1:
         with st.form("login_form"):
-            email = st.text_input("Email", key="email_login")
-            password = st.text_input("Password", type="password", key="password_login")
-            submit = st.form_submit_button("Log In", use_container_width=True)
+            st.subheader("Login with Email")
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+            submit = st.form_submit_button("Login")
             
             if submit:
-                if email and password:
-                    # Hash the password (SHA-256)
+                if not email or not password:
+                    st.error("Please fill in all fields")
+                else:
+                    # Hash the password
                     password_hash = hashlib.sha256(password.encode()).hexdigest()
                     
                     # Check credentials
-                    user = check_valid_credentials(email, password_hash)
-                    
-                    if user:
-                        # Set user in session state
-                        st.session_state.user = user
-                        st.session_state.logged_in = True
-                        st.session_state.user_id = user["id"]
-                        st.session_state.subscription_tier = user["subscription_tier"]
+                    if check_valid_credentials(email, password_hash):
+                        # Get user details
+                        user = get_user_by_email(email)
                         
-                        # Update last login
-                        update_last_login(user["id"])
-                        
-                        # Set a flag to redirect after successful login
-                        st.session_state.login_success = True
-                        st.session_state.login_message = "Login successful!"
-                        st.success("Login successful!")
-                        st.rerun()  # Force a rerun to handle the redirection
+                        if user:
+                            # Set session state
+                            st.session_state.logged_in = True
+                            st.session_state.user = user
+                            st.session_state.user_id = user["id"]
+                            st.session_state.subscription_tier = user.get("subscription_tier", "free")
+                            
+                            # Update last login time
+                            update_last_login(user["id"])
+                            
+                            st.success("Login successful!")
+                            
+                            # Check if there's a redirect after login
+                            if "redirect_after_login" in st.session_state:
+                                redirect_page = st.session_state.pop("redirect_after_login")
+                                st.markdown(f"Redirecting to {redirect_page.split('/')[-1].replace('.py', '')}...")
+                                st.rerun()  # Rerun to clear the form
+                                st.switch_page(redirect_page)
+                            else:
+                                # Redirect to home page
+                                st.rerun()  # Rerun to clear the form
+                                st.switch_page("app.py")
+                        else:
+                            st.error("User not found")
                     else:
-                        st.error("Invalid email or password. Please try again.")
-                else:
-                    st.error("Please enter both email and password.")
+                        st.error("Invalid email or password")
+        
+        st.markdown("Don't have an account? [Sign up here](/pages/signup.py)")
+        st.markdown("Forgot your password? [Reset it here](/pages/reset_password.py)")
     
-    with tab2:
+    with col2:
+        st.markdown("### Or use a social account")
+        
+        # Google OAuth button with some styling
+        google_auth_url = get_google_auth_url()
+        
         st.markdown(
-            """
-            <style>
-            .social-btn {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 10px 20px;
-                margin: 10px 0;
-                border-radius: 4px;
-                cursor: pointer;
-                font-weight: bold;
-                transition: background-color 0.3s;
-            }
-            .google-btn {
-                background-color: white;
-                color: #444;
-                border: 1px solid #ddd;
-            }
-            .google-btn:hover {
-                background-color: #f5f5f5;
-            }
-            .google-icon {
-                margin-right: 10px;
-                width: 20px;
-                height: 20px;
-            }
-            </style>
+            f"""
+            <a href="{google_auth_url}" target="_self" style="text-decoration:none;">
+                <div style="
+                    background-color:white;
+                    border:1px solid #dadce0;
+                    border-radius:4px;
+                    padding:10px 15px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    gap:10px;
+                    margin:20px 0;
+                    transition: background-color 0.3s;
+                    cursor:pointer;
+                ">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" height="20">
+                    <span style="color:#333;font-family:Roboto,sans-serif;font-size:14px;font-weight:500;">
+                        Sign in with Google
+                    </span>
+                </div>
+            </a>
             """,
             unsafe_allow_html=True
         )
         
-        google_clicked = st.button("Sign in with Google", key="google_login", use_container_width=True)
-        
-        if google_clicked:
-            try:
-                # Check if Google OAuth is configured
-                if initialize_google_oauth():
-                    # Get the Google authorization URL
-                    auth_url = get_google_auth_url()
-                    if auth_url:
-                        # Store the current URL in session state for redirect URI calculation
-                        st.query_params["request_uri"] = st.experimental_get_query_params().get("request_uri", [""])[0]
-                        
-                        # Redirect to Google's authorization page
-                        st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
-                        st.info("Redirecting to Google for authentication...")
-                        st.stop()
-                    else:
-                        st.error("Failed to generate Google authentication URL")
-                else:
-                    # Show configuration message if Google OAuth is not set up
-                    st.warning("""
-                    Google Sign-In is not configured. To implement Google Sign-In, you'll need to:
-                    1. Create a project in Google Cloud Console
-                    2. Configure OAuth consent screen
-                    3. Create OAuth credentials (Client ID and Secret)
-                    4. Add these authorized redirect URIs for your app:
-                       - http://localhost:5000/oauth_callback
-                       - http://localhost:5000/pages/oauth_callback
-                       - https://analytics-assist.replit.app/oauth_callback
-                       - https://analytics-assist.replit.app/pages/oauth_callback
-                    """)
-                    
-                    # For demonstration purposes - simulating a successful OAuth login
-                    if st.button("Simulate Successful Google Login (Demo)", key="simulate_google"):
-                        # Create a mock Google user profile
-                        google_user = {
-                            "email": "demo_google_user@example.com",
-                            "name": "Google Demo User",
-                            "oauth_provider": "google"
-                        }
-                        
-                        # Check if user exists in database or create a new one
-                        existing_user = get_user_by_email(google_user["email"])
-                        if not existing_user:
-                            # Generate a random secure password for OAuth users
-                            import secrets
-                            random_password = secrets.token_hex(16)
-                            password_hash = hashlib.sha256(random_password.encode()).hexdigest()
-                            
-                            # Create new user
-                            create_user(google_user["email"], password_hash, google_user["name"])
-                            existing_user = get_user_by_email(google_user["email"])
-                        
-                        # Log the user in
-                        if existing_user:
-                            st.session_state.user = existing_user
-                            st.session_state.logged_in = True
-                            st.session_state.user_id = existing_user["id"]
-                            st.session_state.subscription_tier = existing_user["subscription_tier"]
-                            
-                            # Update last login
-                            update_last_login(existing_user["id"])
-                            
-                            # Set a flag to redirect after successful login
-                            st.session_state.login_success = True
-                            st.session_state.login_message = "Google login successful!"
-                            st.success("Google login successful!")
-                            st.rerun()
-                
-            except Exception as e:
-                st.error(f"Error with Google login: {str(e)}")
+        # Add info box at the bottom
+        st.info("""
+        Signing in gives you:
+        - Personalized analysis
+        - Saved projects
+        - Access to advanced features
+        """)
     
-    # Don't have an account section
-    st.markdown("---")
-    st.markdown(
-        "<div style='text-align: center;'>Don't have an account?</div>", 
-        unsafe_allow_html=True
-    )
-    
-    if st.button("Create a New Account", use_container_width=True):
-        st.session_state.go_to_signup = True
-        st.rerun()
-        
-    # Check if we need to navigate to signup page
-    if "go_to_signup" in st.session_state and st.session_state.go_to_signup:
-        st.session_state.go_to_signup = False
-        st.switch_page("pages/signup.py")
+    # Footer
+    render_footer()
 
 if __name__ == "__main__":
     app()

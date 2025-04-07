@@ -2,90 +2,114 @@ import streamlit as st
 import json
 import os
 import stripe
-from utils.payment import handle_webhook_event
+from utils.payment import handle_stripe_webhook_event
+from utils.global_config import apply_global_css
 
 def app():
     """Handle Stripe webhook events."""
-    # Set the Stripe API key
-    stripe_secret_key = os.environ.get("STRIPE_SECRET_KEY")
-    if not stripe_secret_key:
-        st.error("Stripe secret key not found. Please set the STRIPE_SECRET_KEY environment variable.")
-        return
+    # Apply global CSS
+    apply_global_css()
     
-    stripe.api_key = stripe_secret_key
+    # Set up Stripe API key
+    stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
     
-    # Get the webhook signing secret (would be set in a real deployment)
-    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    # Display a simplified webhook management interface
+    st.title("Stripe Webhook Management")
     
-    st.title("Stripe Webhook Handler")
+    # Explain this is a demo
+    st.info("""
+    This is a demo webhook endpoint for Stripe events. In a production environment, this would be a proper API endpoint 
+    that receives webhook events from Stripe and processes them without a UI.
     
-    if st.session_state.get("show_webhook_form", True):
-        # In a real implementation, this would be an automatic endpoint
-        # For this demo, we'll simulate webhook events manually
+    For demonstration purposes, you can simulate webhook events here.
+    """)
+    
+    # Create a form to simulate webhook events
+    with st.form("webhook_form"):
+        event_type = st.selectbox(
+            "Event Type", 
+            [
+                "checkout.session.completed",
+                "customer.subscription.updated",
+                "customer.subscription.deleted"
+            ]
+        )
         
-        st.write("This page is for handling Stripe webhook events.")
-        st.write("In a production environment, this would be a server-side endpoint that receives webhook events directly from Stripe.")
+        user_id = st.text_input("User ID", value="1")
+        tier = st.selectbox("Subscription Tier", ["free", "basic", "pro", "enterprise"])
         
-        # Event type selection
-        event_types = [
-            "checkout.session.completed",
-            "customer.subscription.updated",
-            "customer.subscription.deleted"
-        ]
-        event_type = st.selectbox("Event Type", event_types)
+        submitted = st.form_submit_button("Simulate Webhook Event")
         
-        # User selection (for simulation)
-        if "logged_in" in st.session_state and st.session_state.logged_in:
-            user_id = st.session_state.user_id
-            st.write(f"User ID: {user_id}")
-        else:
-            user_id = st.text_input("User ID")
-        
-        # Subscription tier selection
-        tiers = ["basic", "pro"]
-        tier = st.selectbox("Subscription Tier", tiers)
-        
-        # Billing cycle selection
-        billing_cycles = ["monthly", "yearly"]
-        billing_cycle = st.selectbox("Billing Cycle", billing_cycles)
-        
-        # Submit button
-        if st.button("Simulate Webhook Event"):
-            # Create a simulated event object
+        if submitted:
+            # Create a simulated event payload
             if event_type == "checkout.session.completed":
-                event_data = {
+                event_json = {
                     "type": event_type,
                     "data": {
                         "object": {
                             "metadata": {
                                 "user_id": user_id,
-                                "tier": tier,
-                                "billing_cycle": billing_cycle
-                            },
-                            "payment_status": "paid"
+                                "tier": tier
+                            }
                         }
                     }
                 }
-                
-                # Process the webhook event
-                result = handle_webhook_event(event_data)
-                
-                if result.get("success"):
-                    st.success(f"Webhook handled successfully: {event_type}")
-                    st.json(result)
-                    
-                    # Hide the form after successful processing
-                    st.session_state.show_webhook_form = False
-                else:
-                    st.error(f"Error handling webhook: {result.get('message', 'Unknown error')}")
             else:
-                st.info(f"Event type '{event_type}' simulation not implemented in this demo")
-    else:
-        # Show success message and button to reset
-        st.success("Webhook event processed successfully!")
-        if st.button("Process Another Webhook Event"):
-            st.session_state.show_webhook_form = True
-            st.rerun()
+                event_json = {
+                    "type": event_type,
+                    "data": {
+                        "object": {
+                            "metadata": {
+                                "user_id": user_id,
+                                "tier": tier
+                            }
+                        }
+                    }
+                }
+            
+            # Handle the webhook event
+            result = handle_stripe_webhook_event(event_json)
+            
+            if result['success']:
+                st.success(f"Success: {result['message']}")
+            else:
+                st.error(f"Error: {result['message']}")
+    
+    # Display webhook configuration instructions
+    st.markdown("## How to set up webhooks in Stripe")
+    st.markdown("""
+    1. Go to the [Stripe Dashboard](https://dashboard.stripe.com/)
+    2. Navigate to Developers > Webhooks
+    3. Click "Add endpoint"
+    4. Enter your webhook URL (e.g., https://yourdomain.com/stripe_webhook)
+    5. Select the events you want to listen for (e.g., checkout.session.completed)
+    6. Click "Add endpoint"
+    """)
+    
+    st.markdown("## Events to listen for")
+    st.markdown("""
+    - `checkout.session.completed`: When a customer completes checkout
+    - `customer.subscription.updated`: When a subscription is updated
+    - `customer.subscription.deleted`: When a subscription is canceled
+    """)
+    
+    # Show test webhook data
+    if st.checkbox("Show test webhook data"):
+        st.json({
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "id": "cs_test_a1b2c3d4e5f6g7h8i9j0",
+                    "object": "checkout.session",
+                    "client_reference_id": "1",
+                    "metadata": {
+                        "user_id": "1",
+                        "tier": "pro",
+                        "billing_cycle": "monthly"
+                    }
+                }
+            }
+        })
 
 if __name__ == "__main__":
     app()

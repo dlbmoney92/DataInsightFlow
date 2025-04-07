@@ -7,9 +7,10 @@ from datetime import datetime
 from utils.file_processor import supported_file_types
 from utils.database import initialize_database
 from utils.access_control import check_and_handle_trial_expiration
-from utils.subscription import SUBSCRIPTION_TIERS, format_price, get_trial_days_remaining
-from utils.custom_navigation import render_navigation, render_developer_login, logout_developer, initialize_navigation
-from utils.global_config import apply_global_css
+from utils.subscription import SUBSCRIPTION_PLANS, format_price, get_trial_days_remaining
+from utils.custom_navigation import render_navigation, initialize_navigation, render_developer_login, logout_developer
+from utils.global_config import apply_global_css, render_footer
+from utils.auth_redirect import require_auth
 import uuid
 
 # Set page configuration
@@ -189,7 +190,7 @@ if "logged_in" in st.session_state and st.session_state.logged_in:
         # Subscription info
         st.markdown("### Your Subscription")
         current_tier = st.session_state.subscription_tier
-        tier_info = SUBSCRIPTION_TIERS[current_tier]
+        tier_info = SUBSCRIPTION_PLANS[current_tier]
         
         st.write(f"Current plan: **{tier_info['name']}**")
         
@@ -514,7 +515,7 @@ else:
             """, 
             unsafe_allow_html=True
         )
-        for feature in SUBSCRIPTION_TIERS['free']['features']:
+        for feature in SUBSCRIPTION_PLANS['free']['features']:
             st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Get Started Free", key="pricing_free", use_container_width=True):
@@ -531,7 +532,7 @@ else:
             """, 
             unsafe_allow_html=True
         )
-        for feature in SUBSCRIPTION_TIERS['basic']['features']:
+        for feature in SUBSCRIPTION_PLANS['basic']['features']:
             st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Choose Basic", key="pricing_basic", use_container_width=True):
@@ -548,7 +549,7 @@ else:
             """, 
             unsafe_allow_html=True
         )
-        for feature in SUBSCRIPTION_TIERS['pro']['features']:
+        for feature in SUBSCRIPTION_PLANS['pro']['features']:
             st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Start 7-Day Trial", key="pricing_pro", use_container_width=True):

@@ -1,58 +1,77 @@
 import streamlit as st
-from utils.payment import handle_payment_success
-from utils.database import get_user_by_id
-from utils.subscription import SUBSCRIPTION_TIERS
+from utils.auth_redirect import require_auth
+from utils.global_config import apply_global_css
 
 def app():
     """Handle successful payment redirect from Stripe."""
-    st.title("Payment Successful")
+    # Apply global CSS
+    apply_global_css()
     
-    # Handle the payment success
-    result = handle_payment_success()
+    # Check if user is logged in
+    if not require_auth():
+        return
     
-    if result.get("success"):
-        tier = result.get("tier", "")
-        tier_info = SUBSCRIPTION_TIERS.get(tier, SUBSCRIPTION_TIERS["free"])
-        
-        # Display success message
-        st.success("🎉 Thank you for your subscription!")
-        
-        st.markdown(f"""
-        ## Welcome to Analytics Assist {tier_info['name']}!
-        
-        Your subscription has been successfully activated. You now have access to all the 
-        {tier_info['name']} plan features.
-        
-        ### What's included in your plan:
-        """)
-        
-        # List features
-        for feature in tier_info["features"]:
-            st.markdown(f"✓ {feature}")
-        
-        # Next steps
-        st.markdown("### Next Steps")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Go to Dashboard", use_container_width=True):
-                st.switch_page("app.py")
-        with col2:
-            if st.button("Explore Features", use_container_width=True):
-                st.switch_page("pages/01_Upload_Data.py")
-    else:
-        # Display error message
-        st.error("There was an issue processing your payment: " + result.get("message", "Unknown error"))
-        
+    # Get query parameters
+    query_params = st.query_params
+    success = query_params.get("success", "false") == "true"
+    tier = query_params.get("tier", None)
+    
+    # Clear query params after reading
+    if "success" in query_params or "tier" in query_params:
+        new_params = {}
+        for param in query_params:
+            if param != "success" and param != "tier":
+                new_params[param] = query_params[param]
+        st.query_params.update(new_params)
+    
+    # Display success message
+    st.title("Payment Successful!")
+    
+    # Show different messages based on the tier
+    if tier == "basic":
+        st.success("Thank you for subscribing to the Basic tier! Your account has been upgraded.")
         st.markdown("""
-        Don't worry! If your payment was processed but you're seeing this message, 
-        your subscription will still be activated automatically.
+        ## What's next?
         
-        If you have any questions or need assistance, please contact our support team.
+        You now have access to:
+        - 10 datasets
+        - Advanced data transformations
+        - Interactive visualizations
+        - CSV, Excel, and JSON support
+        - 30-day data history
+        - Priority support
+        - Data validation tools
+        
+        Start exploring your new features now!
         """)
+    elif tier == "pro":
+        st.success("Thank you for subscribing to the Pro tier! Your account has been upgraded.")
+        st.markdown("""
+        ## What's next?
         
-        if st.button("Go to Home"):
-            st.switch_page("app.py")
+        You now have access to:
+        - Unlimited datasets
+        - All data transformations
+        - Advanced AI-driven insights
+        - All file formats supported
+        - 90-day data history
+        - Priority support
+        - Data validation tools
+        - Custom reports and exports
+        - Team collaboration features
+        
+        Start exploring your new features now!
+        """)
+    else:
+        st.success("Thank you for your payment! Your account has been upgraded.")
+    
+    # Button to go to home
+    if st.button("Go to Dashboard", use_container_width=True):
+        st.switch_page("app.py")
+    
+    # Button to upload data
+    if st.button("Upload Data", use_container_width=True):
+        st.switch_page("pages/01_Upload_Data.py")
 
 if __name__ == "__main__":
     app()

@@ -95,8 +95,15 @@ def app():
                     else:
                         st.success("Your account has been created successfully!")
                     
-                    # Store a flag to redirect after form
-                    st.session_state.redirect_to_login = True
+                    # Set user in session state
+                    user = {"id": user_id, "email": email, "full_name": full_name, "subscription_tier": "free"}
+                    st.session_state.user = user
+                    st.session_state.logged_in = True
+                    st.session_state.user_id = user_id
+                    st.session_state.subscription_tier = "free"
+                    
+                    # Store a flag to redirect to subscription selection
+                    st.session_state.redirect_to_subscription = True
                 else:
                     st.error(f"Error creating account: {result['message']}")
     
@@ -185,16 +192,26 @@ def app():
                             else:
                                 st.success("Your account has been created successfully!")
                             
-                            # Store a flag to redirect after form
-                            st.session_state.redirect_to_login = True
+                            # Set user in session state
+                            user = {"id": user_id, "email": google_user["email"], "full_name": google_user["name"], "subscription_tier": "free"}
+                            st.session_state.user = user
+                            st.session_state.logged_in = True
+                            st.session_state.user_id = user_id
+                            st.session_state.subscription_tier = "free"
+                            
+                            # Store a flag to redirect to subscription selection
+                            st.session_state.redirect_to_subscription = True
                         else:
                             st.error(f"Error creating account: {result['message']}")
                 
                 except Exception as e:
                     st.error(f"Error with Google signup: {str(e)}")
     
-    # Check if we need to redirect to login page after successful signup
-    if "redirect_to_login" in st.session_state and st.session_state.redirect_to_login:
+    # Check if we need to redirect after successful signup
+    if "redirect_to_subscription" in st.session_state and st.session_state.redirect_to_subscription:
+        st.session_state.redirect_to_subscription = False
+        st.switch_page("pages/subscription_selection.py")
+    elif "redirect_to_login" in st.session_state and st.session_state.redirect_to_login:
         st.session_state.redirect_to_login = False
         st.switch_page("pages/login.py")
         

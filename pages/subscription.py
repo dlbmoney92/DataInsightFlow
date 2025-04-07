@@ -1,6 +1,6 @@
 import streamlit as st
 import datetime
-from utils.subscription import SUBSCRIPTION_TIERS, format_price
+from utils.subscription import SUBSCRIPTION_PLANS, format_price
 from utils.database import update_user_subscription, get_user_by_id, start_user_trial
 
 def app():
@@ -50,7 +50,7 @@ def app():
     
     # Display current subscription
     st.header("Your Current Plan")
-    current_plan = SUBSCRIPTION_TIERS[current_tier]
+    current_plan = SUBSCRIPTION_PLANS[current_tier]
     st.subheader(f"{current_plan['name']} Plan")
     
     # Show subscription dates if applicable
@@ -115,7 +115,7 @@ def app():
     st.write("For larger organizations with custom needs.")
     
     # Display enterprise features
-    for feature in SUBSCRIPTION_TIERS["enterprise"]["features"]:
+    for feature in SUBSCRIPTION_PLANS["enterprise"]["features"]:
         st.write(f"✓ {feature}")
     
     # Enterprise contact button
@@ -124,7 +124,7 @@ def app():
 
 def display_plan(tier, current_tier):
     """Display a subscription plan card."""
-    plan = SUBSCRIPTION_TIERS[tier]
+    plan = SUBSCRIPTION_PLANS[tier]
     
     # Style based on if it's the current plan
     if tier == current_tier:
@@ -133,17 +133,17 @@ def display_plan(tier, current_tier):
         st.markdown(f"### {plan['name']} Plan")
     
     # Display price
-    if isinstance(plan["price_monthly"], (int, float)):
-        st.write(f"Monthly: {format_price(plan['price_monthly'])}")
+    if isinstance(plan["monthly_price"], (int, float)):
+        st.write(f"Monthly: {format_price(plan['monthly_price'])}")
         
         # Calculate yearly savings only if monthly price is not zero
-        if plan['price_monthly'] > 0:
-            yearly_savings = int((1 - plan['price_yearly']/(plan['price_monthly']*12))*100)
-            st.write(f"Yearly: {format_price(plan['price_yearly'])} (Save {yearly_savings}%)")
+        if plan['monthly_price'] > 0:
+            yearly_savings = int((1 - plan['annual_price']/(plan['monthly_price']*12))*100)
+            st.write(f"Yearly: {format_price(plan['annual_price'])} (Save {yearly_savings}%)")
         else:
-            st.write(f"Yearly: {format_price(plan['price_yearly'])}")
+            st.write(f"Yearly: {format_price(plan['annual_price'])}")
     else:
-        st.write(plan["price_monthly"])
+        st.write(plan["monthly_price"])
     
     # Display features
     for feature in plan["features"]:

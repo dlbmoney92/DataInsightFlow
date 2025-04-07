@@ -1,193 +1,191 @@
-import stripe
 import os
+import stripe
 import streamlit as st
-from datetime import datetime, timedelta
-from utils.database import update_user_subscription, get_user_by_id
-from utils.subscription import SUBSCRIPTION_TIERS, format_price
+from utils.subscription import SUBSCRIPTION_PLANS
+from utils.database import update_user_subscription
 
-# Set Stripe API keys
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY")
-
-# Define price IDs (in a real implementation, you would create these in your Stripe dashboard)
-# For testing purposes, we'll define placeholder IDs for different subscription tiers and billing cycles
-PRICE_IDS = {
-    "basic": {
-        "monthly": "price_basic_monthly",  # Replace with actual Stripe price ID
-        "yearly": "price_basic_yearly"     # Replace with actual Stripe price ID
-    },
-    "pro": {
-        "monthly": "price_pro_monthly",    # Replace with actual Stripe price ID
-        "yearly": "price_pro_yearly"       # Replace with actual Stripe price ID
-    }
-}
+# Set up Stripe API key
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 def get_stripe_checkout_session(user_id, tier, billing_cycle, success_url, cancel_url):
-    """Create a Stripe checkout session for subscription."""
-    user = get_user_by_id(user_id)
-    if not user:
-        return {"success": False, "message": "User not found"}
+    """
+    Create a Stripe checkout session for a subscription.
+    
+    Parameters:
+    - user_id: The ID of the user making the purchase
+    - tier: The subscription tier to purchase (basic, pro, etc.)
+    - billing_cycle: Either "monthly" or "yearly"
+    - success_url: URL to redirect to after successful payment
+    - cancel_url: URL to redirect to if payment is canceled
+    
+    Returns:
+    - Dictionary with success status and either checkout URL or error message
+    """
+    # Validate inputs
+    if tier not in SUBSCRIPTION_PLANS:
+        return {"success": False, "message": f"Invalid subscription tier: {tier}"}
+    
+    if billing_cycle not in ["monthly", "yearly"]:
+        return {"success": False, "message": f"Invalid billing cycle: {billing_cycle}"}
+    
+    if not stripe.api_key:
+        return {
+            "success": False,
+            "message": "Stripe API key is not configured. Please contact support."
+        }
     
     try:
-        # Get the pricing details for the selected plan
-        plan_details = SUBSCRIPTION_TIERS[tier]
-        price_amount = plan_details["price_monthly"] if billing_cycle == "monthly" else plan_details["price_yearly"]
+        # Get the price based on the tier and billing cycle
+        if billing_cycle == "monthly":
+            price = SUBSCRIPTION_PLANS[tier]["monthly_price"]
+        else:
+            price = SUBSCRIPTION_PLANS[tier]["annual_price"]
         
-        # Create a Stripe Product on the fly if needed
+        # Convert price to cents (Stripe uses the smallest currency unit)
+        price_in_cents = int(price * 100)
+        
+        # Create a product if it doesn't exist (in a real implementation, you'd create products in the Stripe dashboard)
         product = stripe.Product.create(
-            name=f"Analytics Assist {plan_details['name']} Plan - {billing_cycle.capitalize()}",
-            description=f"Analytics Assist {plan_details['name']} Plan subscription ({billing_cycle})",
+            name=f"Analytics Assist {SUBSCRIPTION_PLANS[tier]['name']} ({billing_cycle})",
+            description=f"{SUBSCRIPTION_PLANS[tier]['name']} tier subscription for Analytics Assist - {billing_cycle} billing"
         )
         
-        # Create a Price for the product
-        price = stripe.Price.create(
-            product=product.id,
-            unit_amount=int(price_amount * 100),  # Convert to cents
-            currency="usd",
-            recurring={
-                "interval": "month" if billing_cycle == "monthly" else "year",
-                "interval_count": 1,
-            },
-        )
+        # Create a price object
+        if billing_cycle == "monthly":
+            price_obj = stripe.Price.create(
+                product=product.id,
+                unit_amount=price_in_cents,
+                currency="usd",
+                recurring={"interval": "month"}
+            )
+        else:
+            price_obj = stripe.Price.create(
+                product=product.id,
+                unit_amount=price_in_cents,
+                currency="usd",
+                recurring={"interval": "year"}
+            )
         
         # Create checkout session
         checkout_session = stripe.checkout.Session.create(
             success_url=success_url,
             cancel_url=cancel_url,
-            payment_method_types=["card"],
             mode="subscription",
-            customer_email=user["email"],
+            payment_method_types=["card"],
             line_items=[{
-                "price": price.id,
+                "price": price_obj.id,
                 "quantity": 1
             }],
+            client_reference_id=str(user_id),
             metadata={
-                "user_id": user_id,
+                "user_id": str(user_id),
                 "tier": tier,
                 "billing_cycle": billing_cycle
             }
         )
         
-        return {"success": True, "checkout_url": checkout_session.url, "session_id": checkout_session.id}
+        return {
+            "success": True,
+            "checkout_url": checkout_session.url
+        }
+    
     except Exception as e:
-        st.error(f"Error creating checkout session: {str(e)}")
-        return {"success": False, "message": str(e)}
+        return {
+            "success": False,
+            "message": f"Error creating checkout session: {str(e)}"
+        }
 
-def handle_webhook_event(event_data):
-    """Handle incoming Stripe webhook events."""
-    event_type = event_data["type"]
+def handle_stripe_webhook_event(event_json):
+    """
+    Handle Stripe webhook events.
+    
+    Parameters:
+    - event_json: The parsed JSON from the Stripe webhook
+    
+    Returns:
+    - Dictionary with success status and message
+    """
+    # Check if this is a supported event type
+    event_type = event_json.get("type")
     
     if event_type == "checkout.session.completed":
-        # Payment successful, activate subscription
-        session = event_data["data"]["object"]
-        user_id = session["metadata"]["user_id"]
-        tier = session["metadata"]["tier"]
-        billing_cycle = session["metadata"]["billing_cycle"]
+        # Payment was successful, activate the subscription
+        session = event_json.get("data", {}).get("object", {})
+        metadata = session.get("metadata", {})
         
-        # Calculate subscription end date based on billing cycle
-        start_date = datetime.utcnow()
-        if billing_cycle == "monthly":
-            end_date = start_date + timedelta(days=30)
-        else:  # yearly
-            end_date = start_date + timedelta(days=365)
+        user_id = metadata.get("user_id")
+        tier = metadata.get("tier")
         
-        # Update user's subscription
-        success = update_user_subscription(
-            user_id=user_id,
-            tier=tier,
-            subscription_start_date=start_date,
-            subscription_end_date=end_date
-        )
-        
-        return {"success": success, "user_id": user_id, "tier": tier}
+        if user_id and tier:
+            # Update user subscription in the database
+            update_user_subscription(user_id, tier)
+            return {"success": True, "message": f"Subscription activated: {tier} for user {user_id}"}
+        else:
+            return {"success": False, "message": "Missing user_id or tier in metadata"}
     
     elif event_type == "customer.subscription.updated":
-        # Subscription updated
-        subscription = event_data["data"]["object"]
-        # Process subscription update logic here
-        return {"success": True, "message": "Subscription updated"}
+        # Subscription was updated (upgrade, downgrade, or renewal)
+        subscription = event_json.get("data", {}).get("object", {})
+        metadata = subscription.get("metadata", {})
+        
+        user_id = metadata.get("user_id")
+        tier = metadata.get("tier")
+        
+        if user_id and tier:
+            # Update user subscription in the database
+            update_user_subscription(user_id, tier)
+            return {"success": True, "message": f"Subscription updated: {tier} for user {user_id}"}
+        else:
+            return {"success": False, "message": "Missing user_id or tier in metadata"}
     
     elif event_type == "customer.subscription.deleted":
-        # Subscription cancelled or expired
-        subscription = event_data["data"]["object"]
-        # Process subscription cancellation logic here
-        return {"success": True, "message": "Subscription cancelled"}
-    
-    return {"success": True, "message": f"Event {event_type} received but not processed"}
-
-def display_payment_button(tier, billing_cycle, button_text="Subscribe"):
-    """Display a Stripe checkout button for the specified tier and billing cycle."""
-    if not STRIPE_PUBLISHABLE_KEY:
-        st.error("Stripe publishable key not found. Please check your environment variables.")
-        return
-    
-    # Get current user ID from session state
-    if "user_id" not in st.session_state:
-        st.warning("Please log in to subscribe.")
-        return
-    
-    user_id = st.session_state.user_id
-    
-    # Set success and cancel URLs
-    success_url = f"{st.get_url()}payment_success?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{st.get_url()}subscription"
-    
-    # Create checkout session
-    checkout_result = get_stripe_checkout_session(
-        user_id=user_id,
-        tier=tier,
-        billing_cycle=billing_cycle,
-        success_url=success_url,
-        cancel_url=cancel_url
-    )
-    
-    if checkout_result["success"]:
-        # Display checkout button using Stripe's checkout.js
-        checkout_id = checkout_result["session_id"]
-        checkout_url = checkout_result["checkout_url"]
+        # Subscription was canceled or expired
+        subscription = event_json.get("data", {}).get("object", {})
+        metadata = subscription.get("metadata", {})
         
-        # In a real application, you would use Stripe's JavaScript SDK
-        # Here, we'll use a simplified approach
-        if st.button(button_text, key=f"stripe_{tier}_{billing_cycle}"):
-            st.markdown(f'<meta http-equiv="refresh" content="0;url={checkout_url}">', unsafe_allow_html=True)
-            st.info("Redirecting to Stripe checkout...")
-    else:
-        st.error(f"Error: {checkout_result['message']}")
-
-def handle_payment_success():
-    """Handle successful payment redirect from Stripe."""
-    query_params = st.query_params
-    session_id = query_params.get("session_id", None)
-    
-    if session_id:
-        try:
-            # Verify the checkout session
-            session = stripe.checkout.Session.retrieve(session_id)
-            
-            if session.payment_status == "paid":
-                # Get metadata from session
-                user_id = session.metadata.get("user_id")
-                tier = session.metadata.get("tier")
-                
-                # Update user subscription in database
-                user = get_user_by_id(user_id)
-                
-                if user:
-                    st.session_state.user = user
-                    st.session_state.subscription_tier = user["subscription_tier"]
-                
-                return {"success": True, "tier": tier}
-            else:
-                return {"success": False, "message": "Payment not completed"}
+        user_id = metadata.get("user_id")
         
-        except Exception as e:
-            return {"success": False, "message": str(e)}
+        if user_id:
+            # Downgrade user to free tier
+            update_user_subscription(user_id, "free")
+            return {"success": True, "message": f"Subscription canceled for user {user_id}"}
+        else:
+            return {"success": False, "message": "Missing user_id in metadata"}
     
-    return {"success": False, "message": "Invalid session ID"}
+    # Return success for other event types to avoid webhook errors
+    return {"success": True, "message": f"Unsupported event type: {event_type}"}
 
-def create_stripe_webhook_handler():
-    """Create a handler for Stripe webhooks."""
-    # This would typically be implemented as a separate API endpoint
-    # For Streamlit, you'd need to use a framework like FastAPI alongside
-    # In a real implementation, you would validate the webhook signature
-    pass
+def create_subscription_management_link(user_id):
+    """
+    Create a link for users to manage their subscription.
+    
+    In a real implementation, this would create a Stripe customer portal session.
+    
+    Parameters:
+    - user_id: The ID of the user
+    
+    Returns:
+    - The URL of the subscription management page
+    """
+    if not stripe.api_key:
+        st.warning("Stripe API key is not configured. Please contact support.")
+        return None
+    
+    try:
+        # In a real implementation, you'd store the Stripe customer ID in your database
+        # and look it up here. For demo purposes, we'll create a new customer.
+        customer = stripe.Customer.create(
+            metadata={"user_id": str(user_id)}
+        )
+        
+        # Create a customer portal session
+        session = stripe.billing_portal.Session.create(
+            customer=customer.id,
+            return_url=st.get_url()
+        )
+        
+        return session.url
+    
+    except Exception as e:
+        st.error(f"Error creating subscription management link: {str(e)}")
+        return None

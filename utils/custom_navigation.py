@@ -1,302 +1,307 @@
 import streamlit as st
-from utils.navigation_config import get_navigation_items, is_developer_mode, authenticate_developer
-from utils.subscription import SUBSCRIPTION_TIERS, format_price, get_trial_days_remaining
+import os
+import base64
+from datetime import datetime
+
+from utils.navigation_config import get_navigation_items, authenticate_developer, is_developer_mode, set_developer_mode
+from utils.subscription import get_trial_days_remaining
 
 def render_navigation():
     """Render the navigation bar in the sidebar."""
-    # Check if first run and initialize user_role
-    if "user_role" not in st.session_state:
-        st.session_state["user_role"] = "user"
+    # Get navigation items based on role
+    nav_items = get_navigation_items()
     
-    # Get the current navigation items
-    navigation_items = get_navigation_items()
-    
-    # Create styled navigation CSS
-    st.markdown("""
-    <style>
-    /* Navigation Button Styles */
-    div[data-testid="stButton"] > button {
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        border-radius: 12px;
-        color: #444;
-        transition: all 0.2s ease;
-        background-color: rgba(255, 255, 255, 0.3);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        font-size: 0.92rem;
-        border: none;
-        cursor: pointer;
-        width: 100%;
-        text-align: left;
-        margin-bottom: 6px;
-    }
-    
-    div[data-testid="stButton"] > button:hover {
-        background-color: rgba(144, 175, 255, 0.15);
-        color: #4361ee;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
-    }
-    
-    div[data-testid="stButton"] > button:active {
-        transform: translateY(0);
-        box-shadow: 0 1px 3px rgba(67, 97, 238, 0.2);
-    }
-    
-    /* Active navigation button style will be applied via dynamic CSS */
-    div.nav-button-container {
-        margin-bottom: 6px;
-    }
-    
-    /* User Profile Section */
-    .user-profile-container {
-        background: linear-gradient(145deg, #f8faff 0%, #f1f5fe 100%);
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        border: 1px solid rgba(230, 236, 250, 0.7);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .user-profile-container::before {
-        content: "";
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, rgba(67, 97, 238, 0.1) 0%, rgba(144, 175, 255, 0.05) 100%);
-        z-index: 0;
-    }
-    
-    .user-name {
-        font-weight: 600;
-        font-size: 1.1rem;
-        margin-bottom: 8px;
-        color: #2b3674;
-        position: relative;
-    }
-    
-    .subscription-info {
-        font-size: 0.9rem;
-        color: #697586;
-        margin-bottom: 5px;
-        position: relative;
-    }
-    
-    .trial-info {
-        font-size: 0.85rem;
-        margin-top: 12px;
-        padding: 8px 12px;
-        background: linear-gradient(135deg, #e0ecff 0%, #d1e3ff 100%);
-        border-radius: 8px;
-        color: #2d62ed;
-        font-weight: 500;
-        display: inline-block;
-        box-shadow: 0 2px 8px rgba(41, 94, 255, 0.1);
-    }
-    
-    .dev-badge {
-        margin-top: 10px;
-        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-        color: white;
-        padding: 4px 10px;
-        border-radius: 30px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        display: inline-block;
-        box-shadow: 0 2px 8px rgba(255, 65, 108, 0.2);
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-    }
-    
-    /* Improve default Streamlit sidebar styling */
-    section[data-testid="stSidebar"] {
-        background-color: #f8f9fa;
-        border-right: 1px solid #eaecef;
-    }
-    
-    /* Custom button styles for navigation */
-    div.stButton > button {
-        background-color: #f5f7ff;
-        border: 1px solid #e1e5f2;
-        border-radius: 8px;
-        color: #4361ee;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    
-    div.stButton > button:hover {
-        background-color: #e1e7ff;
-        border-color: #c9d1ff;
-        transform: translateY(-1px);
-        box-shadow: 0 3px 10px rgba(67, 97, 238, 0.1);
-    }
-    
-    /* Better separator */
-    hr {
-        margin-top: 1.5rem;
-        margin-bottom: 1.5rem;
-        border: 0;
-        height: 1px;
-        background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
-    }
-    
-    /* Better heading */
-    .sidebar h2, .sidebar-heading {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #2b3674;
-        margin-bottom: 15px;
-        margin-top: 5px;
-        padding-left: 5px;
-        border-left: 3px solid #4361ee;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Get current page URL
+    # Current page from session state
     current_page = st.session_state.get("current_page", "/")
     
-    # User Profile Section in Sidebar
-    with st.sidebar:
-        # Check if user is logged in
-        if "logged_in" in st.session_state and st.session_state.logged_in and "user" in st.session_state:
-            user_html = f'''
-            <div class="user-profile-container">
-                <div class="user-name">{st.session_state.user.get("full_name", "User")}</div>
-                <div class="subscription-info">
-                    {st.session_state.user.get("email", "")}
-                </div>
-                <div class="subscription-info">
-                    Plan: {st.session_state.subscription_tier.capitalize()}
-                </div>
-            '''
-            
-            # Add trial info if applicable
-            if st.session_state.user.get("is_trial", False):
-                trial_end = st.session_state.user.get("trial_end_date")
-                if trial_end:
-                    days_left = get_trial_days_remaining(trial_end)
-                    if days_left > 0:
-                        user_html += f'''
-                        <div class="trial-info">
-                            Pro Trial: {days_left} days remaining
-                        </div>
-                        '''
-            
-            # Add dev badge if in developer mode
-            if is_developer_mode():
-                user_html += '<div class="dev-badge">DEVELOPER MODE</div>'
-                
-            user_html += '</div>'
-            
-            st.markdown(user_html, unsafe_allow_html=True)
-            
-            # Account and logout buttons
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Account", key="nav_account_btn", use_container_width=True):
-                    st.switch_page("pages/account.py")
-            with col2:
-                if st.button("Logout", key="nav_logout_btn", use_container_width=True):
-                    # Clear session state for user
-                    for key in ['user', 'logged_in', 'user_id', 'subscription_tier']:
-                        if key in st.session_state:
-                            del st.session_state[key]
-                    st.rerun()
-        else:
-            # Login/signup buttons for non-logged-in users
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Login", key="nav_login_btn", use_container_width=True):
-                    st.switch_page("pages/login.py")
-            with col2:
-                if st.button("Sign Up", key="nav_signup_btn", use_container_width=True):
-                    st.switch_page("pages/signup.py")
+    # App title with gradient
+    st.sidebar.markdown(
+        """
+        <div style="
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        ">
+            <h1 style="
+                color: white;
+                margin: 0;
+                font-size: 26px;
+                font-weight: 700;
+                text-align: center;
+                letter-spacing: 0.5px;
+            ">Analytics Assist</h1>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # User profile section if logged in
+    if st.session_state.get("logged_in", False):
+        user = st.session_state.get("user", {})
+        subscription_tier = st.session_state.get("subscription_tier", "free")
         
-        st.markdown("---")
-        st.markdown("<h2 class='sidebar-heading'>Navigation</h2>", unsafe_allow_html=True)
+        # Check if on trial
+        trial_days = 0
+        is_trial = False
+        if user.get("is_trial", False):
+            trial_days = get_trial_days_remaining()
+            is_trial = trial_days > 0
         
-        # Create a container for sidebar navigation
+        # Format subscription tier display
+        tier_display = subscription_tier.capitalize()
+        if is_trial:
+            tier_display = f"Pro (Trial: {trial_days} days left)"
+        
+        # User profile card
+        st.sidebar.markdown(
+            f"""
+            <div style="
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 20px;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            ">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-right: 10px;
+                        font-weight: bold;
+                        color: #1f1f1f;
+                    ">{user.get('full_name', 'User')[0].upper() if user.get('full_name') else 'U'}</div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 16px;">{user.get('full_name', 'User')}</div>
+                        <div style="font-size: 12px; opacity: 0.8;">{user.get('email', '')}</div>
+                    </div>
+                </div>
+                <div style="
+                    background: {"#4CAF50" if is_trial else "#3b82f6"};
+                    color: white;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    font-size: 12px;
+                    display: inline-block;
+                    margin-bottom: 5px;
+                ">{tier_display}</div>
+                <div style="text-align: right; margin-top: 5px;">
+                    <a href="/pages/account.py" style="
+                        font-size: 12px;
+                        text-decoration: none;
+                        color: #3b82f6;
+                    ">Manage Account</a>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    
+    # Developer mode toggle at the top corner
+    # (Hidden button that appears on double-click)
+    st.sidebar.markdown("""
+        <div id="dev-toggle-corner" style="
+            position: absolute; 
+            top: 5px; 
+            right: 5px; 
+            width: 15px; 
+            height: 15px; 
+            border-radius: 50%;
+            cursor: pointer;
+        "></div>
+        <script>
+            const devToggle = document.getElementById('dev-toggle-corner');
+            devToggle.addEventListener('dblclick', function() {
+                const devLogin = document.getElementById('dev-login-section');
+                if (devLogin) {
+                    devLogin.style.display = devLogin.style.display === 'none' ? 'block' : 'none';
+                }
+            });
+        </script>
+    """, unsafe_allow_html=True)
+    
+    # Developer login section (hidden by default)
+    with st.sidebar.container():
+        st.markdown("""
+            <div id="dev-login-section" style="display: none; margin-bottom: 20px;">
+                <div style="
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 8px;
+                    padding: 15px;
+                    border: 1px solid rgba(0, 0, 0, 0.05);
+                ">
+                    <h4 style="margin-top: 0;">Developer Access</h4>
+                    <div id="dev-login-form"></div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # Actual form in a hidden container
         with st.container():
-            # Display each navigation item as buttons that switch pages
-            for item in navigation_items:
-                # Skip items that require auth if not authenticated
-                if item["require_auth"] and "user" not in st.session_state:
-                    continue
-                    
-                # Determine if this is the active page
-                is_active = item["url"] == current_page
-                
-                # Create a unique key for each button to avoid duplicates
-                button_key = f"nav_{item['name'].lower().replace(' ', '_')}"
-                
-                # Style the button based on whether it's active or not
-                if is_active:
-                    btn_style = f"""
-                    <style>
-                    div[data-testid="stButton"] button[kind="secondary"][aria-label="{button_key}"] {{
-                        background: linear-gradient(135deg, rgba(67, 97, 238, 0.15) 0%, rgba(47, 73, 175, 0.2) 100%);
-                        border-left: 3px solid #4361ee;
-                        color: #4361ee;
-                        font-weight: 600;
-                        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
-                    }}
-                    </style>
-                    """
-                    st.markdown(btn_style, unsafe_allow_html=True)
-                
-                # Create a button with the icon and name
-                if st.button(f"{item['icon']} {item['name']}", key=button_key, 
-                              use_container_width=True):
-                    st.switch_page(item["url"])
+            st.write("")  # Placeholder to ensure container exists
+            render_developer_login()
+    
+    # Navigation Items
+    st.sidebar.markdown("""
+        <style>
+            div[data-testid="stSidebarNavItems"] ul {
+                padding-left: 0;
+                list-style-type: none;
+            }
+            
+            div[data-testid="stSidebarNavItems"] li {
+                margin-bottom: 0.5rem;
+            }
+            
+            div[data-testid="stSidebarNavItems"] a {
+                text-decoration: none;
+                color: #31333F;
+                font-size: 1rem;
+                display: block;
+                padding: 0.5rem 0.75rem;
+                border-radius: 0.375rem;
+                transition: all 0.15s ease;
+            }
+            
+            div[data-testid="stSidebarNavItems"] a:hover {
+                background-color: rgba(128, 128, 128, 0.1);
+            }
+            
+            div[data-testid="stSidebarNavItems"] a.sidebar-nav-item-active {
+                background-color: rgba(128, 128, 128, 0.15);
+                font-weight: 600;
+                color: #0F52BA;
+                border-left: 3px solid #0F52BA;
+            }
+            
+            div[data-testid="stSidebarNavItems"] a div {
+                display: flex;
+                align-items: center;
+            }
+            
+            div[data-testid="stSidebarNavItems"] a div svg {
+                margin-right: 0.75rem;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    nav_html = '<ul data-testid="stSidebarNavItems" class="st-emotion-cache-1gczx66 e19011e62">'
+    
+    for item in nav_items:
+        is_active = current_page == item.get("url", "#")
+        active_class = "sidebar-nav-item-active" if is_active else ""
         
+        nav_html += f'''
+        <li>
+            <a href="{item.get('url', '#')}" target="_self" class="{active_class}">
+                <div>
+                    {item.get('icon', '')}
+                    {item.get('name', 'Link')}
+                </div>
+            </a>
+        </li>
+        '''
+    
+    nav_html += '</ul>'
+    
+    st.sidebar.markdown(nav_html, unsafe_allow_html=True)
+    
+    # Logout button at bottom if logged in
+    if st.session_state.get("logged_in", False):
+        st.sidebar.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+        if st.sidebar.button("Logout", key="logout_button"):
+            # Clear session state
+            for key in list(st.session_state.keys()):
+                if key != "current_page":  # Keep current page for redirect
+                    del st.session_state[key]
+            
+            st.sidebar.success("Logged out successfully")
+            
+            # Redirect to home
+            st.switch_page("app.py")
+    
+    # Footer
+    st.sidebar.markdown("""
+        <div style="
+            margin-top: 40px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(128, 128, 128, 0.2);
+            font-size: 0.8rem;
+            opacity: 0.7;
+            text-align: center;
+        ">
+            <p>© 2025 Analytics Assist</p>
+            <p>
+                <a href="/pages/terms_of_service.py" style="text-decoration: none; color: inherit;">Terms</a> · 
+                <a href="/pages/privacy_policy.py" style="text-decoration: none; color: inherit;">Privacy</a>
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # If in developer mode, show a label
+    if is_developer_mode():
+        st.sidebar.markdown("""
+            <div style="
+                position: fixed;
+                bottom: 10px;
+                left: 10px;
+                background-color: #FF5722;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 10px;
+                z-index: 1000;
+            ">DEVELOPER MODE</div>
+        """, unsafe_allow_html=True)
+        
+        # Developer logout button
+        if st.sidebar.button("Exit Developer Mode", key="exit_dev_mode"):
+            logout_developer()
+
 def render_developer_login():
     """Render the developer login form."""
-    with st.sidebar.expander("Developer Login", expanded=False):
-        username = st.text_input("Username", key="dev_username")
-        password = st.text_input("Password", type="password", key="dev_password")
+    # Check if already in developer mode
+    if is_developer_mode():
+        return
+    
+    # Use a unique key for the form
+    with st.form(key="dev_login_form"):
+        dev_username = st.text_input("Username", key="dev_username")
+        dev_password = st.text_input("Password", type="password", key="dev_password")
         
-        if st.button("Login as Developer", key="dev_login_btn"):
-            if authenticate_developer(username, password):
+        submit_button = st.form_submit_button("Login")
+        
+        if submit_button:
+            if authenticate_developer(dev_username, dev_password):
+                set_developer_mode(True)
                 st.success("Developer mode activated")
                 st.rerun()
             else:
                 st.error("Invalid credentials")
-                
+
 def logout_developer():
     """Logout from developer mode."""
-    if is_developer_mode() and st.sidebar.button("Exit Developer Mode", key="exit_dev_mode_btn"):
-        st.session_state["user_role"] = "user"
-        st.rerun()
-        
+    set_developer_mode(False)
+    st.success("Exited developer mode")
+    
+    # Redirect to home
+    st.switch_page("app.py")
+
 def initialize_navigation():
     """Initialize the navigation by determining the current page."""
-    import inspect
-    import os
-    from pathlib import Path
+    # Get the current page from the URL
+    current_url = os.environ.get("STREAMLIT_SERVER_BASE_PATH_INFO", "/")
     
-    # Get the calling script path
-    caller_frame = inspect.currentframe()
-    if caller_frame and caller_frame.f_back:
-        caller_frame = caller_frame.f_back
-        caller_filename = inspect.getframeinfo(caller_frame).filename
-        
-        # Convert to relative path for comparison
-        root_dir = Path(os.getcwd())
-        relative_path = Path(caller_filename).relative_to(root_dir)
-        
-        # Update current page in session state
-        url_path = f"/{relative_path}"
-        if relative_path.name == "app.py":
-            url_path = "/"
-            
-        st.session_state["current_page"] = url_path
-    else:
-        # Fallback if we can't determine the current page
-        st.session_state["current_page"] = "/"
+    # Store in session state
+    if "current_page" not in st.session_state or st.session_state.current_page != current_url:
+        st.session_state.current_page = current_url

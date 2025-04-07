@@ -1,135 +1,100 @@
 import streamlit as st
 import datetime
+from datetime import timedelta
 
-# Define subscription tiers with features and limits
-SUBSCRIPTION_TIERS = {
+# Subscription plans data for UI display
+SUBSCRIPTION_PLANS = {
     "free": {
         "name": "Free",
-        "price_monthly": 0,
-        "price_yearly": 0,
+        "monthly_price": 0,
+        "annual_price": 0,
         "features": [
-            "Basic data analysis",
-            "Up to 3 datasets",
-            "Limited transformations",
+            "1 dataset",
+            "5 MB file size limit",
             "Basic visualizations",
-            "No AI-powered insights"
+            "Basic cleaning transformations",
+            "CSV export only"
         ],
-        "limits": {
-            "max_datasets": 3,
-            "max_rows_per_dataset": 5000,
-            "max_transformations_per_dataset": 10,
-            "ai_features_enabled": False,
-            "export_formats": ["CSV"],
-            "support_level": "Community"
-        }
+        "cta": "Current Plan",
+        "highlight": False
     },
     "basic": {
         "name": "Basic",
-        "price_monthly": 9.99,
-        "price_yearly": 99.99,
+        "monthly_price": 9.99,
+        "annual_price": 99.99,  # ~16% discount
         "features": [
-            "Advanced data analysis",
-            "Up to 10 datasets",
-            "Full transformation suite",
-            "Interactive visualizations",
-            "Basic AI-powered insights"
+            "5 datasets",
+            "50 MB file size limit",
+            "8 visualization types",
+            "Extended transformations",
+            "Excel, CSV, PDF exports",
+            "Basic AI insights"
         ],
-        "limits": {
-            "max_datasets": 10,
-            "max_rows_per_dataset": 50000,
-            "max_transformations_per_dataset": 50,
-            "ai_features_enabled": True,
-            "export_formats": ["CSV", "Excel", "JSON"],
-            "support_level": "Email"
-        }
+        "cta": "Upgrade",
+        "highlight": False
     },
     "pro": {
-        "name": "Professional",
-        "price_monthly": 24.99,
-        "price_yearly": 249.99,
+        "name": "Pro",
+        "monthly_price": 29.99,
+        "annual_price": 299.99,  # ~16% discount
         "features": [
-            "Full data analysis suite",
-            "Unlimited datasets",
-            "Advanced AI-powered insights",
-            "Custom visualization options",
-            "AI learning system",
-            "Priority support"
+            "20 datasets",
+            "200 MB file size limit",
+            "All visualization types",
+            "All transformations",
+            "All export formats",
+            "Advanced AI insights",
+            "Data version history"
         ],
-        "limits": {
-            "max_datasets": float("inf"),
-            "max_rows_per_dataset": 1000000,
-            "max_transformations_per_dataset": float("inf"),
-            "ai_features_enabled": True,
-            "export_formats": ["CSV", "Excel", "JSON", "PDF", "HTML"],
-            "ai_learning": True,
-            "support_level": "Priority"
-        }
+        "cta": "Upgrade",
+        "highlight": True
     },
     "enterprise": {
         "name": "Enterprise",
-        "price_monthly": "Contact us",
-        "price_yearly": "Contact us",
+        "monthly_price": 99.99,
+        "annual_price": 999.99,  # ~16% discount
         "features": [
-            "Everything in Professional",
-            "Advanced AI learning system",
-            "On-premises deployment option",
+            "Unlimited datasets",
+            "500 MB file size limit",
+            "All features in Pro",
+            "Team collaboration",
+            "Priority support",
             "Custom integrations",
-            "Advanced security features",
-            "Dedicated account manager"
+            "White labeling"
         ],
-        "limits": {
-            "max_datasets": float("inf"),
-            "max_rows_per_dataset": float("inf"),
-            "max_transformations_per_dataset": float("inf"),
-            "ai_features_enabled": True,
-            "export_formats": ["CSV", "Excel", "JSON", "PDF", "HTML", "Custom"],
-            "ai_learning": True,
-            "advanced_learning": True,
-            "support_level": "Dedicated"
-        }
+        "cta": "Contact Us",
+        "highlight": False
     }
 }
 
-def get_subscription_info(tier):
-    """Get subscription information for a specific tier."""
-    if tier in SUBSCRIPTION_TIERS:
-        return SUBSCRIPTION_TIERS[tier]
-    return SUBSCRIPTION_TIERS["free"]  # Default to free tier
-
-def is_trial_active(trial_end_date):
-    """Check if trial is still active."""
-    if not trial_end_date:
-        return False
-    
-    now = datetime.datetime.utcnow()
-    return trial_end_date > now
-
-def get_trial_days_remaining(trial_end_date):
-    """Get number of days remaining in trial."""
-    if not trial_end_date:
-        return 0
-    
-    now = datetime.datetime.utcnow()
-    if trial_end_date <= now:
-        return 0
-    
-    days_left = (trial_end_date - now).days
-    return max(0, days_left)
-
-def get_subscription_expires_in_days(subscription_end_date):
-    """Get number of days until subscription expires."""
-    if not subscription_end_date:
-        return 0
-    
-    now = datetime.datetime.utcnow()
-    if subscription_end_date <= now:
-        return 0
-    
-    days_left = (subscription_end_date - now).days
-    return max(0, days_left)
-
 def format_price(price):
-    """Format price for display."""
-    if isinstance(price, (int, float)):
-        return f"${price:.2f}"
-    return price
+    """Format a price with correct currency symbol."""
+    if price == 0:
+        return "Free"
+    return f"${price:.2f}"
+
+def get_trial_days_remaining():
+    """Get the number of days remaining in the trial."""
+    if "user" not in st.session_state or not st.session_state.get("logged_in", False):
+        return 0
+    
+    # Check if user is on a trial
+    if not st.session_state.user.get("is_trial", False):
+        return 0
+    
+    # Get trial end date
+    trial_end_date_str = st.session_state.user.get("subscription_end_date")
+    if not trial_end_date_str:
+        return 0
+    
+    # Parse date string to datetime
+    try:
+        trial_end_date = datetime.datetime.fromisoformat(trial_end_date_str.replace('Z', '+00:00'))
+        today = datetime.datetime.now(datetime.timezone.utc)
+        
+        # Calculate days difference
+        days_left = (trial_end_date - today).days
+        return max(0, days_left)
+    except Exception as e:
+        print(f"Error calculating trial days: {e}")
+        return 0

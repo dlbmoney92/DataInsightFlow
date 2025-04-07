@@ -1,8 +1,7 @@
 import streamlit as st
+from utils.global_config import apply_global_css, render_footer
+from utils.custom_navigation import initialize_navigation, render_navigation, render_developer_login, logout_developer
 from utils.auth_redirect import require_auth
-from utils.custom_navigation import render_navigation
-from utils.navigation_config import is_developer_mode
-from utils.global_config import apply_global_css
 
 def init_page(title, require_login=True, wide_mode=True):
     """
@@ -16,52 +15,30 @@ def init_page(title, require_login=True, wide_mode=True):
     Returns:
     - True if page initialization was successful, False if login redirect occurred
     """
-    # Apply global CSS to hide default Streamlit navigation
+    # Apply global CSS
     apply_global_css()
     
-    # Set wide mode if requested
-    if wide_mode:
-        st.set_page_config(
-            page_title=f"Analytics Assist - {title}",
-            page_icon="📊",
-            layout="wide",
-            initial_sidebar_state="expanded"
-        )
-    else:
-        st.set_page_config(
-            page_title=f"Analytics Assist - {title}",
-            page_icon="📊",
-            initial_sidebar_state="expanded"
-        )
+    # Initialize navigation
+    initialize_navigation()
     
-    # Apply global CSS again after page config in case it reset anything
-    apply_global_css()
+    # Render navigation in sidebar
+    render_navigation()
     
-    # Check authentication if required
+    # If developer mode is active, show logout option
+    logout_developer()
+    
+    # Show developer login (hidden in sidebar expander)
+    render_developer_login()
+    
+    # Check login if required
     if require_login:
         if not require_auth():
             return False
     
-    # Render navigation in sidebar
-    with st.sidebar:
-        st.markdown("""
-        <style>
-        .app-title {
-            color: #4361ee;
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            background: -webkit-linear-gradient(45deg, #4361ee, #7239ea);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        </style>
-        <h1 class="app-title">Analytics Assist</h1>
-        """, unsafe_allow_html=True)
-        
-        render_navigation()
-    
     # Display page title
     st.title(title)
+    
+    # Render footer
+    render_footer()
     
     return True

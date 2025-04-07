@@ -1,7 +1,7 @@
 import streamlit as st
 import hashlib
 from utils.database import get_user_by_id, execute_with_retry
-from utils.subscription import SUBSCRIPTION_TIERS, format_price, get_trial_days_remaining, get_subscription_expires_in_days
+from utils.subscription import SUBSCRIPTION_PLANS, format_price, get_trial_days_remaining, get_subscription_expires_in_days
 from sqlalchemy import text
 
 def update_password(user_id, current_password, new_password):
@@ -141,7 +141,7 @@ def app():
     with tab3:
         st.header("Subscription Information")
         
-        tier_info = SUBSCRIPTION_TIERS[user['subscription_tier']]
+        tier_info = SUBSCRIPTION_PLANS[user['subscription_tier']]
         
         st.subheader(f"Current Plan: {tier_info['name']}")
         
