@@ -9,6 +9,7 @@ from utils.database import initialize_database
 from utils.access_control import check_and_handle_trial_expiration
 from utils.subscription import SUBSCRIPTION_TIERS, format_price, get_trial_days_remaining
 from utils.custom_navigation import render_navigation, render_developer_login, logout_developer, initialize_navigation
+from utils.global_config import apply_global_css
 import uuid
 
 # Set page configuration
@@ -19,7 +20,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Conditionally hide the default Streamlit navigation when not in developer mode
+# Apply global CSS including hiding default Streamlit navigation
+apply_global_css()
+
+# Additional conditional CSS for developer mode
 if not st.session_state.get("user_role") == "developer":
     hide_streamlit_nav = """
     <style>

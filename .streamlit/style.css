@@ -1,0 +1,19 @@
+/* Hide the default Streamlit sidebar navigation menu */
+[data-testid="stSidebarNavItems"] {
+    display: none !important;
+}
+
+/* Hide the navigation collapse button */
+button[kind="headerNoPadding"][data-testid="baseButton-headerNoPadding"] {
+    display: none !important;
+}
+
+/* Optional: If needed, hide the hamburger menu completely */
+section[data-testid="stSidebarUserContent"] > div:first-child > button {
+    display: none !important;
+}
+
+/* Make sure our custom navigation is visible */
+div[data-testid="stSidebarUserContent"] {
+    display: block !important;
+}
