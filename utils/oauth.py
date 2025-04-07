@@ -103,12 +103,12 @@ def handle_oauth_callback():
     
     This would be called on the redirect from Google's consent screen.
     """
-    # Get query parameters
-    query_params = st.experimental_get_query_params()
+    # Get query parameters using the newer non-experimental method
+    query_params = st.query_params
     
     # Check for error
     if "error" in query_params:
-        error = query_params["error"][0]
+        error = query_params["error"]
         return {
             "success": False,
             "message": f"Authentication failed: {error}"
@@ -121,8 +121,8 @@ def handle_oauth_callback():
             "message": "Missing required parameters in callback"
         }
     
-    code = query_params["code"][0]
-    state = query_params["state"][0]
+    code = query_params["code"]
+    state = query_params["state"]
     
     # Verify state to prevent CSRF
     if not verify_state_token(state):

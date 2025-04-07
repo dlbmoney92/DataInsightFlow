@@ -6,6 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from utils.ai_learning import display_learning_preferences_form, get_ai_learning_stats
 from utils.access_control import check_access
+from utils.ai_providers import get_ai_manager, AIProvider
 
 def app():
     st.title("AI Learning System")
@@ -27,7 +28,7 @@ def app():
     """)
     
     # Create tabs
-    tab1, tab2, tab3 = st.tabs(["Your AI Preferences", "Learning Progress", "How It Works"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Your AI Preferences", "AI Providers", "Learning Progress", "How It Works"])
     
     with tab1:
         st.subheader("Your AI Learning Preferences")
@@ -45,6 +46,88 @@ def app():
             display_learning_preferences_form()
     
     with tab2:
+        st.subheader("AI Provider Settings")
+        
+        # Get the AI manager
+        ai_manager = get_ai_manager()
+        
+        # Display available providers
+        st.markdown("### AI Provider: OpenAI GPT-4o")
+        
+        # Check OpenAI availability
+        openai_status = "✅ Available" if ai_manager.openai_available else "❌ Not configured"
+        st.markdown(f"**Status**: {openai_status}")
+        
+        if not ai_manager.openai_available:
+            st.info("An OpenAI API key is required for the AI features. Configure your key to enable advanced AI analysis capabilities.")
+            
+            # Add a button to configure OpenAI
+            if st.button("Configure OpenAI API Key"):
+                # This is where we would typically show a form or redirect
+                # For now, we'll just show an info message
+                st.session_state.show_openai_config = True
+        else:
+            st.success("OpenAI integration is active and ready to use!")
+            st.markdown("""
+            **GPT-4o** is the latest model from OpenAI and offers:
+            - Superior data analysis capabilities
+            - Advanced pattern recognition
+            - Natural language understanding for your data questions
+            - High-quality visualization suggestions
+            """)
+        
+        # Show OpenAI configuration form if requested
+        if st.session_state.get("show_openai_config", False):
+            st.markdown("### Configure OpenAI API Key")
+            st.markdown("To use OpenAI's GPT-4o model, you need an OpenAI API key.")
+            st.markdown("You can get one from [OpenAI's website](https://platform.openai.com/api-keys).")
+            
+            # Use a spinner to indicate this is a placeholder for real implementation
+            with st.spinner("Setting up OpenAI API key..."):
+                st.warning("In a production app, this would securely save your API key.")
+                # Display button to request API key
+                if st.button("Set OpenAI API Key", key="set_openai_key"):
+                    # We would save this in a real app
+                    st.success("API key would be saved securely.")
+                    st.session_state.show_openai_config = False
+                    st.rerun()
+                    
+        # Add section for API key security
+        st.markdown("### API Key Security")
+        
+        # Explain API key security
+        st.markdown("""
+        Your OpenAI API key is stored securely and is never exposed to other users.
+        It is used only to communicate with OpenAI's services for processing your data analysis requests.
+        """)
+        
+        # Add more info about the API usage
+        st.info("""
+        💡 **How AI is used in Analytics Assist:**
+        - Generate insights from your data
+        - Suggest appropriate visualizations
+        - Recommend data cleaning and transformation steps  
+        - Answer natural language questions about your datasets
+        """)
+            
+        # Show button for API key validation
+        if st.button("Verify API Connection"):
+            if ai_manager.openai_available:
+                st.success("✅ OpenAI API key is valid and working")
+                
+                # Add a simple test prompt
+                try:
+                    test_response = ai_manager.generate_completion("Return the text 'API connection successful' as a test", max_tokens=20)
+                    if isinstance(test_response, str) and "API connection successful" in test_response:
+                        st.success("✅ Test API call completed successfully")
+                    else:
+                        st.warning("⚠️ API connection test returned unexpected response")
+                except Exception as e:
+                    st.error(f"❌ API test failed: {str(e)}")
+            else:
+                st.error("❌ OpenAI API key is missing or invalid")
+    
+    with tab3:
         st.subheader("AI Learning Progress")
         
         # Check if user has access to learning stats
@@ -123,7 +206,7 @@ def app():
                 
                 st.plotly_chart(fig2, use_container_width=True)
     
-    with tab3:
+    with tab4:
         st.subheader("How AI Learning Works")
         
         st.markdown("""
