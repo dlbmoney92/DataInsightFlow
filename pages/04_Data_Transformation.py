@@ -5,6 +5,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import json
+import time
+import uuid
 from utils.transformations import (
     apply_transformations,
     register_transformation,
@@ -30,6 +32,12 @@ from utils.transformations import (
 from utils.ai_suggestions import generate_column_cleaning_suggestions
 from utils.visualization import create_distribution_plot, create_categorical_plot
 from utils.auth_redirect import require_auth
+from utils.transformation_visualizer import (
+    generate_transformation_flow_chart,
+    create_before_after_comparison,
+    animate_transformation_process,
+    create_transformation_journey_visualization
+)
 
 st.set_page_config(
     page_title="Data Transformation | Analytics Assist",
@@ -2294,47 +2302,141 @@ with tab2:
 with tab3:
     st.subheader("Transformation History & Management")
     
-    # Display the transformation history
-    if st.session_state.transformation_history:
-        st.markdown("### Applied Transformations")
+    # Create tabs for different visualization views
+    history_tab1, history_tab2, history_tab3 = st.tabs([
+        "📋 Transformation List", 
+        "🔄 Flow Visualization", 
+        "📊 Transformation Journey"
+    ])
+    
+    with history_tab1:
+        # Display the transformation history as a list
+        if st.session_state.transformation_history:
+            st.markdown("### Applied Transformations")
+            
+            # Create a dataframe from transformation history
+            history_data = []
+            for i, history in enumerate(st.session_state.transformation_history):
+                history_data.append({
+                    "ID": i+1,
+                    "Timestamp": history.get('timestamp', ''),
+                    "Action": history.get('action', ''),
+                    "Details": history.get('details', '')
+                })
+            
+            history_df = pd.DataFrame(history_data)
+            
+            # Display the history
+            st.dataframe(history_df, use_container_width=True)
+            
+            # Undo last transformation
+            if st.button("Undo Last Transformation"):
+                if st.session_state.transformations:
+                    # Remove the last transformation
+                    st.session_state.transformations.pop()
+                    st.session_state.transformation_history.pop()
+                    
+                    # Re-apply all transformations from the original data
+                    original_df = pd.read_csv(st.session_state.file_name) if st.session_state.file_name.endswith('.csv') else pd.read_excel(st.session_state.file_name)
+                    
+                    if st.session_state.transformations:
+                        # Apply all remaining transformations
+                        df_transformed = apply_transformations(original_df, st.session_state.transformations)
+                        st.session_state.dataset = df_transformed
+                    else:
+                        # If no transformations left, revert to original
+                        st.session_state.dataset = original_df
+                    
+                    st.success("Successfully undid the last transformation.")
+                    st.rerun()
+        else:
+            st.info("No transformations have been applied yet.")
+    
+    with history_tab2:
+        # Display a visual flow chart of transformations
+        st.markdown("### Transformation Flow")
+        st.markdown("This visualization shows the flow of transformations applied to your dataset.")
         
-        # Create a dataframe from transformation history
-        history_data = []
-        for i, history in enumerate(st.session_state.transformation_history):
-            history_data.append({
-                "ID": i+1,
-                "Timestamp": history.get('timestamp', ''),
-                "Action": history.get('action', ''),
-                "Details": history.get('details', '')
-            })
-        
-        history_df = pd.DataFrame(history_data)
-        
-        # Display the history
-        st.dataframe(history_df, use_container_width=True)
-        
-        # Undo last transformation
-        if st.button("Undo Last Transformation"):
-            if st.session_state.transformations:
-                # Remove the last transformation
-                st.session_state.transformations.pop()
-                st.session_state.transformation_history.pop()
+        # Create a list of transformation objects in the format needed for the visualizer
+        transformations = []
+        if st.session_state.transformation_history:
+            for i, history in enumerate(st.session_state.transformation_history):
+                if 'action' in history:
+                    transformations.append({
+                        'name': history.get('action', f'Transformation {i+1}'),
+                        'description': history.get('details', 'No details available'),
+                        'transformation_details': {'type': history.get('type', 'unknown')},
+                        'affected_columns': history.get('columns', [])
+                    })
+            
+            # Generate and display the flow chart
+            flow_chart = generate_transformation_flow_chart(transformations)
+            st.plotly_chart(flow_chart, use_container_width=True)
+            
+            # Add option to animate a specific transformation
+            if len(transformations) > 0:
+                # If we have at least one transformation, ask user which one to animate
+                transform_indices = list(range(len(transformations)))
+                selected_transform = st.selectbox(
+                    "Select a transformation to animate:", 
+                    options=transform_indices,
+                    format_func=lambda x: transformations[x]['name'] if x < len(transformations) else "Select a transformation"
+                )
                 
-                # Re-apply all transformations from the original data
+                if st.button("Animate Selected Transformation"):
+                    # Get the original data
+                    try:
+                        original_df = pd.read_csv(st.session_state.file_name) if st.session_state.file_name.endswith('.csv') else pd.read_excel(st.session_state.file_name)
+                        
+                        # Apply transformations up to but not including the selected one
+                        if selected_transform > 0:
+                            pre_transform_df = apply_transformations(original_df, st.session_state.transformations[:selected_transform])
+                        else:
+                            pre_transform_df = original_df.copy()
+                        
+                        # Apply the selected transformation to get the "after" state
+                        post_transform_df = apply_transformations(pre_transform_df.copy(), [st.session_state.transformations[selected_transform]])
+                        
+                        # Get the affected columns
+                        affected_cols = transformations[selected_transform].get('affected_columns', [])
+                        if not affected_cols and 'columns' in st.session_state.transformations[selected_transform]:
+                            affected_cols = st.session_state.transformations[selected_transform]['columns']
+                        
+                        # Animate the transformation
+                        animate_transformation_process(
+                            pre_transform_df,
+                            post_transform_df,
+                            transformations[selected_transform],
+                            affected_cols
+                        )
+                    except Exception as e:
+                        st.error(f"Error animating transformation: {str(e)}")
+        else:
+            st.info("No transformations have been applied yet. Apply some transformations to see the visualization.")
+    
+    with history_tab3:
+        # Show the transformation journey visualization
+        st.markdown("### Transformation Journey")
+        st.markdown("This visualization shows the journey of your dataset through all transformations.")
+        
+        if st.session_state.transformation_history:
+            try:
+                # Get the original data
                 original_df = pd.read_csv(st.session_state.file_name) if st.session_state.file_name.endswith('.csv') else pd.read_excel(st.session_state.file_name)
                 
-                if st.session_state.transformations:
-                    # Apply all remaining transformations
-                    df_transformed = apply_transformations(original_df, st.session_state.transformations)
-                    st.session_state.dataset = df_transformed
-                else:
-                    # If no transformations left, revert to original
-                    st.session_state.dataset = original_df
+                # Current transformed data
+                current_df = df
                 
-                st.success("Successfully undid the last transformation.")
-                st.rerun()
-    else:
-        st.info("No transformations have been applied yet.")
+                # Create and display the transformation journey
+                create_transformation_journey_visualization(
+                    transformations,
+                    original_df,
+                    current_df
+                )
+            except Exception as e:
+                st.error(f"Error visualizing transformation journey: {str(e)}")
+        else:
+            st.info("No transformations have been applied yet. Apply some transformations to see the journey.")
     
     # Display the current data
     st.subheader("Current Dataset Preview")

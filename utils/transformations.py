@@ -14,11 +14,36 @@ def register_transformation(df, name, description, function, columns, params=Non
     if 'transformation_history' not in st.session_state:
         st.session_state.transformation_history = []
     
+    # Determine transformation type category for visualization
+    function_to_type = {
+        'impute_missing_mean': 'missing_value_handling',
+        'impute_missing_median': 'missing_value_handling',
+        'impute_missing_mode': 'missing_value_handling',
+        'impute_missing_constant': 'missing_value_handling',
+        'remove_outliers': 'outlier_removal',
+        'normalize_columns': 'normalization',
+        'standardize_data': 'normalization',
+        'encode_categorical': 'encoding',
+        'format_dates': 'date_formatting',
+        'drop_columns': 'column_removal',
+        'rename_columns': 'column_renaming',
+        'create_bins': 'binning',
+        'log_transform': 'transformation',
+        'sqrt_transform': 'transformation',
+        'boxcox_transform': 'transformation',
+        'convert_numeric_to_datetime': 'type_conversion',
+        'round_off': 'rounding',
+        'standardize_category_names': 'standardization'
+    }
+    
+    transformation_type = function_to_type.get(function, 'other')
+    
     # Add to transformations list
     transformation = {
         'name': name,
         'description': description,
         'function': function,
+        'type': transformation_type,
         'columns': columns,
         'params': params,
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -26,11 +51,14 @@ def register_transformation(df, name, description, function, columns, params=Non
     
     st.session_state.transformations.append(transformation)
     
-    # Add to history
+    # Add to history with additional metadata for visualization
     history_entry = {
         'action': f"Applied {name} to {', '.join(columns)}",
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'details': description
+        'details': description,
+        'type': transformation_type,
+        'columns': columns,
+        'function': function
     }
     
     st.session_state.transformation_history.append(history_entry)
