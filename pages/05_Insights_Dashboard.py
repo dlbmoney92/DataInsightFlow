@@ -8,12 +8,22 @@ from datetime import datetime
 import json
 from utils.ai_suggestions import generate_dataset_insights, answer_data_question
 from utils.visualization import create_visualization_from_suggestion
+from utils.auth_redirect import require_auth
 
 st.set_page_config(
     page_title="Insights Dashboard | Analytics Assist",
     page_icon="💡",
     layout="wide"
 )
+
+# Check authentication first
+if not require_auth():
+    st.stop()  # Stop if not authenticated
+
+# Show user info if authenticated
+if "user" in st.session_state:
+    st.sidebar.success(f"Logged in as: {st.session_state.user.get('email', 'User')}")
+    st.sidebar.info(f"Subscription: {st.session_state.subscription_tier.capitalize()}")
 
 # Check if dataset exists in session state
 if 'dataset' not in st.session_state or st.session_state.dataset is None:

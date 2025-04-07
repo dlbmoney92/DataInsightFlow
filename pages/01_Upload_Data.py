@@ -11,6 +11,7 @@ from utils.file_processor import (
     supported_file_types
 )
 from utils.database import save_dataset, list_datasets, get_dataset
+from utils.access_control import check_access
 
 st.set_page_config(
     page_title="Upload Data | Analytics Assist",
@@ -18,6 +19,46 @@ st.set_page_config(
     layout="wide"
 )
 
+# Authentication check
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.warning("⚠️ You need to log in to upload and analyze data.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Log In", use_container_width=True):
+            st.switch_page("pages/login.py")
+    with col2:
+        if st.button("Sign Up", use_container_width=True):
+            st.switch_page("pages/signup.py")
+            
+    # Display feature preview even if not logged in
+    st.markdown("---")
+    st.subheader("Upload Data Feature Preview")
+    st.markdown("""
+    Once logged in, you'll be able to:
+    - Upload various file formats (CSV, Excel, JSON, etc.)
+    - Automatically detect data types and structure
+    - Save datasets to your account for analysis
+    - Transform and visualize your data
+    
+    Sign up for a free account to get started!
+    """)
+else:
+    # Show user info if authenticated
+    if "user" in st.session_state:
+        st.sidebar.success(f"Logged in as: {st.session_state.user.get('email', 'User')}")
+        st.sidebar.info(f"Subscription: {st.session_state.subscription_tier.capitalize()}")
+    
+    # Display supported file formats in preview
+    st.markdown("**Supported file formats:**")
+    file_format_cols = st.columns(3)
+    for i, file_type in enumerate(supported_file_types):
+        with file_format_cols[i % 3]:
+            st.markdown(f"- {file_type}")
+            
+    st.stop()  # Stop execution for non-logged-in users
+
+# If user is logged in, continue with the normal upload functionality
 # Header and description
 st.title("Upload Your Data")
 st.markdown("""
@@ -37,10 +78,20 @@ with col1:
 
 # File uploader
 with col2:
-    uploaded_file = st.file_uploader("", type=[ext[1:] for ext in supported_file_types])
+    # Check if user can upload based on their subscription tier
+    can_upload = check_access("upload", "new_dataset")
+    
+    if can_upload:
+        uploaded_file = st.file_uploader("", type=[ext[1:] for ext in supported_file_types])
+    else:
+        st.warning("Your current subscription plan doesn't allow uploading more datasets. Please upgrade your plan.")
+        if st.button("Upgrade Subscription"):
+            st.switch_page("pages/subscription.py")
+        uploaded_file = None
 
 # Name the project
-project_name = st.text_input("Project Name", value="My Data Analysis Project")
+if uploaded_file is not None:
+    project_name = st.text_input("Project Name", value="My Data Analysis Project")
 
 # Process the uploaded file
 if uploaded_file is not None:

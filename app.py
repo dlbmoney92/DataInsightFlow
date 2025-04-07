@@ -336,100 +336,274 @@ if "logged_in" in st.session_state and st.session_state.logged_in:
             st.switch_page("pages/05_Insights_Dashboard.py")
 
 else:
-    # Landing page for anonymous users
-    st.title("Analytics Assist")
-    st.subheader("Your AI-powered data analysis co-pilot")
+    # Splash screen for anonymous users
+    st.markdown(
+        """
+        <style>
+        .splash-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .splash-logo {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .splash-tagline {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: #4a4a4a;
+        }
+        .splash-steps {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        .step-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            width: 220px;
+            margin: 1rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .step-card:hover {
+            transform: translateY(-5px);
+        }
+        .step-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .step-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .main-cta {
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .main-cta:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
+        }
+        .secondary-cta {
+            background: white;
+            color: #3a7bd5;
+            border: 2px solid #3a7bd5;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .secondary-cta:hover {
+            background: #f0f7ff;
+            transform: scale(1.05);
+        }
+        .or-divider {
+            display: flex;
+            align-items: center;
+            color: #777;
+            margin: 1.5rem 0;
+        }
+        .or-divider::before, .or-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+            margin: 0 10px;
+        }
+        </style>
+        
+        <div class="splash-container">
+            <div class="splash-logo">Analytics Assist</div>
+            <div class="splash-tagline">Transform your data into actionable insights with AI</div>
+            
+            <div class="splash-steps">
+                <div class="step-card">
+                    <div class="step-icon">📤</div>
+                    <div class="step-title">Upload</div>
+                    <p>Upload any data source with our smart importer</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">🧹</div>
+                    <div class="step-title">Transform</div>
+                    <p>Clean and prepare your data with AI assistance</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">📊</div>
+                    <div class="step-title">Visualize</div>
+                    <p>Create beautiful, insightful visualizations</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">💡</div>
+                    <div class="step-title">Discover</div>
+                    <p>Gain valuable insights from your data</p>
+                </div>
+            </div>
+            
+            <h3>All Your Data Tools in One Platform</h3>
+            <p>Analytics Assist combines powerful data analysis with an AI assistant to help you make better decisions.</p>
+            <p>Get started today and join thousands of users who trust Analytics Assist with their data needs.</p>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
     
-    # Hero section
-    st.markdown("""
-    ## Transform Your Data into Actionable Insights 🚀
+    # Sign-up container
+    st.markdown(
+        """
+        <style>
+        .signup-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        </style>
+        <div class="signup-container">
+            <h2>Start Your Analytics Journey Today</h2>
+            <p>Create an account to access all features and begin analyzing your data</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
-    Analytics Assist is a powerful AI-driven platform that helps you:
-    - **Explore** and understand your data
-    - **Clean** and transform your datasets with ease
-    - **Discover** valuable insights automatically
-    - **Visualize** your findings with beautiful charts
-    - **Learn** and improve with AI that adapts to your feedback
-    - **Share** your results with customizable reports
-    """)
-    
-    # Call to action
-    cta_col1, cta_col2 = st.columns(2)
-    with cta_col1:
-        if st.button("Sign Up Free", use_container_width=True):
+    # Sign-up buttons
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        if st.button("Create an Account", use_container_width=True, key="main_signup"):
             st.switch_page("pages/signup.py")
-    with cta_col2:
-        if st.button("Start 7-Day Pro Trial", use_container_width=True):
-            st.switch_page("pages/signup.py")
+        
+        st.markdown("<div class='or-divider'>OR</div>", unsafe_allow_html=True)
+        
+        google_btn = st.button("Sign in with Google", use_container_width=True, key="google_signin")
+        if google_btn:
+            st.warning("Google authentication will be integrated with your OAuth credentials")
+            st.info("To complete the Google Sign-in setup, you'll need to register your app with Google Cloud Console and obtain OAuth credentials")
     
-    # Features showcase
+    # Feature highlights
     st.markdown("---")
-    st.markdown("## Key Features")
+    st.markdown("## Why Choose Analytics Assist")
     
     feature_cols = st.columns(3)
     
     with feature_cols[0]:
         st.markdown("### 🤖 AI-Powered Analysis")
         st.markdown("""
-        Leverage the power of AI to:
         - Get intelligent data cleaning suggestions
         - Automatically detect patterns and anomalies
         - Generate natural language insights
-        - Learn from your feedback and interactions
+        - Learn from your feedback
         - Receive personalized recommendations
         """)
     
     with feature_cols[1]:
-        st.markdown("### 📊 Powerful Visualizations")
+        st.markdown("### 🔒 Secure & Private")
         st.markdown("""
-        Create insightful visualizations:
-        - Interactive charts and graphs
-        - Correlation analysis
-        - Distribution plots
-        - Time series analysis
-        - Automated dashboard generation
+        - Your data stays private and secure
+        - Role-based access controls
+        - Compliant with data protection standards
+        - Fine-grained permission management
+        - Complete audit trail
         """)
     
     with feature_cols[2]:
-        st.markdown("### 🧩 No-Code Experience")
+        st.markdown("### 🚀 Enterprise Ready")
         st.markdown("""
-        Designed for users of all skill levels:
-        - Intuitive drag-and-drop interface
-        - Guided data transformation workflows
-        - Human-readable explanations
-        - Export in multiple formats
-        - Share insights with your team
+        - Scales to handle large datasets
+        - Integration with existing systems
+        - Collaboration features for teams
+        - Custom reporting options
+        - Priority support available
         """)
     
     # Pricing section
     st.markdown("---")
-    st.markdown("## Subscription Plans")
+    st.markdown("## Choose Your Plan")
     
     pricing_cols = st.columns(3)
     
     with pricing_cols[0]:
-        st.markdown("### Free")
-        st.markdown(f"**{format_price(SUBSCRIPTION_TIERS['free']['price_monthly'])}**/month")
+        st.markdown(
+            """
+            <div style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; height: 100%;">
+                <h3>Free</h3>
+                <div style="font-size: 1.8rem; margin: 1rem 0;">$0<span style="font-size: 1rem;">/month</span></div>
+                <ul style="list-style-type: none; padding-left: 0;">
+            """, 
+            unsafe_allow_html=True
+        )
         for feature in SUBSCRIPTION_TIERS['free']['features']:
-            st.markdown(f"✓ {feature}")
-        if st.button("Sign Up Free", key="pricing_free", use_container_width=True):
+            st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
+        st.markdown("</ul>", unsafe_allow_html=True)
+        if st.button("Get Started Free", key="pricing_free", use_container_width=True):
             st.switch_page("pages/signup.py")
+        st.markdown("</div>", unsafe_allow_html=True)
     
     with pricing_cols[1]:
-        st.markdown("### Basic")
-        st.markdown(f"**{format_price(SUBSCRIPTION_TIERS['basic']['price_monthly'])}**/month")
+        st.markdown(
+            """
+            <div style="padding: 1.5rem; border: 1px solid #3a7bd5; border-radius: 8px; box-shadow: 0 4px 12px rgba(58, 123, 213, 0.2); height: 100%;">
+                <h3>Basic</h3>
+                <div style="font-size: 1.8rem; margin: 1rem 0;">$9.99<span style="font-size: 1rem;">/month</span></div>
+                <ul style="list-style-type: none; padding-left: 0;">
+            """, 
+            unsafe_allow_html=True
+        )
         for feature in SUBSCRIPTION_TIERS['basic']['features']:
-            st.markdown(f"✓ {feature}")
+            st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
+        st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Choose Basic", key="pricing_basic", use_container_width=True):
             st.switch_page("pages/signup.py")
+        st.markdown("</div>", unsafe_allow_html=True)
     
     with pricing_cols[2]:
-        st.markdown("### Pro")
-        st.markdown(f"**{format_price(SUBSCRIPTION_TIERS['pro']['price_monthly'])}**/month")
+        st.markdown(
+            """
+            <div style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; height: 100%;">
+                <h3>Pro</h3>
+                <div style="font-size: 1.8rem; margin: 1rem 0;">$29.99<span style="font-size: 1rem;">/month</span></div>
+                <ul style="list-style-type: none; padding-left: 0;">
+            """, 
+            unsafe_allow_html=True
+        )
         for feature in SUBSCRIPTION_TIERS['pro']['features']:
-            st.markdown(f"✓ {feature}")
+            st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
+        st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Start 7-Day Trial", key="pricing_pro", use_container_width=True):
             st.switch_page("pages/signup.py")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")

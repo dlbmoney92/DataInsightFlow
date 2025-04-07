@@ -21,6 +21,7 @@ from utils.visualization import (
     create_missing_values_heatmap
 )
 from utils.ai_suggestions import suggest_visualizations
+from utils.auth_redirect import require_auth
 import base64
 
 st.set_page_config(
@@ -28,6 +29,15 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+
+# Check authentication first
+if not require_auth():
+    st.stop()  # Stop if not authenticated
+
+# Show user info if authenticated
+if "user" in st.session_state:
+    st.sidebar.success(f"Logged in as: {st.session_state.user.get('email', 'User')}")
+    st.sidebar.info(f"Subscription: {st.session_state.subscription_tier.capitalize()}")
 
 # Check if dataset exists in session state
 if 'dataset' not in st.session_state or st.session_state.dataset is None:

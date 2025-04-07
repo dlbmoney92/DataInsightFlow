@@ -2,12 +2,22 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from utils.file_processor import apply_column_types
+from utils.auth_redirect import require_auth
 
 st.set_page_config(
     page_title="Data Preview | Analytics Assist",
     page_icon="🔍",
     layout="wide"
 )
+
+# Check authentication first
+if not require_auth():
+    st.stop()  # Stop if not authenticated
+
+# Show user info if authenticated
+if "user" in st.session_state:
+    st.sidebar.success(f"Logged in as: {st.session_state.user.get('email', 'User')}")
+    st.sidebar.info(f"Subscription: {st.session_state.subscription_tier.capitalize()}")
 
 # Check if dataset exists in session state
 if 'dataset' not in st.session_state or st.session_state.dataset is None:

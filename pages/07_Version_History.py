@@ -5,12 +5,22 @@ from datetime import datetime
 import json
 from utils.database import get_versions, get_version, get_dataset, save_version, get_transformations
 from utils.export import generate_excel_download_link, generate_csv_download_link
+from utils.auth_redirect import require_auth
 
 st.set_page_config(
     page_title="Version History | Analytics Assist",
     page_icon="📚",
     layout="wide"
 )
+
+# Check authentication first
+if not require_auth():
+    st.stop()  # Stop if not authenticated
+
+# Show user info if authenticated
+if "user" in st.session_state:
+    st.sidebar.success(f"Logged in as: {st.session_state.user.get('email', 'User')}")
+    st.sidebar.info(f"Subscription: {st.session_state.subscription_tier.capitalize()}")
 
 # Header
 st.title("Version History")
