@@ -15,21 +15,21 @@ def check_access(feature_type, feature_name=None):
     
     if feature_type == "ai_features" and not tier_limits["ai_features_enabled"]:
         st.warning("AI-powered features are only available on paid plans. Please upgrade to access this feature.")
-        st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+        st.button("View Plans", key="view_plans_ai_features", on_click=lambda: st.switch_page("pages/subscription.py"))
         return False
         
     elif feature_type == "ai" and feature_name:
         # Check if the specific AI feature is available in the current tier
         if not tier_limits.get("ai_features_enabled", False):
             st.warning(f"AI features are only available on paid plans. Please upgrade to access this feature.")
-            st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+            st.button("View Plans", key="view_plans_specific_ai", on_click=lambda: st.switch_page("pages/subscription.py"))
             return False
         
         # Check for AI learning features
         if feature_name in ["learning_preferences", "learning_stats"]:
             if not tier_limits.get("ai_learning", False):
                 st.warning(f"AI learning features are available on Pro and Enterprise plans. Please upgrade to access this feature.")
-                st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+                st.button("View Plans", key="view_plans_ai_learning", on_click=lambda: st.switch_page("pages/subscription.py"))
                 return False
         
         return True
@@ -37,7 +37,7 @@ def check_access(feature_type, feature_name=None):
     elif feature_type == "export_format":
         if feature_name not in tier_limits["export_formats"]:
             st.warning(f"Export to {feature_name} is not available on your current plan. Please upgrade to access this feature.")
-            st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+            st.button("View Plans", key="view_plans_export_format", on_click=lambda: st.switch_page("pages/subscription.py"))
             return False
             
     elif feature_type == "dataset_count":
@@ -45,19 +45,19 @@ def check_access(feature_type, feature_name=None):
             current_count = get_dataset_count(st.session_state.user_id)
             if current_count >= tier_limits["max_datasets"] and tier_limits["max_datasets"] != float("inf"):
                 st.warning(f"You've reached the maximum number of datasets ({tier_limits['max_datasets']}) for your plan. Please upgrade to add more.")
-                st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+                st.button("View Plans", key="view_plans_dataset_limit", on_click=lambda: st.switch_page("pages/subscription.py"))
                 return False
         
     elif feature_type == "row_count":
         if feature_name and feature_name > tier_limits["max_rows_per_dataset"]:
             st.warning(f"Your plan allows a maximum of {tier_limits['max_rows_per_dataset']} rows per dataset. This dataset has {feature_name} rows. Please upgrade to process larger datasets.")
-            st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+            st.button("View Plans", key="view_plans_row_limit", on_click=lambda: st.switch_page("pages/subscription.py"))
             return False
     
     elif feature_type == "ai_learning":
         if not tier_limits.get("ai_learning", False):
             st.warning("AI learning features are available on Pro and Enterprise plans. Please upgrade to access this feature.")
-            st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+            st.button("View Plans", key="view_plans_ai_learning_feature", on_click=lambda: st.switch_page("pages/subscription.py"))
             return False
         
         # Check for advanced learning features
@@ -118,4 +118,4 @@ def check_and_handle_trial_expiration():
         
         # Show message
         st.warning("Your Pro trial has expired. You've been switched to the Free plan.")
-        st.button("Upgrade Now", on_click=lambda: st.switch_page("pages/subscription.py"))
+        st.button("Upgrade Now", key="trial_expired_upgrade", on_click=lambda: st.switch_page("pages/subscription.py"))
