@@ -487,16 +487,52 @@ else:
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.image("https://miro.medium.com/max/1400/1*S8Escq5DgEZC9Mdxm0inNw.webp", caption="Correlation Analysis")
-        st.markdown("**Discover relationships between variables**")
+        # Created box with color and visualization example
+        st.markdown(
+            """
+            <div style="background-color: #f0f7ff; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 10px;">
+                <div style="font-size: 40px; color: #3a7bd5; margin-bottom: 10px;">📊</div>
+                <div style="height: 100px; background-color: #e6eefa; border-radius: 5px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+                    <div style="width: 80%; height: 80px; background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%); border-radius: 5px;"></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        st.markdown("**Correlation Analysis**")
+        st.markdown("Discover relationships between variables")
     
     with col2:
-        st.image("https://miro.medium.com/max/1400/1*WWcU-RT5UgPvdTpZyB6iCQ.webp", caption="Sales Performance")
-        st.markdown("**Track sales trends and forecasts**")
+        # Created box with color and visualization example
+        st.markdown(
+            """
+            <div style="background-color: #f0fff7; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 10px;">
+                <div style="font-size: 40px; color: #3ab795; margin-bottom: 10px;">📈</div>
+                <div style="height: 100px; background-color: #e6faf2; border-radius: 5px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+                    <div style="width: 80%; height: 80px; background: linear-gradient(to right, #a1c4fd 0%, #c2e9fb 100%); border-radius: 5px;"></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        st.markdown("**Sales Performance**")
+        st.markdown("Track sales trends and forecasts")
     
     with col3:
-        st.image("https://miro.medium.com/max/1400/1*oO0KGH7sQGkGEH9lLNGlEg.webp", caption="Anomaly Detection")
-        st.markdown("**Automatically find outliers in your data**")
+        # Created box with color and visualization example
+        st.markdown(
+            """
+            <div style="background-color: #fff7f0; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 10px;">
+                <div style="font-size: 40px; color: #d57a3a; margin-bottom: 10px;">⚠️</div>
+                <div style="height: 100px; background-color: #faf0e6; border-radius: 5px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+                    <div style="width: 80%; height: 80px; background: linear-gradient(to right, #ffecd2 0%, #fcb69f 100%); border-radius: 5px;"></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        st.markdown("**Anomaly Detection**")
+        st.markdown("Automatically find outliers in your data")
     
     # Add the platform description
     st.markdown("### All Your Data Tools in One Platform")
