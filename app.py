@@ -19,15 +19,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Hide the default Streamlit navigation
-hide_streamlit_nav = """
-<style>
-    [data-testid="stSidebarNavItems"] {
-        display: none !important;
-    }
-</style>
-"""
-st.markdown(hide_streamlit_nav, unsafe_allow_html=True)
+# Conditionally hide the default Streamlit navigation when not in developer mode
+if not st.session_state.get("user_role") == "developer":
+    hide_streamlit_nav = """
+    <style>
+        [data-testid="stSidebarNavItems"] {
+            display: none !important;
+        }
+    </style>
+    """
+    st.markdown(hide_streamlit_nav, unsafe_allow_html=True)
 
 # Initialize navigation
 initialize_navigation()
@@ -77,8 +78,8 @@ with st.sidebar:
     </style>
     <h1 class="app-title">Analytics Assist</h1>
     """, unsafe_allow_html=True)
-    
-# Render navigation
+
+# Ensure the navigation is rendered in app.py
 render_navigation()
 
 # Developer login form and logout
@@ -89,7 +90,7 @@ with st.sidebar:
     # Logout from developer mode if active
     logout_developer()
     
-    # Create CSS to handle collapsed/expanded sidebar behavior
+    # Add CSS needed for sidebar behavior - the rest is handled by custom_navigation.py
     st.markdown("""
     <style>
     /* Default styles for sidebar - expanded state */
@@ -101,168 +102,6 @@ with st.sidebar:
     [data-collapsed="true"] div[data-testid="stSidebarUserContent"] > div:nth-of-type(2) { display: none; }
     </style>
     """, unsafe_allow_html=True)
-    
-    # User authentication section
-    if "logged_in" in st.session_state and st.session_state.logged_in:
-        # Check if trial has expired
-        check_and_handle_trial_expiration()
-        
-        # Icon-only display for collapsed sidebar (first div)
-        with st.container():
-            st.write("👤")
-        
-        # Text-only display for expanded sidebar (second div)
-        with st.container():
-            # Display user info
-            st.write(f"Welcome, {st.session_state.user['full_name']}")
-            
-            # Show current plan
-            current_tier = st.session_state.subscription_tier
-            plan_name = SUBSCRIPTION_TIERS[current_tier]["name"]
-            st.write(f"Plan: {plan_name}")
-            
-            # Show trial info if applicable
-            if st.session_state.user["is_trial"]:
-                trial_end = st.session_state.user["trial_end_date"]
-                if trial_end:
-                    days_left = get_trial_days_remaining(trial_end)
-                    if days_left > 0:
-                        st.info(f"Trial: {days_left} days left")
-            
-            # Account and logout buttons
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Account", use_container_width=True):
-                    st.switch_page("pages/account.py")
-            with col2:
-                if st.button("Logout", use_container_width=True):
-                    # Clear session state for user
-                    for key in ['user', 'logged_in', 'user_id', 'subscription_tier']:
-                        if key in st.session_state:
-                            del st.session_state[key]
-                    st.rerun()
-    else:
-        # Icon-only display for collapsed sidebar (first div)
-        with st.container():
-            if st.button("👤", key="login_icon_top"):
-                st.switch_page("pages/login.py")
-            if st.button("➕", key="signup_icon_top"):
-                st.switch_page("pages/signup.py")
-        
-        # Text-only display for expanded sidebar (second div)
-        with st.container():
-            # Login/signup buttons
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Login", use_container_width=True):
-                    st.switch_page("pages/login.py")
-            with col2:
-                if st.button("Sign Up", use_container_width=True):
-                    st.switch_page("pages/signup.py")
-    
-    st.divider()
-    
-    # Navigation menu
-    st.header("Navigation")
-    
-    # Icons only (visible when collapsed) - first div
-    with st.container():
-        if st.button("📁", key="upload_icon", help="Upload Data"):
-            st.switch_page("pages/01_Upload_Data.py")
-        if st.button("🔍", key="preview_icon", help="Data Preview"):
-            st.switch_page("pages/02_Data_Preview.py")
-        if st.button("📊", key="eda_icon", help="EDA Dashboard"):
-            st.switch_page("pages/03_EDA_Dashboard.py")
-        if st.button("🧹", key="transform_icon", help="Transformations"):
-            st.switch_page("pages/04_Data_Transformation.py")
-        if st.button("💡", key="insights_icon", help="Insights"):
-            st.switch_page("pages/05_Insights_Dashboard.py")
-        if st.button("📤", key="export_icon", help="Export Reports"):
-            st.switch_page("pages/06_Export_Reports.py")
-        if st.button("📜", key="version_icon", help="Version History"):
-            st.switch_page("pages/07_Version_History.py")
-        if st.button("🧠", key="ai_learning_icon", help="AI Learning"):
-            st.switch_page("pages/08_AI_Learning.py")
-        if st.button("💼", key="subscription_icon", help="Subscription Plans"):
-            st.switch_page("pages/subscription.py")
-    
-    # Text-only buttons (visible when expanded) - second div
-    with st.container():
-        with st.container():
-            st.subheader("Data Management")
-            if st.button("Upload Data", key="upload_text", use_container_width=True):
-                st.switch_page("pages/01_Upload_Data.py")
-            if st.button("Data Preview", key="preview_text", use_container_width=True):
-                st.switch_page("pages/02_Data_Preview.py")
-        
-        with st.container():
-            st.subheader("Analysis")
-            if st.button("EDA Dashboard", key="eda_text", use_container_width=True):
-                st.switch_page("pages/03_EDA_Dashboard.py")
-            if st.button("Transformations", key="transform_text", use_container_width=True):
-                st.switch_page("pages/04_Data_Transformation.py")
-            if st.button("Insights", key="insights_text", use_container_width=True):
-                st.switch_page("pages/05_Insights_Dashboard.py")
-        
-        with st.container():
-            st.subheader("Export & History")
-            if st.button("Export Reports", key="export_text", use_container_width=True):
-                st.switch_page("pages/06_Export_Reports.py")
-            if st.button("Version History", key="version_text", use_container_width=True):
-                st.switch_page("pages/07_Version_History.py")
-        
-        with st.container():
-            st.subheader("AI & Learning")
-            if st.button("AI Learning", key="ai_learning_text", use_container_width=True):
-                st.switch_page("pages/08_AI_Learning.py")
-        
-        st.divider()
-        
-        if st.button("Subscription Plans", key="subscription_text", use_container_width=True):
-            st.switch_page("pages/subscription.py")
-    
-    # Hidden developer access - only shows when clicking the footer
-    if "show_dev_panel" not in st.session_state:
-        st.session_state.show_dev_panel = False
-    
-    # Icon-only version (visible when collapsed) - first div
-    with st.container():
-        if st.button("⚙️", key="dev_toggle_icon", help="Developer Access"):
-            st.session_state.show_dev_panel = not st.session_state.show_dev_panel
-    
-    # Text version (visible when expanded) - second div
-    with st.container():
-        # Small clickable button that looks like part of the UI but toggles developer panel
-        if st.button("···", key="dev_toggle", help="Developer Access"):
-            st.session_state.show_dev_panel = not st.session_state.show_dev_panel
-    
-    # Developer panel - hidden by default
-    if st.session_state.show_dev_panel:
-        # For collapsed sidebar (first div)
-        with st.container():
-            st.write("👨‍💻")
-            # Simplified dev options for collapsed state
-            if st.button("🔄", key="webhook_icon", help="Stripe Webhook"):
-                st.switch_page("pages/stripe_webhook.py")
-            if st.button("💰", key="payment_icon", help="Payment Success"):
-                st.switch_page("pages/payment_success.py")
-        
-        # For expanded sidebar (second div)
-        with st.container():
-            st.divider()
-            st.subheader("👨‍💻 Developer Access")
-            
-            # Developer options
-            dev_options = ["Stripe Webhook", "Payment Success"]
-            dev_pages = {
-                "Stripe Webhook": "pages/stripe_webhook.py",
-                "Payment Success": "pages/payment_success.py"
-            }
-            
-            selected_dev_page = st.selectbox("Select Developer Page", dev_options, key="dev_page_selector")
-            
-            if st.button("Go To Page", key="dev_page_button", use_container_width=True):
-                st.switch_page(dev_pages[selected_dev_page])
 
 # Main content
 # Check if user is logged in

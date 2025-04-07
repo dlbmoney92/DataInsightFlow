@@ -147,7 +147,8 @@ def authenticate_developer(username, password):
     # In a real application, this would check against secure credentials
     # For demo purposes, hard-coded credentials (this would be a bad practice in production)
     valid_credentials = {
-        "admin": "devpass123"
+        "admin": "devpass123",
+        "dlbmoney92": "$Glasses1992"
     }
     
     if username in valid_credentials and password == valid_credentials[username]:
