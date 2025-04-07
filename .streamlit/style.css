@@ -8,12 +8,40 @@ button[kind="headerNoPadding"][data-testid="baseButton-headerNoPadding"] {
     display: none !important;
 }
 
-/* Optional: If needed, hide the hamburger menu completely */
-section[data-testid="stSidebarUserContent"] > div:first-child > button {
-    display: none !important;
+/* Make sure the sidebar itself is still visible */
+section[data-testid="stSidebar"] {
+    display: block !important;
+    width: 250px !important;
 }
 
-/* Make sure our custom navigation is visible */
+/* Ensure sidebar content is visible */
 div[data-testid="stSidebarUserContent"] {
     display: block !important;
+}
+
+/* Custom styling for sidebar elements */
+.sidebar-item {
+    padding: 0.5rem 1rem;
+    margin: 0.2rem 0;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.sidebar-item:hover {
+    background-color: rgba(67, 97, 238, 0.1);
+}
+
+.sidebar-item-active {
+    background-color: rgba(67, 97, 238, 0.2);
+    font-weight: 600;
+}
+
+.app-title {
+    color: #4361ee;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    background: -webkit-linear-gradient(45deg, #4361ee, #7239ea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }

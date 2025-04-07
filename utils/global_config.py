@@ -13,6 +13,7 @@ def apply_global_css():
             st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
     
     # Additional CSS for hiding default Streamlit navigation
+    # But keeping our custom navigation visible
     hide_default_nav = """
     <style>
     /* Hide the default Streamlit sidebar navigation menu */
@@ -25,12 +26,13 @@ def apply_global_css():
         display: none !important;
     }
     
-    /* Hide the hamburger menu completely */
-    section[data-testid="stSidebarUserContent"] > div:first-child > button {
-        display: none !important;
+    /* Make sure the sidebar itself is still visible */
+    section[data-testid="stSidebar"] {
+        display: block !important;
+        width: 250px !important;
     }
     
-    /* Make sure our custom navigation is visible */
+    /* Ensure sidebar content is visible */
     div[data-testid="stSidebarUserContent"] {
         display: block !important;
     }
