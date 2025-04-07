@@ -14,82 +14,163 @@ def render_navigation():
     # Create styled navigation CSS
     st.markdown("""
     <style>
+    /* Modern Navigation Styles */
     .sidebar-nav-container {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        padding: 10px 0;
+        gap: 10px;
+        padding: 12px 4px;
         margin-bottom: 20px;
     }
     
     .sidebar-nav-item {
         display: flex;
         align-items: center;
-        padding: 8px 12px;
-        border-radius: 8px;
+        padding: 12px 16px;
+        border-radius: 12px;
         text-decoration: none;
-        color: #495057;
-        transition: all 0.3s ease;
-        background-color: rgba(255, 255, 255, 0.7);
+        color: #444;
+        transition: all 0.2s ease;
+        background-color: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     
     .sidebar-nav-item:hover {
-        background-color: rgba(52, 152, 219, 0.1);
-        color: #3498db;
+        background-color: rgba(144, 175, 255, 0.15);
+        color: #4361ee;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
     }
     
     .sidebar-nav-item.active {
-        background-color: rgba(52, 152, 219, 0.2);
-        color: #2980b9;
-        font-weight: bold;
+        background: linear-gradient(135deg, rgba(67, 97, 238, 0.15) 0%, rgba(47, 73, 175, 0.2) 100%);
+        border-left: 3px solid #4361ee;
+        color: #4361ee;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
     }
     
     .sidebar-nav-icon {
-        font-size: 1.2rem;
-        margin-right: 10px;
-        width: 25px;
+        font-size: 1.25rem;
+        margin-right: 12px;
+        width: 28px;
         text-align: center;
+        opacity: 0.9;
     }
     
     .sidebar-nav-label {
-        font-size: 0.9rem;
+        font-size: 0.92rem;
+        letter-spacing: 0.2px;
     }
     
+    /* User Profile Section */
     .user-profile-container {
-        background-color: #f8f9fa;
-        border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 20px;
+        background: linear-gradient(145deg, #f8faff 0%, #f1f5fe 100%);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(230, 236, 250, 0.7);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .user-profile-container::before {
+        content: "";
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(67, 97, 238, 0.1) 0%, rgba(144, 175, 255, 0.05) 100%);
+        z-index: 0;
     }
     
     .user-name {
-        font-weight: bold;
-        margin-bottom: 5px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+        color: #2b3674;
+        position: relative;
     }
     
     .subscription-info {
         font-size: 0.9rem;
-        color: #666;
+        color: #697586;
+        margin-bottom: 5px;
+        position: relative;
     }
     
     .trial-info {
-        font-size: 0.8rem;
-        margin-top: 5px;
-        padding: 5px;
-        background-color: #e3f2fd;
-        border-radius: 5px;
-        color: #0d47a1;
+        font-size: 0.85rem;
+        margin-top: 12px;
+        padding: 8px 12px;
+        background: linear-gradient(135deg, #e0ecff 0%, #d1e3ff 100%);
+        border-radius: 8px;
+        color: #2d62ed;
+        font-weight: 500;
+        display: inline-block;
+        box-shadow: 0 2px 8px rgba(41, 94, 255, 0.1);
     }
     
     .dev-badge {
-        margin-top: 5px;
-        background-color: #e74c3c;
+        margin-top: 10px;
+        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
         color: white;
-        padding: 3px 8px;
-        border-radius: 10px;
-        font-size: 0.7rem;
-        font-weight: bold;
+        padding: 4px 10px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 600;
         display: inline-block;
+        box-shadow: 0 2px 8px rgba(255, 65, 108, 0.2);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+    
+    /* Improve default Streamlit sidebar styling */
+    section[data-testid="stSidebar"] {
+        background-color: #f8f9fa;
+        border-right: 1px solid #eaecef;
+    }
+    
+    /* Custom button styles for navigation */
+    div.stButton > button {
+        background-color: #f5f7ff;
+        border: 1px solid #e1e5f2;
+        border-radius: 8px;
+        color: #4361ee;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    div.stButton > button:hover {
+        background-color: #e1e7ff;
+        border-color: #c9d1ff;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(67, 97, 238, 0.1);
+    }
+    
+    /* Better separator */
+    hr {
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 0;
+        height: 1px;
+        background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
+    }
+    
+    /* Better heading */
+    .sidebar h2, .sidebar-heading {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2b3674;
+        margin-bottom: 15px;
+        margin-top: 5px;
+        padding-left: 5px;
+        border-left: 3px solid #4361ee;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -155,7 +236,7 @@ def render_navigation():
                     st.switch_page("pages/signup.py")
         
         st.markdown("---")
-        st.markdown("## Navigation")
+        st.markdown("<h2 class='sidebar-heading'>Navigation</h2>", unsafe_allow_html=True)
         
         # Create navigation HTML
         nav_html = '<div class="sidebar-nav-container">'

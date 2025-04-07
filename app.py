@@ -53,7 +53,20 @@ if 'user_role' not in st.session_state:
 
 # Sidebar title and navigation
 with st.sidebar:
-    st.title("Analytics Assist")
+    st.markdown("""
+    <style>
+    .app-title {
+        color: #4361ee;
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        background: -webkit-linear-gradient(45deg, #4361ee, #7239ea);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    </style>
+    <h1 class="app-title">Analytics Assist</h1>
+    """, unsafe_allow_html=True)
     
 # Render navigation
 render_navigation()
