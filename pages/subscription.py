@@ -135,8 +135,13 @@ def display_plan(tier, current_tier):
     # Display price
     if isinstance(plan["price_monthly"], (int, float)):
         st.write(f"Monthly: {format_price(plan['price_monthly'])}")
-        yearly_savings = int((1 - plan['price_yearly']/(plan['price_monthly']*12))*100)
-        st.write(f"Yearly: {format_price(plan['price_yearly'])} (Save {yearly_savings}%)")
+        
+        # Calculate yearly savings only if monthly price is not zero
+        if plan['price_monthly'] > 0:
+            yearly_savings = int((1 - plan['price_yearly']/(plan['price_monthly']*12))*100)
+            st.write(f"Yearly: {format_price(plan['price_yearly'])} (Save {yearly_savings}%)")
+        else:
+            st.write(f"Yearly: {format_price(plan['price_yearly'])}")
     else:
         st.write(plan["price_monthly"])
     
