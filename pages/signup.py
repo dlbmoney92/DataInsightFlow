@@ -27,7 +27,15 @@ def app():
     # If already logged in, redirect to home
     if "logged_in" in st.session_state and st.session_state.logged_in:
         st.info("You are already logged in.")
-        st.button("Go to Home", on_click=lambda: st.switch_page("app.py"))
+        if st.button("Go to Home"):
+            st.session_state.go_to_home = True
+            st.rerun()
+        
+        # Handle navigation to home
+        if "go_to_home" in st.session_state and st.session_state.go_to_home:
+            st.session_state.go_to_home = False
+            st.switch_page("app.py")
+            
         return
     
     with st.form("signup_form"):
@@ -93,7 +101,16 @@ def app():
         
     st.markdown("---")
     st.markdown("Already have an account? [Log in here](/login)")
-    st.button("Log In", on_click=lambda: st.switch_page("pages/login.py"))
+    
+    # Use a session state approach instead of a callback for redirection
+    if st.button("Log In"):
+        st.session_state.go_to_login = True
+        st.rerun()
+        
+    # Check if we need to navigate to login page
+    if "go_to_login" in st.session_state and st.session_state.go_to_login:
+        st.session_state.go_to_login = False
+        st.switch_page("pages/login.py")
 
 if __name__ == "__main__":
     app()
