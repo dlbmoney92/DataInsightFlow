@@ -327,10 +327,10 @@ else:
     with col1:
         st.markdown(
             """
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
+            <div style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">📤</div>
-                <div style="font-weight: bold; margin-bottom: 0.5rem;">Upload</div>
-                <p>Upload any data source with our smart importer</p>
+                <div style="font-weight: bold; margin-bottom: 0.5rem; color: inherit;">Upload</div>
+                <p style="color: inherit;">Upload any data source with our smart importer</p>
             </div>
             """, 
             unsafe_allow_html=True
@@ -339,10 +339,10 @@ else:
     with col2:
         st.markdown(
             """
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
+            <div style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">🧹</div>
-                <div style="font-weight: bold; margin-bottom: 0.5rem;">Transform</div>
-                <p>Clean and prepare your data with AI assistance</p>
+                <div style="font-weight: bold; margin-bottom: 0.5rem; color: inherit;">Transform</div>
+                <p style="color: inherit;">Clean and prepare your data with AI assistance</p>
             </div>
             """, 
             unsafe_allow_html=True
@@ -351,10 +351,10 @@ else:
     with col3:
         st.markdown(
             """
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
+            <div style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
-                <div style="font-weight: bold; margin-bottom: 0.5rem;">Visualize</div>
-                <p>Create beautiful, insightful visualizations</p>
+                <div style="font-weight: bold; margin-bottom: 0.5rem; color: inherit;">Visualize</div>
+                <p style="color: inherit;">Create beautiful, insightful visualizations</p>
             </div>
             """, 
             unsafe_allow_html=True
@@ -363,10 +363,10 @@ else:
     with col4:
         st.markdown(
             """
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
+            <div style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">💡</div>
-                <div style="font-weight: bold; margin-bottom: 0.5rem;">Discover</div>
-                <p>Gain valuable insights from your data</p>
+                <div style="font-weight: bold; margin-bottom: 0.5rem; color: inherit;">Discover</div>
+                <p style="color: inherit;">Gain valuable insights from your data</p>
             </div>
             """, 
             unsafe_allow_html=True
@@ -436,7 +436,7 @@ else:
         """
         <style>
         .signup-container {
-            background: white;
+            background: rgba(255, 255, 255, 0.1);
             padding: 2rem;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -445,8 +445,8 @@ else:
         }
         </style>
         <div class="signup-container">
-            <h2>Start Your Analytics Journey Today</h2>
-            <p>Create an account to access all features and begin analyzing your data</p>
+            <h2 style="color: inherit;">Start Your Analytics Journey Today</h2>
+            <p style="color: inherit;">Create an account to access all features and begin analyzing your data</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -510,15 +510,15 @@ else:
     with pricing_cols[0]:
         st.markdown(
             """
-            <div style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; height: 100%;">
-                <h3>Free</h3>
-                <div style="font-size: 1.8rem; margin: 1rem 0;">$0<span style="font-size: 1rem;">/month</span></div>
-                <ul style="list-style-type: none; padding-left: 0;">
+            <div style="padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; height: 100%;">
+                <h3 style="color: inherit;">Free</h3>
+                <div style="font-size: 1.8rem; margin: 1rem 0; color: inherit;">$0<span style="font-size: 1rem;">/month</span></div>
+                <ul style="list-style-type: none; padding-left: 0; color: inherit;">
             """, 
             unsafe_allow_html=True
         )
         for feature in SUBSCRIPTION_PLANS['free']['features']:
-            st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
+            st.markdown(f"<li style='color: inherit;'>✓ {feature}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Get Started Free", key="pricing_free", use_container_width=True):
             st.switch_page("pages/signup.py")
@@ -528,14 +528,14 @@ else:
         st.markdown(
             """
             <div style="padding: 1.5rem; border: 1px solid #3a7bd5; border-radius: 8px; box-shadow: 0 4px 12px rgba(58, 123, 213, 0.2); height: 100%;">
-                <h3>Basic</h3>
-                <div style="font-size: 1.8rem; margin: 1rem 0;">$9.99<span style="font-size: 1rem;">/month</span></div>
-                <ul style="list-style-type: none; padding-left: 0;">
+                <h3 style="color: inherit;">Basic</h3>
+                <div style="font-size: 1.8rem; margin: 1rem 0; color: inherit;">$9.99<span style="font-size: 1rem;">/month</span></div>
+                <ul style="list-style-type: none; padding-left: 0; color: inherit;">
             """, 
             unsafe_allow_html=True
         )
         for feature in SUBSCRIPTION_PLANS['basic']['features']:
-            st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
+            st.markdown(f"<li style='color: inherit;'>✓ {feature}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Choose Basic", key="pricing_basic", use_container_width=True):
             st.switch_page("pages/signup.py")
@@ -544,15 +544,15 @@ else:
     with pricing_cols[2]:
         st.markdown(
             """
-            <div style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; height: 100%;">
-                <h3>Pro</h3>
-                <div style="font-size: 1.8rem; margin: 1rem 0;">$29.99<span style="font-size: 1rem;">/month</span></div>
-                <ul style="list-style-type: none; padding-left: 0;">
+            <div style="padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; height: 100%;">
+                <h3 style="color: inherit;">Pro</h3>
+                <div style="font-size: 1.8rem; margin: 1rem 0; color: inherit;">$29.99<span style="font-size: 1rem;">/month</span></div>
+                <ul style="list-style-type: none; padding-left: 0; color: inherit;">
             """, 
             unsafe_allow_html=True
         )
         for feature in SUBSCRIPTION_PLANS['pro']['features']:
-            st.markdown(f"<li>✓ {feature}</li>", unsafe_allow_html=True)
+            st.markdown(f"<li style='color: inherit;'>✓ {feature}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
         if st.button("Start 7-Day Trial", key="pricing_pro", use_container_width=True):
             st.switch_page("pages/signup.py")
@@ -563,12 +563,12 @@ st.markdown("---")
 st.markdown(
     """
     <div style="text-align:center">
-        <p>
+        <p style="color: inherit;">
             Analytics Assist v1.0.0 | Made with ❤️ for data enthusiasts<br/>
             <a href="pages/terms_of_service.py" target="_self" style="color: #4361ee; text-decoration: none; margin: 0 10px;">Terms of Service</a> | 
             <a href="pages/privacy_policy.py" target="_self" style="color: #4361ee; text-decoration: none; margin: 0 10px;">Privacy Policy</a>
         </p>
-        <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">© 2025 Analytics Assist. All rights reserved.</p>
+        <p style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.6); margin-top: 5px;">© 2025 Analytics Assist. All rights reserved.</p>
     </div>
     """, 
     unsafe_allow_html=True
