@@ -1,8 +1,9 @@
 import streamlit as st
 import hashlib
 import json
+import os
 from utils.database import check_valid_credentials, update_last_login, get_user_by_email, create_user
-from utils.oauth import initialize_google_oauth
+from utils.oauth import initialize_google_oauth, get_google_auth_url
 
 def app():
     st.title("Login to Analytics Assist")
@@ -98,52 +99,69 @@ def app():
         
         if google_clicked:
             try:
-                # Here we'd normally implement the OAuth flow
-                # For now, we'll simulate success with a message
-                st.info("Google OAuth will be implemented with your credentials")
-                st.warning("""
-                To implement Google Sign-In, you'll need to:
-                1. Create a project in Google Cloud Console
-                2. Configure OAuth consent screen
-                3. Create OAuth credentials (Client ID and Secret)
-                4. Add authorized redirect URIs for your app
-                """)
-                
-                # For demonstration purposes - simulating a successful OAuth login
-                if st.button("Simulate Successful Google Login (Demo)", key="simulate_google"):
-                    # Create a mock Google user profile
-                    google_user = {
-                        "email": "demo_google_user@example.com",
-                        "name": "Google Demo User",
-                        "oauth_provider": "google"
-                    }
-                    
-                    # Check if user exists in database or create a new one
-                    existing_user = get_user_by_email(google_user["email"])
-                    if not existing_user:
-                        # Generate a random secure password for OAuth users
-                        import secrets
-                        random_password = secrets.token_hex(16)
-                        password_hash = hashlib.sha256(random_password.encode()).hexdigest()
+                # Check if Google OAuth is configured
+                if initialize_google_oauth():
+                    # Get the Google authorization URL
+                    auth_url = get_google_auth_url()
+                    if auth_url:
+                        # Store the current URL in session state for redirect URI calculation
+                        st.query_params["request_uri"] = st.experimental_get_query_params().get("request_uri", [""])[0]
                         
-                        # Create new user
-                        create_user(google_user["email"], password_hash, google_user["name"])
+                        # Redirect to Google's authorization page
+                        st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
+                        st.info("Redirecting to Google for authentication...")
+                        st.stop()
+                    else:
+                        st.error("Failed to generate Google authentication URL")
+                else:
+                    # Show configuration message if Google OAuth is not set up
+                    st.warning("""
+                    Google Sign-In is not configured. To implement Google Sign-In, you'll need to:
+                    1. Create a project in Google Cloud Console
+                    2. Configure OAuth consent screen
+                    3. Create OAuth credentials (Client ID and Secret)
+                    4. Add these authorized redirect URIs for your app:
+                       - http://localhost:5000/oauth_callback
+                       - http://localhost:5000/pages/oauth_callback
+                       - https://analytics-assist.replit.app/oauth_callback
+                       - https://analytics-assist.replit.app/pages/oauth_callback
+                    """)
+                    
+                    # For demonstration purposes - simulating a successful OAuth login
+                    if st.button("Simulate Successful Google Login (Demo)", key="simulate_google"):
+                        # Create a mock Google user profile
+                        google_user = {
+                            "email": "demo_google_user@example.com",
+                            "name": "Google Demo User",
+                            "oauth_provider": "google"
+                        }
+                        
+                        # Check if user exists in database or create a new one
                         existing_user = get_user_by_email(google_user["email"])
-                    
-                    # Log the user in
-                    if existing_user:
-                        st.session_state.user = existing_user
-                        st.session_state.logged_in = True
-                        st.session_state.user_id = existing_user["id"]
-                        st.session_state.subscription_tier = existing_user["subscription_tier"]
+                        if not existing_user:
+                            # Generate a random secure password for OAuth users
+                            import secrets
+                            random_password = secrets.token_hex(16)
+                            password_hash = hashlib.sha256(random_password.encode()).hexdigest()
+                            
+                            # Create new user
+                            create_user(google_user["email"], password_hash, google_user["name"])
+                            existing_user = get_user_by_email(google_user["email"])
                         
-                        # Update last login
-                        update_last_login(existing_user["id"])
-                        
-                        # Set a flag to redirect after successful login
-                        st.session_state.login_success = True
-                        st.success("Google login successful!")
-                        st.rerun()
+                        # Log the user in
+                        if existing_user:
+                            st.session_state.user = existing_user
+                            st.session_state.logged_in = True
+                            st.session_state.user_id = existing_user["id"]
+                            st.session_state.subscription_tier = existing_user["subscription_tier"]
+                            
+                            # Update last login
+                            update_last_login(existing_user["id"])
+                            
+                            # Set a flag to redirect after successful login
+                            st.session_state.login_success = True
+                            st.success("Google login successful!")
+                            st.rerun()
                 
             except Exception as e:
                 st.error(f"Error with Google login: {str(e)}")

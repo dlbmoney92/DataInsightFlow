@@ -9,7 +9,34 @@ from utils.database import get_user_by_email, create_user, update_last_login
 # OAuth configuration
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
-REDIRECT_URI = os.getenv('REDIRECT_URI', 'http://localhost:5000/oauth_callback')
+
+# List of authorized redirect URIs
+AUTHORIZED_REDIRECT_URIS = [
+    'http://localhost:5000/oauth_callback',
+    'http://localhost:5000/pages/oauth_callback',
+    'https://analytics-assist.replit.app/oauth_callback',
+    'https://analytics-assist.replit.app/pages/oauth_callback'
+]
+
+# Determine the appropriate redirect URI based on the request origin
+def get_redirect_uri():
+    """Get the appropriate redirect URI based on the request environment."""
+    # If a specific REDIRECT_URI is set in the environment, use that
+    if redirect_uri := os.getenv('REDIRECT_URI'):
+        return redirect_uri
+        
+    # Otherwise, try to determine the appropriate URI based on the request
+    request_uri = st.query_params.get("request_uri", "")
+    
+    # Check if we're running on Replit
+    if "replit.app" in request_uri or "repl.co" in request_uri:
+        return 'https://analytics-assist.replit.app/pages/oauth_callback'
+    
+    # Default to localhost
+    return 'http://localhost:5000/pages/oauth_callback'
+
+# Get the current redirect URI
+REDIRECT_URI = get_redirect_uri()
 
 def initialize_google_oauth():
     """Initialize Google OAuth configuration.
