@@ -157,10 +157,17 @@ def get_dataset_count(user_id):
         # Build query
         query = text("SELECT COUNT(*) FROM datasets WHERE user_id = :user_id")
         
-        # Execute query
-        with sa.create_engine(st.secrets["postgresql"]).connect() as conn:
-            result = conn.execute(query, {"user_id": user_id}).fetchone()
-            return result[0] if result else 0
+        # Execute query using the DATABASE_URL environment variable
+        import os
+        database_url = os.environ.get("DATABASE_URL")
+        
+        if database_url:
+            with sa.create_engine(database_url).connect() as conn:
+                result = conn.execute(query, {"user_id": user_id}).fetchone()
+                return result[0] if result else 0
+        else:
+            st.error("Database connection information not found")
+            return 0
     
     # Execute with retry
     return execute_with_retry(_count_datasets_operation)
