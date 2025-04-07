@@ -158,7 +158,12 @@ def render_navigation():
             type="primary" if is_active else "secondary"
         ):
             # When clicked, navigate to the page
-            st.switch_page(item.get('url', '#').lstrip('/'))
+            url = item.get('url', '#')
+            # Handle the home page specially
+            if url == '/':
+                st.switch_page("app.py")
+            elif url != '#':
+                st.switch_page(url.lstrip('/'))
     
     # Logout button at bottom if logged in
     if st.session_state.get("logged_in", False):

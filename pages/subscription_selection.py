@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from utils.subscription import SUBSCRIPTION_PLANS, format_price
 from utils.database import update_user_subscription, start_user_trial, get_user_by_id
@@ -180,9 +181,15 @@ def app():
 
 def redirect_to_payment(tier, billing_cycle):
     """Redirect to Stripe payment for the selected plan."""
-    # Set success and cancel URLs - using hardcoded URLs instead of st.get_url()
-    success_url = f"/pages/payment_success.py?success=true&tier={tier}"
-    cancel_url = f"/pages/subscription_selection.py?cancelled=true"
+    # Use absolute URLs for Stripe (relative URLs don't work with Stripe)
+    # Get the base URL from environment or use a default for development
+    base_url = os.environ.get("REPL_SLUG", "localhost:5000")
+    protocol = "https" if "replit" in base_url else "http"
+    success_url = f"{protocol}://{base_url}/pages/payment_success.py?success=true&tier={tier}"
+    cancel_url = f"{protocol}://{base_url}/pages/subscription_selection.py?cancelled=true"
+    
+    print(f"Success URL: {success_url}")
+    print(f"Cancel URL: {cancel_url}")
     
     # Create checkout session
     checkout_result = get_stripe_checkout_session(

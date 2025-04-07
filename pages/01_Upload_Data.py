@@ -93,15 +93,33 @@ with col1:
 
 # File uploader
 with col2:
-    # Check if user can upload based on their subscription tier
-    can_upload = check_access("upload", "new_dataset")
+    # Check if user can upload based on their dataset count and subscription tier
+    from utils.access_control import get_dataset_count
+    
+    # Get user's current dataset count and limit
+    current_count = get_dataset_count(st.session_state.user_id)
+    dataset_limit = check_access("dataset_count")
+    
+    # Show dataset usage information
+    if dataset_limit > 0:  # Only show if there's a limit
+        st.info(f"You are currently using {current_count} datasets out of your {dataset_limit} dataset limit.")
+        progress_percentage = min(1.0, current_count / dataset_limit)
+        st.progress(progress_percentage, f"Dataset Usage: {int(progress_percentage * 100)}%")
+    
+    # Check if user can upload more datasets
+    can_upload = dataset_limit <= 0 or current_count < dataset_limit
     
     if can_upload:
         uploaded_file = st.file_uploader("", type=[ext[1:] for ext in supported_file_types])
     else:
-        st.warning("Your current subscription plan doesn't allow uploading more datasets. Please upgrade your plan.")
-        if st.button("Upgrade Subscription"):
-            st.switch_page("pages/subscription.py")
+        st.warning("Your current subscription plan doesn't allow uploading more datasets. Please upgrade your plan or delete some existing datasets.")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Manage Datasets", key="manage_datasets_btn"):
+                st.switch_page("pages/09_Dataset_Management.py")
+        with col2:
+            if st.button("Upgrade Subscription", key="upgrade_sub_btn"):
+                st.switch_page("pages/subscription.py")
         uploaded_file = None
 
 # Name the project
