@@ -118,6 +118,9 @@ with st.sidebar:
     
     if st.button("📜 Version History", use_container_width=True):
         st.switch_page("pages/07_Version_History.py")
+        
+    if st.button("🧠 AI Learning", use_container_width=True):
+        st.switch_page("pages/08_AI_Learning.py")
     
     st.divider()
     
@@ -250,6 +253,7 @@ else:
     - **Clean** and transform your datasets with ease
     - **Discover** valuable insights automatically
     - **Visualize** your findings with beautiful charts
+    - **Learn** and improve with AI that adapts to your feedback
     - **Share** your results with customizable reports
     """)
     
@@ -275,6 +279,7 @@ else:
         - Get intelligent data cleaning suggestions
         - Automatically detect patterns and anomalies
         - Generate natural language insights
+        - Learn from your feedback and interactions
         - Receive personalized recommendations
         """)
     

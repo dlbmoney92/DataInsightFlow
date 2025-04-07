@@ -18,6 +18,22 @@ def check_access(feature_type, feature_name=None):
         st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
         return False
         
+    elif feature_type == "ai" and feature_name:
+        # Check if the specific AI feature is available in the current tier
+        if not tier_limits.get("ai_features_enabled", False):
+            st.warning(f"AI features are only available on paid plans. Please upgrade to access this feature.")
+            st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+            return False
+        
+        # Check for AI learning features
+        if feature_name in ["learning_preferences", "learning_stats"]:
+            if not tier_limits.get("ai_learning", False):
+                st.warning(f"AI learning features are available on Pro and Enterprise plans. Please upgrade to access this feature.")
+                st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+                return False
+        
+        return True
+        
     elif feature_type == "export_format":
         if feature_name not in tier_limits["export_formats"]:
             st.warning(f"Export to {feature_name} is not available on your current plan. Please upgrade to access this feature.")
@@ -36,6 +52,17 @@ def check_access(feature_type, feature_name=None):
         if feature_name and feature_name > tier_limits["max_rows_per_dataset"]:
             st.warning(f"Your plan allows a maximum of {tier_limits['max_rows_per_dataset']} rows per dataset. This dataset has {feature_name} rows. Please upgrade to process larger datasets.")
             st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+            return False
+    
+    elif feature_type == "ai_learning":
+        if not tier_limits.get("ai_learning", False):
+            st.warning("AI learning features are available on Pro and Enterprise plans. Please upgrade to access this feature.")
+            st.button("View Plans", on_click=lambda: st.switch_page("pages/subscription.py"))
+            return False
+        
+        # Check for advanced learning features
+        if feature_name == "advanced" and not tier_limits.get("advanced_learning", False):
+            st.warning("Advanced AI learning features are available on Enterprise plans. Please contact sales to upgrade.")
             return False
             
     return True

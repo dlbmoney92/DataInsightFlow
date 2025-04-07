@@ -52,6 +52,7 @@ SUBSCRIPTION_TIERS = {
             "Unlimited datasets",
             "Advanced AI-powered insights",
             "Custom visualization options",
+            "AI learning system",
             "Priority support"
         ],
         "limits": {
@@ -60,6 +61,7 @@ SUBSCRIPTION_TIERS = {
             "max_transformations_per_dataset": float("inf"),
             "ai_features_enabled": True,
             "export_formats": ["CSV", "Excel", "JSON", "PDF", "HTML"],
+            "ai_learning": True,
             "support_level": "Priority"
         }
     },
@@ -69,6 +71,7 @@ SUBSCRIPTION_TIERS = {
         "price_yearly": "Contact us",
         "features": [
             "Everything in Professional",
+            "Advanced AI learning system",
             "On-premises deployment option",
             "Custom integrations",
             "Advanced security features",
@@ -80,6 +83,8 @@ SUBSCRIPTION_TIERS = {
             "max_transformations_per_dataset": float("inf"),
             "ai_features_enabled": True,
             "export_formats": ["CSV", "Excel", "JSON", "PDF", "HTML", "Custom"],
+            "ai_learning": True,
+            "advanced_learning": True,
             "support_level": "Dedicated"
         }
     }
