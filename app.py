@@ -8,12 +8,10 @@ from utils.file_processor import supported_file_types
 from utils.database import initialize_database
 from utils.access_control import check_and_handle_trial_expiration
 from utils.subscription import SUBSCRIPTION_PLANS, format_price, get_trial_days_remaining
-from utils.custom_navigation import render_navigation, initialize_navigation, render_developer_login, logout_developer
 from utils.global_config import apply_global_css, render_footer
-from utils.auth_redirect import require_auth
 import uuid
 
-# Set page configuration
+# Set page configuration - must be the first Streamlit command
 st.set_page_config(
     page_title="Analytics Assist",
     page_icon="📊",
@@ -21,15 +19,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Apply global CSS including hiding default Streamlit navigation
+# Apply global CSS to add styling to Streamlit's native navigation
 apply_global_css()
-
-# Remove the hiding of navigation items to make them visible for all users
-# We'll still apply custom styling to them with our custom navigation
-
-# Initialize navigation with extra debugging
-initialize_navigation()
-print(f"Current page in session state after initialization: {st.session_state.get('current_page', 'Not set')}")
 
 # Initialize database
 initialize_database()
@@ -60,7 +51,8 @@ if 'dataset_id' not in st.session_state:
 if 'user_role' not in st.session_state:
     st.session_state.user_role = "user"
 
-# Sidebar title and navigation
+# Using Streamlit's native navigation instead of custom navigation
+# We'll just add the app title to the sidebar
 with st.sidebar:
     st.markdown("""
     <style>
@@ -77,19 +69,19 @@ with st.sidebar:
     <h1 class="app-title">Analytics Assist</h1>
     """, unsafe_allow_html=True)
 
-# Ensure the navigation is rendered in app.py
-render_navigation()
+# Logout button for logged in users
+if st.session_state.get("logged_in", False):
+    with st.sidebar:
+        if st.button("Logout", key="sidebar_logout"):
+            # Clear session state
+            for key in list(st.session_state.keys()):
+                if key != "current_page":  # Keep current page for redirect
+                    del st.session_state[key]
+            
+            st.sidebar.success("Logged out successfully")
+            st.rerun()
 
-# Developer login form and logout
-# Commenting out developer login functionality for now
-# with st.sidebar:
-#     # Developer login form 
-#     render_developer_login(form_id="app")
-#     
-#     # Logout from developer mode if active
-#     logout_developer()
-
-# Add CSS needed for sidebar behavior - the rest is handled by custom_navigation.py
+# Add CSS for sidebar behavior
 with st.sidebar:
     st.markdown("""
     <style>
