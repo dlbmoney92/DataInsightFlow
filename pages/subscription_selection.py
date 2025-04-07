@@ -1,6 +1,6 @@
 import streamlit as st
 from utils.subscription import SUBSCRIPTION_PLANS, format_price
-from utils.database import update_user_subscription, start_user_trial
+from utils.database import update_user_subscription, start_user_trial, get_user_by_id
 from utils.payment import get_stripe_checkout_session
 from utils.auth_redirect import require_auth
 from utils.global_config import apply_global_css
@@ -12,6 +12,17 @@ def app():
     # Check if user is logged in
     if not require_auth():
         return
+        
+    # Check if trial was activated
+    if "trial_activated" in st.session_state:
+        st.success("Your 7-day Pro trial has been activated!")
+        del st.session_state.trial_activated
+        # Update user information
+        user = get_user_by_id(st.session_state.user_id)
+        st.session_state.user = user
+        st.session_state.subscription_tier = user["subscription_tier"] 
+        # Redirect to home page
+        st.rerun()
     
     # Create a modal-like container
     with st.container():
@@ -114,8 +125,9 @@ def app():
                 if st.button("Start 7-Day Free Trial", key="pro_trial", use_container_width=True):
                     # Start user trial
                     start_user_trial(st.session_state.user_id)
+                    st.session_state.trial_activated = True
                     st.success("Your 7-day Pro trial has been activated!")
-                    st.rerun()
+                    # Don't call st.rerun() directly in a callback
             
             # Payment buttons
             col1, col2 = st.columns(2)

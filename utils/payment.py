@@ -7,6 +7,29 @@ from utils.database import update_user_subscription
 # Set up Stripe API key
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
+# Check for API key on module load
+if not stripe.api_key:
+    print("WARNING: STRIPE_SECRET_KEY environment variable is not set")
+    print("Payment functionality will not work correctly")
+
+# Pre-defined product and price IDs for each tier and billing cycle
+# In a production environment, these would be created in the Stripe dashboard
+# and stored in environment variables or a database
+STRIPE_PRODUCTS = {
+    "basic": {
+        "monthly": {"product_id": "prod_basic_monthly", "price_id": "price_basic_monthly"},
+        "yearly": {"product_id": "prod_basic_yearly", "price_id": "price_basic_yearly"}
+    },
+    "pro": {
+        "monthly": {"product_id": "prod_pro_monthly", "price_id": "price_pro_monthly"},
+        "yearly": {"product_id": "prod_pro_yearly", "price_id": "price_pro_yearly"}
+    },
+    "enterprise": {
+        "monthly": {"product_id": "prod_enterprise_monthly", "price_id": "price_enterprise_monthly"},
+        "yearly": {"product_id": "prod_enterprise_yearly", "price_id": "price_enterprise_yearly"}
+    }
+}
+
 def get_stripe_checkout_session(user_id, tier, billing_cycle, success_url, cancel_url):
     """
     Create a Stripe checkout session for a subscription.
@@ -35,45 +58,83 @@ def get_stripe_checkout_session(user_id, tier, billing_cycle, success_url, cance
         }
     
     try:
-        # Get the price based on the tier and billing cycle
-        if billing_cycle == "monthly":
-            price = SUBSCRIPTION_PLANS[tier]["monthly_price"]
-        else:
-            price = SUBSCRIPTION_PLANS[tier]["annual_price"]
+        price_id = None
         
-        # Convert price to cents (Stripe uses the smallest currency unit)
-        price_in_cents = int(price * 100)
+        # First try to use a predefined price ID
+        if tier in STRIPE_PRODUCTS and billing_cycle in STRIPE_PRODUCTS[tier]:
+            # Use predefined price ID if available
+            try:
+                # Try to get price from Stripe to verify it exists
+                price_id = STRIPE_PRODUCTS[tier][billing_cycle]["price_id"]
+                stripe.Price.retrieve(price_id)
+                print(f"Using existing price ID: {price_id}")
+            except Exception as e:
+                # Could be stripe.error.InvalidRequestError but handling all exceptions
+                # Price doesn't exist yet, will create it
+                price_id = None
+                print(f"Price ID {price_id} not found, will create a new one")
         
-        # Create a product if it doesn't exist (in a real implementation, you'd create products in the Stripe dashboard)
-        product = stripe.Product.create(
-            name=f"Analytics Assist {SUBSCRIPTION_PLANS[tier]['name']} ({billing_cycle})",
-            description=f"{SUBSCRIPTION_PLANS[tier]['name']} tier subscription for Analytics Assist - {billing_cycle} billing"
-        )
+        # If no predefined price or it doesn't exist, create a new one
+        if not price_id:
+            # Get the price based on the tier and billing cycle
+            if billing_cycle == "monthly":
+                price = SUBSCRIPTION_PLANS[tier]["monthly_price"]
+            else:
+                price = SUBSCRIPTION_PLANS[tier]["annual_price"]
+            
+            # Convert price to cents (Stripe uses the smallest currency unit)
+            price_in_cents = int(price * 100)
+            
+            # Get or create product
+            product_id = None
+            if tier in STRIPE_PRODUCTS and billing_cycle in STRIPE_PRODUCTS[tier]:
+                product_id = STRIPE_PRODUCTS[tier][billing_cycle]["product_id"]
+            
+            try:
+                if product_id:
+                    # Try to get existing product
+                    product = stripe.Product.retrieve(product_id)
+                    print(f"Using existing product: {product_id}")
+                else:
+                    raise Exception("Product not found")
+            except Exception as e:
+                # Create a new product
+                product = stripe.Product.create(
+                    id=product_id if product_id else None,
+                    name=f"Analytics Assist {SUBSCRIPTION_PLANS[tier]['name']} ({billing_cycle})",
+                    description=f"{SUBSCRIPTION_PLANS[tier]['name']} tier subscription for Analytics Assist - {billing_cycle} billing"
+                )
+                print(f"Created new product: {product.id}")
+            
+            # Create a price object
+            if billing_cycle == "monthly":
+                price_obj = stripe.Price.create(
+                    id=price_id if price_id else None,
+                    product=product.id,
+                    unit_amount=price_in_cents,
+                    currency="usd",
+                    recurring={"interval": "month"}
+                )
+            else:
+                price_obj = stripe.Price.create(
+                    id=price_id if price_id else None,
+                    product=product.id,
+                    unit_amount=price_in_cents,
+                    currency="usd",
+                    recurring={"interval": "year"}
+                )
+            
+            price_id = price_obj.id
+            print(f"Created new price: {price_id}")
         
-        # Create a price object
-        if billing_cycle == "monthly":
-            price_obj = stripe.Price.create(
-                product=product.id,
-                unit_amount=price_in_cents,
-                currency="usd",
-                recurring={"interval": "month"}
-            )
-        else:
-            price_obj = stripe.Price.create(
-                product=product.id,
-                unit_amount=price_in_cents,
-                currency="usd",
-                recurring={"interval": "year"}
-            )
-        
-        # Create checkout session
+        # Create checkout session with the price
         checkout_session = stripe.checkout.Session.create(
             success_url=success_url,
             cancel_url=cancel_url,
             mode="subscription",
             payment_method_types=["card"],
             line_items=[{
-                "price": price_obj.id,
+                "price": price_id,
                 "quantity": 1
             }],
             client_reference_id=str(user_id),

@@ -148,26 +148,17 @@ def render_navigation():
         </style>
     """, unsafe_allow_html=True)
     
-    nav_html = '<ul data-testid="stSidebarNavItems" class="st-emotion-cache-1gczx66 e19011e62">'
-    
+    # Use standard Streamlit navigation instead of custom HTML
     for item in nav_items:
         is_active = current_page == item.get("url", "#")
-        active_class = "sidebar-nav-item-active" if is_active else ""
-        
-        nav_html += f'''
-        <li>
-            <a href="{item.get('url', '#')}" target="_self" class="{active_class}">
-                <div>
-                    {item.get('icon', '')}
-                    {item.get('name', 'Link')}
-                </div>
-            </a>
-        </li>
-        '''
-    
-    nav_html += '</ul>'
-    
-    st.sidebar.markdown(nav_html, unsafe_allow_html=True)
+        if st.sidebar.button(
+            item.get('name', 'Link'), 
+            key=f"nav_{item.get('name', 'link').lower().replace(' ', '_')}",
+            use_container_width=True,
+            type="primary" if is_active else "secondary"
+        ):
+            # When clicked, navigate to the page
+            st.switch_page(item.get('url', '#').lstrip('/'))
     
     # Logout button at bottom if logged in
     if st.session_state.get("logged_in", False):

@@ -11,6 +11,22 @@ def app():
         st.warning("Please log in to manage your subscription.")
         st.button("Go to Login", on_click=lambda: st.switch_page("pages/login.py"))
         return
+        
+    # Check if we need to handle any session state flags
+    if "downgrade_requested" in st.session_state:
+        tier = st.session_state.downgrade_requested
+        st.success(f"Successfully downgraded to {tier.capitalize()} plan.")
+        # Clear the flag
+        del st.session_state.downgrade_requested
+        # Trigger a rerun to update the UI
+        st.rerun()
+        
+    if "selected_plan" in st.session_state:
+        plan = st.session_state.selected_plan
+        st.success(f"Redirecting to checkout for {plan['name']} plan ({plan['billing']})...")
+        # Clear the flag
+        del st.session_state.selected_plan
+        # Page will be redirected by the upgrade_subscription function
     
     # Check for query parameters using non-experimental API
     query_params = st.query_params
@@ -154,22 +170,24 @@ def display_plan(tier, current_tier):
         # For free plan, show downgrade button
         if tier == "free":
             if st.button("Downgrade to Free Plan", key=f"downgrade_{tier}"):
-                if downgrade_subscription(tier):
-                    st.success("Successfully downgraded to Free plan.")
-                    st.rerun()
+                # Set session state flag for downgrade and refresh
+                st.session_state.downgrade_requested = tier
+                downgrade_subscription(tier)
+                st.success("Successfully downgraded to Free plan.")
+                # Don't call st.rerun() directly in a callback
         # For paid plans, show monthly and yearly options
         else:
             col1, col2 = st.columns(2)
             with col1:
                 if st.button(f"Monthly", key=f"monthly_{tier}"):
-                    if upgrade_subscription(tier, "monthly"):
-                        st.success(f"Successfully upgraded to {plan['name']} plan (Monthly).")
-                        st.rerun()
+                    # Set session state for plan selection
+                    st.session_state.selected_plan = {"tier": tier, "billing": "monthly", "name": plan['name']}
+                    upgrade_subscription(tier, "monthly")
             with col2:
                 if st.button(f"Yearly", key=f"yearly_{tier}"):
-                    if upgrade_subscription(tier, "yearly"):
-                        st.success(f"Successfully upgraded to {plan['name']} plan (Yearly).")
-                        st.rerun()
+                    # Set session state for plan selection
+                    st.session_state.selected_plan = {"tier": tier, "billing": "yearly", "name": plan['name']}
+                    upgrade_subscription(tier, "yearly")
 
 def upgrade_subscription(tier, billing_cycle):
     """Upgrade user subscription to a higher tier using Stripe."""
