@@ -470,6 +470,31 @@ else:
                 </div>
             </div>
             
+            <h3>Example Analytics</h3>
+            <div style="display: flex; justify-content: space-around; margin: 20px 0; flex-wrap: wrap;">
+                <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; margin: 10px; overflow: hidden;">
+                    <img src="https://miro.medium.com/max/1400/1*S8Escq5DgEZC9Mdxm0inNw.webp" style="width: 100%; height: 120px; object-fit: cover;" alt="Correlation Heatmap">
+                    <div style="padding: 10px;">
+                        <div style="font-weight: bold;">Correlation Analysis</div>
+                        <p style="font-size: 12px;">Discover relationships between variables</p>
+                    </div>
+                </div>
+                <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; margin: 10px; overflow: hidden;">
+                    <img src="https://miro.medium.com/max/1400/1*WWcU-RT5UgPvdTpZyB6iCQ.webp" style="width: 100%; height: 120px; object-fit: cover;" alt="Sales Dashboard">
+                    <div style="padding: 10px;">
+                        <div style="font-weight: bold;">Sales Performance</div>
+                        <p style="font-size: 12px;">Track sales trends and forecasts</p>
+                    </div>
+                </div>
+                <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; margin: 10px; overflow: hidden;">
+                    <img src="https://miro.medium.com/max/1400/1*oO0KGH7sQGkGEH9lLNGlEg.webp" style="width: 100%; height: 120px; object-fit: cover;" alt="Anomaly Detection">
+                    <div style="padding: 10px;">
+                        <div style="font-weight: bold;">Anomaly Detection</div>
+                        <p style="font-size: 12px;">Automatically find outliers in your data</p>
+                    </div>
+                </div>
+            </div>
+            
             <h3>All Your Data Tools in One Platform</h3>
             <p>Analytics Assist combines powerful data analysis with an AI assistant to help you make better decisions.</p>
             <p>Get started today and join thousands of users who trust Analytics Assist with their data needs.</p>
