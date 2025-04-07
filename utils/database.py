@@ -279,12 +279,15 @@ def list_datasets(user_id=None):
         try:
             query = session.query(datasets)
             
+            # Use non-local variable to store user_id
+            current_user_id = user_id
+            
             # Filter by user_id if provided or available in session state
-            if user_id is None and "user_id" in st.session_state:
-                user_id = st.session_state.user_id
+            if current_user_id is None and "user_id" in st.session_state:
+                current_user_id = st.session_state.user_id
                 
-            if user_id:
-                query = query.filter(datasets.c.user_id == user_id)
+            if current_user_id:
+                query = query.filter(datasets.c.user_id == current_user_id)
                 
             results = query.all()
             
@@ -323,13 +326,14 @@ def delete_dataset(dataset_id, user_id=None):
     session = Session()
     try:
         # Get user_id from session state if not provided
-        if user_id is None and "user_id" in st.session_state:
-            user_id = st.session_state.user_id
+        current_user_id = user_id
+        if current_user_id is None and "user_id" in st.session_state:
+            current_user_id = st.session_state.user_id
             
         # Check if dataset exists and belongs to the user
         dataset = None
-        if user_id:
-            dataset = session.query(datasets).filter(datasets.c.id == dataset_id, datasets.c.user_id == user_id).first()
+        if current_user_id:
+            dataset = session.query(datasets).filter(datasets.c.id == dataset_id, datasets.c.user_id == current_user_id).first()
         else:
             dataset = session.query(datasets).filter(datasets.c.id == dataset_id).first()
             
