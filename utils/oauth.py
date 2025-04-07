@@ -106,12 +106,12 @@ def handle_oauth_callback():
     
     This would be called on the redirect from Google's consent screen.
     """
-    # Get query parameters from the URL
-    query_params = st.experimental_get_query_params()
+    # Get query parameters from the URL using the new API
+    query_params = st.query_params
     
     # Check for errors
     if "error" in query_params:
-        st.error(f"Authentication error: {query_params['error'][0]}")
+        st.error(f"Authentication error: {query_params['error']}")
         return False
     
     # Check for authorization code and state
@@ -120,12 +120,12 @@ def handle_oauth_callback():
         return False
     
     # Verify state to prevent CSRF
-    if not verify_state_token(query_params["state"][0]):
+    if not verify_state_token(query_params["state"]):
         st.error("Invalid state token")
         return False
     
     # Exchange code for token
-    token_data = exchange_code_for_token(query_params["code"][0])
+    token_data = exchange_code_for_token(query_params["code"])
     if not token_data:
         st.error("Failed to get access token")
         return False

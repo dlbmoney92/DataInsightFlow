@@ -71,7 +71,7 @@ else:
         with file_format_cols[i % 3]:
             st.markdown(f"- {file_type}")
             
-    st.stop()  # Stop execution for non-logged-in users
+    # Continue execution for logged-in users
 
 # If user is logged in, continue with the normal upload functionality
 # Header and description

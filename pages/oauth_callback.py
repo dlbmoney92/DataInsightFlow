@@ -23,11 +23,15 @@ def app():
             st.error("Authentication failed. Please try again.")
             
             if st.button("Go to Login"):
+                # Clear query params and go to login page
+                st.query_params.clear()
                 st.switch_page("pages/login.py")
     
     # If login was successful, redirect to home page
     if "login_success" in st.session_state and st.session_state.login_success:
         st.session_state.login_success = False
+        # Clear query params before redirecting
+        st.query_params.clear()
         st.switch_page("app.py")
 
 if __name__ == "__main__":
