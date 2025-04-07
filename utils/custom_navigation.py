@@ -62,7 +62,7 @@ def render_navigation():
         if is_trial:
             tier_display = f"Pro (Trial: {trial_days} days left)"
         
-        # User profile card
+        # User profile card - simplified
         st.sidebar.markdown(
             f"""
             <div style="
@@ -73,33 +73,19 @@ def render_navigation():
                 border: 1px solid rgba(0, 0, 0, 0.05);
             ">
                 <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                    <div style="
-                        width: 40px;
-                        height: 40px;
-                        border-radius: 50%;
-                        background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        margin-right: 10px;
-                        font-weight: bold;
-                        color: #1f1f1f;
-                    ">{user.get('full_name', 'User')[0].upper() if user.get('full_name') else 'U'}</div>
-                    <div>
-                        <div style="font-weight: 600; font-size: 16px;">{user.get('full_name', 'User')}</div>
-                        <div style="font-size: 12px; opacity: 0.8;">{user.get('email', '')}</div>
+                    <div style="font-weight: 600; font-size: 16px;">
+                        Welcome, {user.get('full_name', 'User')}
                     </div>
                 </div>
-                <div style="
-                    background: {"#4CAF50" if is_trial else "#3b82f6"};
-                    color: white;
-                    border-radius: 4px;
-                    padding: 4px 8px;
-                    font-size: 12px;
-                    display: inline-block;
-                    margin-bottom: 5px;
-                ">{tier_display}</div>
-                <div style="text-align: right; margin-top: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="
+                        background: {"#4CAF50" if is_trial else "#3b82f6"};
+                        color: white;
+                        border-radius: 4px;
+                        padding: 4px 8px;
+                        font-size: 12px;
+                        display: inline-block;
+                    ">{tier_display}</div>
                     <a href="/pages/account.py" style="
                         font-size: 12px;
                         text-decoration: none;
@@ -111,7 +97,7 @@ def render_navigation():
             unsafe_allow_html=True
         )
     
-    # Developer mode has been removed as requested
+    
     
     # Navigation Items
     st.sidebar.markdown("""

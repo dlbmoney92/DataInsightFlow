@@ -9,9 +9,9 @@ from utils.database import execute_with_retry
 FEATURE_ACCESS = {
     # Data Upload & Management
     "dataset_count": {
-        "free": 1,
-        "basic": 5,
-        "pro": 20,
+        "free": 20,
+        "basic": 50,
+        "pro": 100,
         "enterprise": -1  # Unlimited
     },
     "file_size_limit": {
