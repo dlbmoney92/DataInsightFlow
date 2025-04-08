@@ -34,13 +34,8 @@ st.markdown("""
 render_navigation()
 
 def app():
-    
-    # Check if user is logged in
-    if not require_auth():
-        return
-        
-    # Check if trial was activated
-    if "trial_activated" in st.session_state:
+    # Display trial activation message for logged-in users
+    if st.session_state.get("logged_in", False) and "trial_activated" in st.session_state:
         st.success("Your 7-day Pro trial has been activated!")
         del st.session_state.trial_activated
         # Update user information
@@ -146,8 +141,8 @@ def app():
             for feature in SUBSCRIPTION_PLANS["pro"]["features"]:
                 st.markdown(f"✓ {feature}")
             
-            # Trial option
-            if st.session_state.subscription_tier == "free" and not st.session_state.user.get("is_trial", False):
+            # Trial option for logged-in users
+            if st.session_state.get("logged_in", False) and st.session_state.get("subscription_tier", "") == "free" and not st.session_state.get("user", {}).get("is_trial", False):
                 if st.button("Start 7-Day Free Trial", key="pro_trial", use_container_width=True):
                     # Start user trial
                     start_user_trial(st.session_state.user_id)
@@ -184,7 +179,8 @@ def app():
                 feature_cols[1].markdown(f"✓ {feature}")
         
         with col2:
-            st.button("Contact Sales", use_container_width=True)
+            if st.button("Contact Sales", use_container_width=True):
+                st.switch_page("pages/contact_us.py")
     
     # Option to skip subscription selection
     st.markdown("---")
@@ -206,6 +202,17 @@ def app():
 
 def redirect_to_payment(tier, billing_cycle):
     """Redirect to Stripe payment for the selected plan."""
+    # Check if user is logged in
+    if not st.session_state.get("logged_in", False):
+        # Save the selected plan in session state
+        st.session_state.selected_plan = {"tier": tier, "billing_cycle": billing_cycle}
+        
+        # Redirect to signup page
+        st.info("Please create an account or login to continue with your subscription")
+        st.switch_page("pages/signup.py")
+        return
+    
+    # User is logged in, proceed with payment
     # Use absolute URLs for Stripe (relative URLs don't work with Stripe)
     # Get the base URL from environment or use a default for development
     base_url = os.environ.get("REPL_SLUG", "localhost:5000")

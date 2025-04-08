@@ -99,13 +99,27 @@ def app():
                 st.session_state.user_id = user_id
                 st.session_state.subscription_tier = "free"
                 
-                # Store a flag to redirect to subscription selection
-                st.session_state.redirect_to_subscription = True
+                # Check if user had selected a plan before signup
+                if "selected_plan" in st.session_state:
+                    selected_plan = st.session_state.selected_plan
+                    # Store the plan and set redirect to subscription_selection
+                    st.session_state.redirect_to_payment = True
+                else:
+                    # Otherwise just redirect to subscription selection
+                    st.session_state.redirect_to_subscription = True
             else:
                 st.error(f"Error creating account: {result['message']}")
     
     # Check if we need to redirect after successful signup
-    if "redirect_to_subscription" in st.session_state and st.session_state.redirect_to_subscription:
+    if "redirect_to_payment" in st.session_state and st.session_state.redirect_to_payment:
+        # User signed up after selecting a plan, redirect back to payment
+        selected_plan = st.session_state.selected_plan
+        st.session_state.redirect_to_payment = False
+        del st.session_state.selected_plan
+        
+        # Redirect to subscription selection page
+        st.switch_page("pages/subscription_selection.py")
+    elif "redirect_to_subscription" in st.session_state and st.session_state.redirect_to_subscription:
         st.session_state.redirect_to_subscription = False
         st.switch_page("pages/subscription_selection.py")
     elif "redirect_to_login" in st.session_state and st.session_state.redirect_to_login:

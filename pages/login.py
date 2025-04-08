@@ -75,8 +75,15 @@ def app():
                             
                             st.success("Login successful!")
                             
+                            # Check if user was in the middle of subscription selection
+                            if "selected_plan" in st.session_state:
+                                # Save the plan info and prepare redirect
+                                st.markdown("Redirecting back to complete your subscription...")
+                                st.session_state.redirect_to_payment = True
+                                st.rerun()  # Rerun to clear the form
+                                st.switch_page("pages/subscription_selection.py")
                             # Check if there's a redirect after login
-                            if "redirect_after_login" in st.session_state:
+                            elif "redirect_after_login" in st.session_state:
                                 redirect_page = st.session_state.pop("redirect_after_login")
                                 st.markdown(f"Redirecting to {redirect_page.split('/')[-1].replace('.py', '')}...")
                                 st.rerun()  # Rerun to clear the form
