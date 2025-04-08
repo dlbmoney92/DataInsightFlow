@@ -3,11 +3,10 @@ import pandas as pd
 import numpy as np
 import json
 import os
-from openai import OpenAI
+from utils.ai_providers import get_ai_manager
 
-# Initialize OpenAI client
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-openai = OpenAI(api_key=OPENAI_API_KEY)
+# Get AI manager instance
+ai_manager = get_ai_manager()
 
 def generate_column_cleaning_suggestions(df, column_name, column_type):
     """Generate AI suggestions for cleaning a specific column."""
@@ -53,19 +52,14 @@ def generate_column_cleaning_suggestions(df, column_name, column_type):
     """
     
     try:
-        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-        # do not change this unless explicitly requested by the user
-        response = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a data cleaning expert. Provide specific, actionable recommendations."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"},
+        # Use the AI manager to generate the completion
+        system_message = "You are a data cleaning expert. Provide specific, actionable recommendations."
+        result = ai_manager.generate_completion(
+            prompt=prompt, 
+            system_message=system_message,
+            json_response=True,
             max_tokens=1000
         )
-        
-        result = json.loads(response.choices[0].message.content)
         return result.get('recommendations', []) if isinstance(result, dict) and 'recommendations' in result else result
     except Exception as e:
         st.error(f"Error generating cleaning suggestions: {str(e)}")
@@ -116,20 +110,14 @@ def generate_dataset_insights(df):
     """
     
     try:
-        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-        # do not change this unless explicitly requested by the user
-        response = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a data insights expert. Provide specific, valuable insights from data."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"},
+        # Use the AI manager to generate the completion
+        system_message = "You are a data insights expert. Provide specific, valuable insights from data."
+        result = ai_manager.generate_completion(
+            prompt=prompt, 
+            system_message=system_message,
+            json_response=True,
             max_tokens=1500
         )
-        
-        # Parse the API response
-        result = json.loads(response.choices[0].message.content)
         
         # Check for different possible response formats
         if isinstance(result, dict):
@@ -205,20 +193,14 @@ def suggest_visualizations(df):
     """
     
     try:
-        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-        # do not change this unless explicitly requested by the user
-        response = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a data visualization expert. Suggest appropriate and insightful visualizations."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"},
+        # Use the AI manager to generate the completion
+        system_message = "You are a data visualization expert. Suggest appropriate and insightful visualizations."
+        result = ai_manager.generate_completion(
+            prompt=prompt, 
+            system_message=system_message,
+            json_response=True,
             max_tokens=1200
         )
-        
-        # Parse the API response
-        result = json.loads(response.choices[0].message.content)
         
         # Check for different possible response formats
         if isinstance(result, dict):
@@ -288,20 +270,14 @@ def answer_data_question(df, question):
     """
     
     try:
-        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-        # do not change this unless explicitly requested by the user
-        response = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a data analyst expert. Answer questions about datasets accurately and helpfully."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"},
+        # Use the AI manager to generate the completion
+        system_message = "You are a data analyst expert. Answer questions about datasets accurately and helpfully."
+        result = ai_manager.generate_completion(
+            prompt=prompt, 
+            system_message=system_message,
+            json_response=True,
             max_tokens=1000
         )
-        
-        # Parse the API response
-        result = json.loads(response.choices[0].message.content)
         
         # Ensure we have the expected keys
         required_keys = ['answer', 'confidence', 'relevant_columns']

@@ -77,26 +77,11 @@ st.sidebar.info(f"""
 """)
 
 # Check for OpenAI API key
-from utils.ai_providers import get_ai_manager
-ai_manager = get_ai_manager()
+from utils.api_key_handler import check_api_key_and_display_form
 
-if not ai_manager.is_available():
-    st.warning("OpenAI API key is not available. Please add your API key in the secrets configuration to use AI-powered insights.")
-    
-    # Show instructions for adding API key
-    with st.expander("How to add your OpenAI API key"):
-        st.markdown("""
-        To use AI-powered insights, you need to provide your OpenAI API key.
-        
-        1. Get an API key from [OpenAI](https://platform.openai.com/account/api-keys)
-        2. Click on the "Add API Key" button below
-        3. Enter your API key in the form
-        """)
-    
-    # Placeholder for API key entry (would need to be implemented)
-    api_key = st.text_input("Enter your OpenAI API key", type="password")
-    if st.button("Save API Key") and api_key:
-        st.success("API key saved! Please restart the application for changes to take effect.")
+# If the API key is not available, display the form and stop the page execution
+if not check_api_key_and_display_form():
+    st.stop()
 else:
     # Create tabs for different insights features
     tab1, tab2, tab3 = st.tabs(["🔍 Generate Insights", "❓ Ask Questions", "📊 Visualizations"])

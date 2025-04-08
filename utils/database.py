@@ -230,13 +230,24 @@ def get_dataset(dataset_id, user_id=None):
                 current_user_id = st.session_state.user_id
             else:
                 current_user_id = user_id
+            
+            # Convert numpy.int64 to int if needed
+            if hasattr(dataset_id, 'item'):
+                dataset_id_int = dataset_id.item()
+            else:
+                dataset_id_int = int(dataset_id)
                 
             # Build the query
-            query = session.query(datasets).filter(datasets.c.id == dataset_id)
+            query = session.query(datasets).filter(datasets.c.id == dataset_id_int)
             
             # Apply user_id filter if provided
             if current_user_id:
-                query = query.filter(datasets.c.user_id == current_user_id)
+                # Convert user_id to int if needed
+                if hasattr(current_user_id, 'item'):
+                    current_user_id_int = current_user_id.item()
+                else:
+                    current_user_id_int = int(current_user_id)
+                query = query.filter(datasets.c.user_id == current_user_id_int)
             
             result = query.first()
             
@@ -287,7 +298,12 @@ def list_datasets(user_id=None):
                 current_user_id = st.session_state.user_id
                 
             if current_user_id:
-                query = query.filter(datasets.c.user_id == current_user_id)
+                # Convert user_id to int if needed (for numpy.int64)
+                if hasattr(current_user_id, 'item'):
+                    current_user_id_int = current_user_id.item()
+                else:
+                    current_user_id_int = int(current_user_id)
+                query = query.filter(datasets.c.user_id == current_user_id_int)
                 
             results = query.all()
             
@@ -329,25 +345,39 @@ def delete_dataset(dataset_id, user_id=None):
         current_user_id = user_id
         if current_user_id is None and "user_id" in st.session_state:
             current_user_id = st.session_state.user_id
+        
+        # Convert numpy.int64 to int if needed
+        if hasattr(dataset_id, 'item'):
+            dataset_id_int = dataset_id.item()
+        else:
+            dataset_id_int = int(dataset_id)
+            
+        # Convert user_id to int if needed
+        if current_user_id and hasattr(current_user_id, 'item'):
+            current_user_id_int = current_user_id.item()
+        elif current_user_id:
+            current_user_id_int = int(current_user_id)
+        else:
+            current_user_id_int = None
             
         # Check if dataset exists and belongs to the user
         dataset = None
-        if current_user_id:
-            dataset = session.query(datasets).filter(datasets.c.id == dataset_id, datasets.c.user_id == current_user_id).first()
+        if current_user_id_int:
+            dataset = session.query(datasets).filter(datasets.c.id == dataset_id_int, datasets.c.user_id == current_user_id_int).first()
         else:
-            dataset = session.query(datasets).filter(datasets.c.id == dataset_id).first()
+            dataset = session.query(datasets).filter(datasets.c.id == dataset_id_int).first()
             
         if not dataset:
             st.error(f"Dataset not found or you don't have permission to delete it.")
             return False
             
         # Delete related records first
-        session.execute(transformations.delete().where(transformations.c.dataset_id == dataset_id))
-        session.execute(versions.delete().where(versions.c.dataset_id == dataset_id))
-        session.execute(insights.delete().where(insights.c.dataset_id == dataset_id))
+        session.execute(transformations.delete().where(transformations.c.dataset_id == dataset_id_int))
+        session.execute(versions.delete().where(versions.c.dataset_id == dataset_id_int))
+        session.execute(insights.delete().where(insights.c.dataset_id == dataset_id_int))
         
         # Delete the dataset
-        session.execute(datasets.delete().where(datasets.c.id == dataset_id))
+        session.execute(datasets.delete().where(datasets.c.id == dataset_id_int))
         
         session.commit()
         return True

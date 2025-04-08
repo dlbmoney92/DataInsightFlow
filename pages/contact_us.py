@@ -90,7 +90,7 @@ def app():
             
             st.markdown("""
             **Analytics Assist Support**  
-            Email: support@analyticsassist.com
+            Email: dariusbell@bellcontractingservices.com
             
             **Business Hours**  
             Monday - Friday: 9am - 5pm EST

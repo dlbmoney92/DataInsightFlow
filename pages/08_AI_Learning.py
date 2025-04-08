@@ -67,19 +67,11 @@ def app():
         
         return
     
-    # Check if AI is available
-    ai_manager = get_ai_manager()
-    if not ai_manager.is_available():
-        st.warning("AI features require an OpenAI API key. Please add your API key to use this feature.")
-        
-        # Add OpenAI key input
-        st.subheader("Add OpenAI API Key")
-        api_key = st.text_input("OpenAI API Key", type="password")
-        
-        if st.button("Save API Key") and api_key:
-            st.session_state.temp_openai_key = api_key
-            st.success("API key saved for this session. Please restart the application for full integration.")
-        
+    # Check for OpenAI API key
+    from utils.api_key_handler import check_api_key_and_display_form
+    
+    # If the API key is not available, display the form and stop the page execution
+    if not check_api_key_and_display_form():
         return
     
     # Main content for AI Learning
@@ -89,7 +81,7 @@ def app():
     """)
     
     # Create tabs for different sections
-    tab1, tab2, tab3 = st.tabs(["Learning Status", "Preferences", "Data Performance"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Learning Status", "Preferences", "Data Performance", "AI Providers"])
     
     with tab1:
         st.header("Learning Status")
@@ -270,6 +262,149 @@ def app():
                 for i, tip in enumerate(tips):
                     st.markdown(f"{i+1}. {tip}")
     
+    with tab4:
+        st.header("AI Providers")
+        
+        st.markdown("""
+        Analytics Assist now supports multiple AI providers to power its intelligent features.
+        Each provider has different strengths and capabilities that can enhance your data analysis experience.
+        """)
+        
+        # Get AI manager
+        ai_manager = get_ai_manager()
+        available_providers = ai_manager.get_available_providers()
+        
+        # Display current provider info
+        st.subheader("Current AI Provider")
+        
+        if not available_providers:
+            st.warning("No AI providers are currently configured. Add an API key to enable AI features.")
+            from utils.api_key_handler import display_api_key_form
+            display_api_key_form()
+        else:
+            # Display info about the current provider
+            provider_info = {
+                AIProvider.OPENAI: {
+                    "name": "OpenAI GPT-4o",
+                    "description": """
+                    OpenAI's GPT-4o is a state-of-the-art large language model optimized for handling both 
+                    text and visual data. It excels at understanding complex data relationships and generating 
+                    detailed insights with strong reasoning capabilities.
+                    """,
+                    "strengths": [
+                        "Superior pattern recognition in numeric data",
+                        "Excellent at generating natural language explanations",
+                        "Strong reasoning capabilities for complex insights",
+                        "Effective handling of multimodal data (text, tables)"
+                    ],
+                    "best_for": [
+                        "Advanced statistical insights",
+                        "Complex data relationships",
+                        "Natural language explanations",
+                        "Data storytelling"
+                    ],
+                    "icon": "🧠"
+                },
+                AIProvider.ANTHROPIC: {
+                    "name": "Anthropic Claude 3.5 Sonnet",
+                    "description": """
+                    Anthropic's Claude 3.5 Sonnet is a cutting-edge AI assistant designed with a focus on 
+                    helpful, harmless, and honest interactions. It excels at nuanced understanding of data 
+                    and provides thoughtful, detailed analyses.
+                    """,
+                    "strengths": [
+                        "Superior at understanding context in data",
+                        "Excellent at generating balanced, nuanced analyses",
+                        "Strong safety and reliability features",
+                        "Clear and detailed explanations"
+                    ],
+                    "best_for": [
+                        "Nuanced data interpretation",
+                        "Long-form data storytelling",
+                        "Educational insights and explanations",
+                        "Balanced analysis with multiple perspectives"
+                    ],
+                    "icon": "🔮"
+                }
+            }
+            
+            # Get current provider
+            current_provider = ai_manager.provider
+            
+            if current_provider in provider_info:
+                info = provider_info[current_provider]
+                
+                # Create columns for layout
+                col1, col2 = st.columns([1, 3])
+                
+                with col1:
+                    st.markdown(f"<h1 style='text-align: center; font-size: 4rem;'>{info['icon']}</h1>", unsafe_allow_html=True)
+                
+                with col2:
+                    st.markdown(f"### {info['name']}")
+                    st.markdown(info['description'])
+                
+                # Strengths and best uses
+                st.subheader("Strengths")
+                for strength in info['strengths']:
+                    st.markdown(f"- {strength}")
+                
+                st.subheader("Best For")
+                for use_case in info['best_for']:
+                    st.markdown(f"- {use_case}")
+                
+                # Provider selection form
+                st.markdown("---")
+                st.subheader("Change AI Provider")
+                
+                from utils.api_key_handler import select_ai_provider
+                select_ai_provider()
+            else:
+                st.warning("Current provider information not available.")
+        
+        # Providers comparison
+        st.markdown("---")
+        st.subheader("AI Provider Comparison")
+        
+        comparison_data = {
+            "Feature": [
+                "Model Type", 
+                "Strengths", 
+                "Best Use Cases", 
+                "Token Limits", 
+                "Response Speed", 
+                "Cost Efficiency"
+            ],
+            "OpenAI GPT-4o": [
+                "Multimodal LLM",
+                "Statistical analysis, pattern recognition, reasoning",
+                "Complex analytics, data storytelling, detailed insights",
+                "High (128K tokens)",
+                "Fast",
+                "Medium"
+            ],
+            "Anthropic Claude 3.5 Sonnet": [
+                "Multimodal LLM",
+                "Context understanding, nuanced analysis, safety",
+                "Educational insights, balanced analysis, detailed explanations",
+                "Very High (200K tokens)",
+                "Medium",
+                "High"
+            ]
+        }
+        
+        # Convert to DataFrame for display
+        comparison_df = pd.DataFrame(comparison_data)
+        st.dataframe(comparison_df, use_container_width=True)
+        
+        # Add API Key button
+        st.markdown("---")
+        st.subheader("Add or Update AI Provider Keys")
+        
+        if st.button("Configure AI Provider Keys"):
+            from utils.api_key_handler import display_api_key_form
+            display_api_key_form()
+        
     # Call to action
     st.markdown("---")
     st.write("Continue using Analytics Assist and provide feedback to improve the AI learning system.")

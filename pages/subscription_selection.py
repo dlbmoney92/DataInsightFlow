@@ -186,7 +186,12 @@ def app():
     st.markdown("---")
     st.markdown("<div style='text-align: center;'>Not ready to decide?</div>", unsafe_allow_html=True)
     if st.button("Continue with Free Plan", use_container_width=False, key="skip"):
-        st.switch_page("app.py")
+        # Check if user is logged in
+        if not st.session_state.get("logged_in", False):
+            st.session_state.selected_plan = {"tier": "free", "billing_cycle": "monthly"}
+            st.switch_page("pages/signup.py")
+        else:
+            st.switch_page("app.py")
         
     # Close the modal body and container divs
     st.markdown('</div>', unsafe_allow_html=True)  # Close modal-body

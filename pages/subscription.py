@@ -46,12 +46,14 @@ def app():
         st.success(f"Successfully downgraded to {tier.capitalize()} plan.")
         # Clear the flag
         del st.session_state.downgrade_requested
-        # Trigger a rerun to update the UI
-        st.rerun()
         
     if "selected_plan" in st.session_state:
         plan = st.session_state.selected_plan
-        st.success(f"Redirecting to checkout for {plan['name']} plan ({plan['billing']})...")
+        # Check if plan is a dictionary with the expected keys
+        if isinstance(plan, dict) and 'name' in plan and 'billing' in plan:
+            st.success(f"Redirecting to checkout for {plan['name']} plan ({plan['billing']})...")
+        else:
+            st.success(f"Redirecting to checkout...")
         # Clear the flag
         del st.session_state.selected_plan
         # Page will be redirected by the upgrade_subscription function
@@ -130,8 +132,14 @@ def app():
                     st.session_state.user = user
                     st.session_state.subscription_tier = "free"
                     
-                    # Rerun to refresh UI
-                    st.rerun()
+                    # Use Javascript to refresh the page instead of st.rerun()
+                    st.markdown("""
+                    <script>
+                    setTimeout(function() {
+                        window.location.href = window.location.pathname;
+                    }, 2000);
+                    </script>
+                    """, unsafe_allow_html=True)
     
     # Display features
     st.subheader("Features")
@@ -164,7 +172,7 @@ def app():
     
     # Enterprise contact button
     if st.button("Contact Sales for Enterprise Plan"):
-        st.info("Our sales team will contact you soon. Please check your email for further information.")
+        st.switch_page("pages/contact_us.py")
 
 def display_plan(tier, current_tier):
     """Display a subscription plan card."""

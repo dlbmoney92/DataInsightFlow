@@ -46,6 +46,15 @@ if 'subscription_tier' not in st.session_state:
 if 'trial_end_date' not in st.session_state:
     st.session_state.trial_end_date = None
 
+# Initialize OpenAI if API key is available
+import os
+from utils.ai_providers import AIManager
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+if OPENAI_API_KEY:
+    # Store in session state for persistence
+    st.session_state.openai_api_key = OPENAI_API_KEY
+    st.session_state.ai_manager = AIManager()
+
 # Check if trial has expired
 check_and_handle_trial_expiration()
 
