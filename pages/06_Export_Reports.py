@@ -28,6 +28,7 @@ from utils.export import (
 from utils.auth_redirect import require_auth
 from utils.custom_navigation import render_navigation, initialize_navigation
 from utils.global_config import apply_global_css
+from utils.access_control import check_access
 
 # Apply global CSS
 apply_global_css()
@@ -135,22 +136,86 @@ with tab1:
     # Format selection
     st.subheader("Export Format")
     
-    format_cols = st.columns(3)
+    # Get available export formats for the current subscription tier
+    available_formats = check_access("export_format", None)
+    if isinstance(available_formats, list):
+        allowed_formats = available_formats
+    else:
+        allowed_formats = ["csv"]  # Default to CSV only if check_access fails
     
-    with format_cols[0]:
-        if st.button("Export as CSV", use_container_width=True):
-            csv_link = generate_csv_download_link(export_df, filename=f"{st.session_state.current_project.get('name', 'data')}.csv")
-            st.markdown(csv_link, unsafe_allow_html=True)
+    # Display a message about available formats
+    st.info(f"Your subscription ({st.session_state.subscription_tier.capitalize()}) allows export in the following formats: {', '.join([f.upper() for f in allowed_formats])}")
     
-    with format_cols[1]:
-        if st.button("Export as Excel", use_container_width=True):
-            excel_link = generate_excel_download_link(export_df, filename=f"{st.session_state.current_project.get('name', 'data')}.xlsx")
-            st.markdown(excel_link, unsafe_allow_html=True)
+    # Determine how many columns we need based on available formats
+    format_cols = st.columns(min(3, len(allowed_formats)))
     
-    with format_cols[2]:
-        if st.button("Export as JSON", use_container_width=True):
-            json_link = generate_json_download_link(export_df, filename=f"{st.session_state.current_project.get('name', 'data')}.json")
-            st.markdown(json_link, unsafe_allow_html=True)
+    # CSV (available to all tiers)
+    if "csv" in allowed_formats:
+        with format_cols[0]:
+            if st.button("Export as CSV", use_container_width=True):
+                csv_link = generate_csv_download_link(export_df, filename=f"{st.session_state.current_project.get('name', 'data')}.csv")
+                st.markdown(csv_link, unsafe_allow_html=True)
+    
+    # Excel (available to basic, pro and enterprise tiers)
+    if "excel" in allowed_formats:
+        col_index = min(1, len(format_cols) - 1)
+        with format_cols[col_index]:
+            if st.button("Export as Excel", use_container_width=True):
+                excel_link = generate_excel_download_link(export_df, filename=f"{st.session_state.current_project.get('name', 'data')}.xlsx")
+                st.markdown(excel_link, unsafe_allow_html=True)
+    
+    # JSON (available to pro and enterprise tiers)
+    if "json" in allowed_formats:
+        col_index = min(2, len(format_cols) - 1)
+        with format_cols[col_index]:
+            if st.button("Export as JSON", use_container_width=True):
+                json_link = generate_json_download_link(export_df, filename=f"{st.session_state.current_project.get('name', 'data')}.json")
+                st.markdown(json_link, unsafe_allow_html=True)
+    
+    # PDF (available to basic, pro and enterprise tiers)
+    if "pdf" in allowed_formats:
+        st.markdown("---")
+        if st.button("Export as PDF", use_container_width=True):
+            # Create a simple PDF report
+            try:
+                import matplotlib.pyplot as plt
+                from io import BytesIO
+                import base64
+                
+                buffer = BytesIO()
+                plt.figure(figsize=(10, 6))
+                plt.axis('off')
+                
+                # Create a table representation
+                table_data = export_df.head(50).values  # Limit to 50 rows for PDF
+                table_cols = export_df.columns
+                
+                # Create a table visualization
+                table = plt.table(
+                    cellText=table_data,
+                    colLabels=table_cols,
+                    cellLoc='center',
+                    loc='center'
+                )
+                
+                # Adjust table size
+                table.auto_set_font_size(False)
+                table.set_fontsize(9)
+                table.scale(1.2, 1.2)
+                
+                plt.title(f"{st.session_state.current_project.get('name', 'Data Export')}")
+                plt.tight_layout()
+                
+                # Save to PDF file via png in memory
+                plt.savefig(buffer, format='png', dpi=300, bbox_inches='tight')
+                buffer.seek(0)
+                
+                # Create download link for PDF
+                pdf_download_link = f'<a href="data:application/pdf;base64,{base64.b64encode(buffer.getvalue()).decode()}" download="{st.session_state.current_project.get("name", "data")}.pdf">Download PDF Report</a>'
+                st.markdown(pdf_download_link, unsafe_allow_html=True)
+                
+            except Exception as e:
+                st.error(f"Error creating PDF export: {e}")
     
     # Export transformation history
     if 'transformations' in st.session_state and st.session_state.transformations:
@@ -165,15 +230,25 @@ with tab1:
 with tab2:
     st.header("Generate Analysis Reports")
     
-    # Report options
-    st.subheader("Report Type")
+    # Check if user has access to report exports (requires at least the basic tier)
+    can_export_reports = check_access("export_format", "pdf")
     
-    report_type = st.selectbox(
-        "Select report type",
-        ["Summary Report", "Data Quality Report", "Insight Report", "Custom Report"]
-    )
+    if not can_export_reports:
+        st.warning("Report generation requires a Basic subscription or higher. Please upgrade your subscription to access this feature.")
+        
+        # Show a button to upgrade
+        if st.button("View Subscription Options"):
+            st.switch_page("pages/subscription.py")
+    else:
+        # Report options
+        st.subheader("Report Type")
+        
+        report_type = st.selectbox(
+            "Select report type",
+            ["Summary Report", "Data Quality Report", "Insight Report", "Custom Report"]
+        )
     
-    if report_type == "Summary Report":
+    if report_type == "Summary Report" and can_export_reports:
         include_transformations = st.checkbox("Include transformation history", value=True)
         include_insights = st.checkbox("Include insights", value=True)
         include_visualizations = st.checkbox("Include visualizations", value=True)
@@ -192,7 +267,7 @@ with tab2:
                 download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.html">Download Summary Report</a>'
                 st.markdown(download_link, unsafe_allow_html=True)
     
-    elif report_type == "Data Quality Report":
+    elif report_type == "Data Quality Report" and can_export_reports:
         # Options for data quality report
         include_missing_values = st.checkbox("Include missing values analysis", value=True)
         include_outliers = st.checkbox("Include outlier analysis", value=True)
@@ -356,7 +431,7 @@ with tab2:
                 download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_data_quality.html">Download Data Quality Report</a>'
                 st.markdown(download_link, unsafe_allow_html=True)
     
-    elif report_type == "Insight Report":
+    elif report_type == "Insight Report" and can_export_reports:
         if 'generated_insights' not in st.session_state or not st.session_state.generated_insights:
             st.warning("No insights have been generated yet. Please go to the Insights Dashboard to generate insights first.")
         else:
@@ -425,7 +500,7 @@ with tab2:
                     download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_insights.html">Download Insight Report</a>'
                     st.markdown(download_link, unsafe_allow_html=True)
     
-    elif report_type == "Custom Report":
+    elif report_type == "Custom Report" and can_export_reports:
         st.subheader("Custom Report Options")
         
         # Title
