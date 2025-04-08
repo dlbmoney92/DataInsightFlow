@@ -96,6 +96,21 @@ else:
                     # Generate insights using AI
                     insights = generate_dataset_insights(df)
                     
+                    # Check if insights is a string (raw JSON) and parse it if needed
+                    if isinstance(insights, str):
+                        try:
+                            insights = json.loads(insights)
+                        except Exception as e:
+                            st.error(f"Error parsing insights: {str(e)}")
+                    
+                    # Ensure we have a proper structure for insights
+                    if isinstance(insights, dict) and 'insights' in insights:
+                        insights = insights['insights']
+                    
+                    # Ensure it's a list
+                    if not isinstance(insights, list):
+                        insights = [insights] if insights else []
+                    
                     # Store in session state
                     st.session_state.generated_insights = insights
                     
@@ -353,17 +368,56 @@ else:
         if 'viz_suggestions' in st.session_state and st.session_state.viz_suggestions:
             suggestions = st.session_state.viz_suggestions
             
+            # Our suggest_visualizations function should already return a normalized list,
+            # but let's add a safety check just in case
+            if isinstance(suggestions, str):
+                try:
+                    suggestions = json.loads(suggestions)
+                except Exception as e:
+                    st.error(f"Error parsing visualization suggestions: {str(e)}")
+                    
+            # Handle different possible response formats
+            if isinstance(suggestions, dict):
+                # Check for common response structures
+                if 'visualizations' in suggestions:
+                    suggestions = suggestions['visualizations']
+                elif 'visualization_recommendations' in suggestions:
+                    suggestions = suggestions['visualization_recommendations']
+                elif 'recommendations' in suggestions:
+                    suggestions = suggestions['recommendations']
+                elif 'chart_type' in suggestions:
+                    # It's a single visualization
+                    suggestions = [suggestions]
+                else:
+                    # Look for any array that might contain visualization objects
+                    for key, value in suggestions.items():
+                        if isinstance(value, list) and len(value) > 0:
+                            if isinstance(value[0], dict) and ('chart_type' in value[0] or 'plotly_fig_type' in value[0]):
+                                suggestions = value
+                                break
+            
+            # Ensure we have a list to iterate over
+            if not isinstance(suggestions, list):
+                suggestions = [suggestions]
+                
             for i, suggestion in enumerate(suggestions):
                 with st.container():
+                    # Extract title and description, providing defaults if not found
+                    title = suggestion.get('title', f"Visualization {i+1}")
+                    description = suggestion.get('description', "No description available")
+                    
                     st.markdown(f"""
-                    ### {suggestion['title']}
-                    {suggestion['description']}
+                    ### {title}
+                    {description}
                     """)
                     
                     # Create visualization
                     try:
                         fig = create_visualization_from_suggestion(df, suggestion)
-                        st.plotly_chart(fig, use_container_width=True)
+                        if fig:
+                            st.plotly_chart(fig, use_container_width=True)
+                        else:
+                            st.warning("Could not create visualization with the provided columns.")
                     except Exception as e:
                         st.error(f"Error creating visualization: {str(e)}")
                     

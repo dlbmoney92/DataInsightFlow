@@ -111,7 +111,39 @@ def generate_dataset_insights(df):
     
     try:
         # Use the AI manager to generate the completion
-        system_message = "You are a data insights expert. Provide specific, valuable insights from data."
+        system_message = """You are a data insights expert. Provide specific, valuable insights from data.
+Return your response as a JSON array of insight objects with exactly these fields for each insight:
+- category: one of "general", "statistical", "pattern", or "anomaly"
+- title: a concise headline summarizing the insight
+- description: detailed explanation of the insight with specific values/details
+- importance: a value from 1-5 indicating importance
+- recommended_action: what action could be taken based on this insight
+- visualization: (optional) object with chart_type and columns fields if a visualization would help
+
+Example format:
+{
+  "insights": [
+    {
+      "category": "general",
+      "title": "Dataset Overview",
+      "description": "The dataset contains 1000 rows and 5 columns with complete data.",
+      "importance": 3,
+      "recommended_action": "No action needed, data is complete."
+    },
+    {
+      "category": "statistical",
+      "title": "Strong Correlation Between X and Y",
+      "description": "Variables X and Y show a strong positive correlation of 0.85.",
+      "importance": 4,
+      "recommended_action": "Consider using X as a predictor for Y in models.",
+      "visualization": {
+        "chart_type": "scatter_plot",
+        "columns": ["X", "Y"]
+      }
+    }
+  ]
+}
+"""
         result = ai_manager.generate_completion(
             prompt=prompt, 
             system_message=system_message,
@@ -119,20 +151,47 @@ def generate_dataset_insights(df):
             max_tokens=1500
         )
         
-        # Check for different possible response formats
+        # Check for different possible response formats and normalize them
+        if isinstance(result, str):
+            # If it's a string, try to parse it as JSON
+            try:
+                result = json.loads(result)
+            except Exception as e:
+                st.error(f"Error parsing insights JSON: {str(e)}")
+                return []
+                
         if isinstance(result, dict):
-            # If the response is a dictionary with an 'insights' key, return that
+            # Check for common response structures
             if 'insights' in result:
-                return result['insights']
-            # If it's a dictionary but doesn't have an insights key, check if it looks like a single insight
-            elif all(key in result for key in ['type', 'title', 'description']):
-                return [result]  # Return as a list of one insight
-            # Otherwise return the whole dict
-            else:
+                insights = result['insights']
+                # Make sure it's a list
+                if not isinstance(insights, list):
+                    insights = [insights] if insights else []
+                return insights
+            # If it has expected insight fields, it might be a single insight
+            elif all(key in result for key in ['title', 'description']):
+                # Add category if missing
+                if 'category' not in result:
+                    result['category'] = 'general'
                 return [result]
+            else:
+                # Look for any array in the result that might contain insights
+                for key, value in result.items():
+                    if isinstance(value, list) and len(value) > 0:
+                        if isinstance(value[0], dict) and 'title' in value[0]:
+                            return value
+                # If no suitable insights found, return an empty list
+                return []
         elif isinstance(result, list):
-            # If it's already a list, return it directly
-            return result
+            # It's already a list, make sure items have required fields
+            normalized_insights = []
+            for item in result:
+                if isinstance(item, dict) and 'title' in item and 'description' in item:
+                    # Add category if missing
+                    if 'category' not in item:
+                        item['category'] = 'general'
+                    normalized_insights.append(item)
+            return normalized_insights
         else:
             # If it's something unexpected, return empty list
             return []
@@ -194,7 +253,12 @@ def suggest_visualizations(df):
     
     try:
         # Use the AI manager to generate the completion
-        system_message = "You are a data visualization expert. Suggest appropriate and insightful visualizations."
+        system_message = """You are a data visualization expert. Suggest appropriate and insightful visualizations.
+Return your response in a properly formatted JSON array of visualization objects with the exact structure and fields requested.
+Make sure each visualization has chart_type, title, columns, description, and plotly_fig_type fields.
+The chart_type should be one of: histogram, scatter_plot, bar_chart, line_chart, pie_chart, box_plot, heatmap, correlation_heatmap, pair_plot, or similar.
+The columns field must be an array of column names, even if it's just one column.
+"""
         result = ai_manager.generate_completion(
             prompt=prompt, 
             system_message=system_message,
@@ -202,20 +266,41 @@ def suggest_visualizations(df):
             max_tokens=1200
         )
         
-        # Check for different possible response formats
+        # Check for different possible response formats and normalize them
+        if isinstance(result, str):
+            # If it's a string, try to parse it as JSON
+            try:
+                result = json.loads(result)
+            except Exception as e:
+                st.error(f"Error parsing visualization JSON: {str(e)}")
+                return []
+                
         if isinstance(result, dict):
-            # If the response is a dictionary with a 'visualizations' key, return that
+            # Check for common response structures
             if 'visualizations' in result:
                 return result['visualizations']
-            # If it's a dict but doesn't have visualizations key, it might be a single visualization suggestion
+            elif 'visualization_recommendations' in result:
+                return result['visualization_recommendations']
+            elif 'recommendations' in result:
+                return result['recommendations']
             elif 'chart_type' in result:
+                # It's a single visualization
                 return [result]
-            # Otherwise return the whole dict
             else:
+                # Look for any array that might contain visualization objects
+                for key, value in result.items():
+                    if isinstance(value, list) and len(value) > 0:
+                        if isinstance(value[0], dict) and ('chart_type' in value[0] or 'plotly_fig_type' in value[0]):
+                            return value
+                # If no suitable array found, wrap the entire dict
                 return [result]
         elif isinstance(result, list):
-            # If it's already a list, return it
-            return result
+            # If it's already a list, return it if it has valid items
+            if len(result) > 0 and isinstance(result[0], dict):
+                return result
+            else:
+                # Empty list or not a list of dicts
+                return []
         else:
             # If it's something unexpected, return an empty list
             return []
@@ -226,7 +311,7 @@ def suggest_visualizations(df):
 def answer_data_question(df, question):
     """Use AI to answer a natural language question about the data."""
     if df is None or df.empty or not question:
-        return {"answer": "No data available or question not provided."}
+        return {"text": "No data available or question not provided."}
     
     # Prepare a summary of the dataset
     columns_info = {}
@@ -249,7 +334,7 @@ def answer_data_question(df, question):
         "columns_info": columns_info
     }
     
-    # Prepare the context for OpenAI
+    # Prepare the context for AI
     prompt = f"""
     Given this dataset:
     {json.dumps(dataset_summary, default=str)}
@@ -262,30 +347,52 @@ def answer_data_question(df, question):
     
     Return JSON with this structure:
     {{
-        "answer": "string with detailed answer",
+        "text": "string with detailed answer",
         "confidence": number between 0 and 1,
         "relevant_columns": ["list of columns relevant to this question"],
-        "suggested_visualization": "string describing a visualization to answer this question" (optional)
+        "visualization": {{
+            "chart_type": "appropriate chart type (e.g., bar_chart, scatter_plot, histogram)",
+            "title": "suggested visualization title",
+            "description": "what this visualization shows",
+            "columns": ["columns to include in the visualization"]
+        }} (optional)
     }}
     """
     
     try:
         # Use the AI manager to generate the completion
-        system_message = "You are a data analyst expert. Answer questions about datasets accurately and helpfully."
+        system_message = """You are a data analyst expert. Answer questions about datasets accurately and helpfully.
+If a visualization would help illustrate your answer, include the visualization object in your response.
+Make sure your response is properly formatted JSON with the exact structure requested.
+The visualization.chart_type should be one of: bar_chart, line_chart, scatter_plot, histogram, box_plot, pie_chart, or correlation_heatmap.
+The visualization.columns must be an array of actual column names from the dataset, even if it's just one column.
+"""
         result = ai_manager.generate_completion(
             prompt=prompt, 
             system_message=system_message,
             json_response=True,
-            max_tokens=1000
+            max_tokens=1200
         )
         
-        # Ensure we have the expected keys
-        required_keys = ['answer', 'confidence', 'relevant_columns']
+        # Check if result is a string (raw JSON) and parse it if needed
+        if isinstance(result, str):
+            try:
+                result = json.loads(result)
+            except Exception as e:
+                st.error(f"Error parsing answer JSON: {str(e)}")
+                return {"text": f"Error processing response: {str(e)}"}
+        
+        # Ensure we have the expected keys and normalize the response
+        required_keys = ['text', 'confidence', 'relevant_columns']
         if isinstance(result, dict):
+            # Convert 'answer' to 'text' if needed for consistency
+            if 'answer' in result and 'text' not in result:
+                result['text'] = result['answer']
+            
             # Add default values for any missing required keys
             for key in required_keys:
                 if key not in result:
-                    if key == 'answer':
+                    if key == 'text':
                         result[key] = "Unable to determine answer from the data."
                     elif key == 'confidence':
                         result[key] = 0.0
@@ -299,15 +406,30 @@ def answer_data_question(df, question):
                     result['confidence'] = max(0.0, min(1.0, confidence))
                 except:
                     result['confidence'] = 0.0
-                    
+            
+            # Normalize visualization structure
+            if 'suggested_visualization' in result and 'visualization' not in result:
+                if isinstance(result['suggested_visualization'], str):
+                    # It's just a text description, create a simple visualization object
+                    viz_desc = result['suggested_visualization']
+                    result['visualization'] = {
+                        "chart_type": "bar_chart",  # Default type
+                        "title": "Suggested Visualization",
+                        "description": viz_desc,
+                        "columns": result.get('relevant_columns', [])[:2]  # Use up to 2 relevant columns 
+                    }
+                elif isinstance(result['suggested_visualization'], dict):
+                    # It's already an object, just rename the key
+                    result['visualization'] = result['suggested_visualization']
+            
             return result
         else:
             # Return a default response if we didn't get a dict
             return {
-                "answer": "Error: Unexpected response format from AI service.",
+                "text": "Error: Unexpected response format from AI service.",
                 "confidence": 0,
                 "relevant_columns": []
             }
     except Exception as e:
         st.error(f"Error answering data question: {str(e)}")
-        return {"answer": f"Error processing question: {str(e)}", "confidence": 0, "relevant_columns": []}
+        return {"text": f"Error processing question: {str(e)}", "confidence": 0, "relevant_columns": []}
