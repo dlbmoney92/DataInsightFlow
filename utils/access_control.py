@@ -21,6 +21,21 @@ FEATURE_ACCESS = {
         "enterprise": 500  # MB
     },
     
+    # AI Features
+    "ai_suggestions": {
+        "free": False,  # No AI suggestions for free tier
+        "basic": True,  # AI suggestions enabled
+        "pro": True,    # AI suggestions enabled
+        "enterprise": True  # AI suggestions enabled
+    },
+    
+    "ai_insights": {
+        "free": False,  # No AI insights for free tier
+        "basic": True,  # AI insights enabled
+        "pro": True,    # AI insights enabled
+        "enterprise": True  # AI insights enabled
+    },
+    
     # Data Transformation
     "transformation": {
         "free": ["basic_cleaning", "data_type_conversion", "rename_columns"],
@@ -57,6 +72,14 @@ FEATURE_ACCESS = {
         "pro": ["basic_stats", "correlation", "distribution", "outlier_detection",
                "trend_analysis", "forecasting", "clustering", "basic_ml"],
         "enterprise": "all"
+    },
+    
+    # AI Learning
+    "ai_learning": {
+        "free": False,
+        "basic": False,
+        "pro": True,
+        "enterprise": True
     },
     
     # AI Features

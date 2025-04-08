@@ -15,6 +15,7 @@ from datetime import datetime
 import json
 import time
 import uuid
+from utils.access_control import check_access
 from utils.transformations import (
     apply_transformations,
     register_transformation,
@@ -1867,36 +1868,47 @@ else:
             # Create AI suggestion section based on column data types
             st.subheader("AI-Powered Suggestions")
             
-            # Select column for AI suggestions
-            selected_col_for_ai = st.selectbox("Select column for AI suggestions", df.columns)
-            
-            if selected_col_for_ai:
-                # Get column type
-                col_dtype = df[selected_col_for_ai].dtype
-                if np.issubdtype(col_dtype, np.number):
-                    col_type = "numeric"
-                elif pd.api.types.is_datetime64_any_dtype(df[selected_col_for_ai]):
-                    col_type = "datetime"
-                else:
-                    col_type = "categorical"
+            # Check if user has access to AI suggestions
+            if not check_access("ai_suggestions"):
+                st.warning("AI-powered suggestions are available on Basic, Pro, and Enterprise plans only.")
+                st.markdown("""
+                Upgrade your plan to get intelligent suggestions for data cleaning and transformation.
+                Our AI can help you identify issues and recommend transformations specific to your data.
+                """)
                 
-                # Get AI suggestions
-                with st.spinner("Generating AI suggestions..."):
-                    suggestions = generate_column_cleaning_suggestions(df, selected_col_for_ai, col_type)
-                    
-                    # Display suggestions in a better format
-                    st.markdown(f"### Suggestions for '{selected_col_for_ai}'")
-                    
-                    # Check if we got suggestions back
-                    if suggestions and isinstance(suggestions, list):
-                        for i, suggestion in enumerate(suggestions):
-                            with st.expander(f"{i+1}. {suggestion.get('operation', 'Suggestion')}", expanded=False):
-                                st.markdown(f"**Description:** {suggestion.get('description', 'N/A')}")
-                                st.markdown(f"**Rationale:** {suggestion.get('rationale', 'N/A')}")
-                                st.markdown(f"**Code Action:** `{suggestion.get('code_action', 'N/A')}`")
-                                st.divider()
+                if st.button("View Subscription Plans", key="view_plans_ai_suggestions"):
+                    st.switch_page("pages/subscription.py")
+            else:
+                # Select column for AI suggestions
+                selected_col_for_ai = st.selectbox("Select column for AI suggestions", df.columns)
+                
+                if selected_col_for_ai:
+                    # Get column type
+                    col_dtype = df[selected_col_for_ai].dtype
+                    if np.issubdtype(col_dtype, np.number):
+                        col_type = "numeric"
+                    elif pd.api.types.is_datetime64_any_dtype(df[selected_col_for_ai]):
+                        col_type = "datetime"
                     else:
-                        st.info("No suggestions available for this column.")
+                        col_type = "categorical"
+                    
+                    # Get AI suggestions
+                    with st.spinner("Generating AI suggestions..."):
+                        suggestions = generate_column_cleaning_suggestions(df, selected_col_for_ai, col_type)
+                        
+                        # Display suggestions in a better format
+                        st.markdown(f"### Suggestions for '{selected_col_for_ai}'")
+                        
+                        # Check if we got suggestions back
+                        if suggestions and isinstance(suggestions, list):
+                            for i, suggestion in enumerate(suggestions):
+                                with st.expander(f"{i+1}. {suggestion.get('operation', 'Suggestion')}", expanded=False):
+                                    st.markdown(f"**Description:** {suggestion.get('description', 'N/A')}")
+                                    st.markdown(f"**Rationale:** {suggestion.get('rationale', 'N/A')}")
+                                    st.markdown(f"**Code Action:** `{suggestion.get('code_action', 'N/A')}`")
+                                    st.divider()
+                        else:
+                            st.info("No suggestions available for this column.")
             
             # Data preview section
             st.subheader("Data Preview")

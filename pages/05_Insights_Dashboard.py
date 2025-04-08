@@ -19,6 +19,7 @@ from utils.visualization import create_visualization_from_suggestion
 from utils.auth_redirect import require_auth
 from utils.custom_navigation import render_navigation, initialize_navigation
 from utils.global_config import apply_global_css
+from utils.access_control import check_access
 from utils.ai_learning import display_feedback_form, create_feedback_buttons
 
 # Apply global CSS
@@ -75,6 +76,18 @@ st.sidebar.info(f"""
 - **Columns**: {df.shape[1]}
 - **Project**: {st.session_state.current_project.get('name', 'Unnamed project')}
 """)
+
+# Check if user has access to AI insights
+if not check_access("ai_insights"):
+    st.warning("AI-powered insights are available on Basic, Pro, and Enterprise plans only.")
+    st.markdown("""
+    Upgrade your plan to get intelligent insights about your data. 
+    Our AI can analyze your dataset to find patterns, trends, outliers, and more.
+    """)
+    
+    if st.button("View Subscription Plans"):
+        st.switch_page("pages/subscription.py")
+    st.stop()
 
 # Check for OpenAI API key
 from utils.api_key_handler import check_api_key_and_display_form
