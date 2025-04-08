@@ -1,6 +1,6 @@
 import streamlit as st
 import hashlib
-from utils.database import get_user_by_email
+from utils.database import get_user_by_email, create_password_reset_token
 from utils.global_config import apply_global_css
 from utils.custom_navigation import render_navigation, initialize_navigation
 
@@ -50,30 +50,42 @@ def app():
             if not email:
                 st.error("Please enter your email address.")
             else:
-                # Check if email exists in database
-                user = get_user_by_email(email)
+                # Generate a reset token (whether the email exists or not)
+                token = create_password_reset_token(email)
                 
-                if user:
-                    # In a real app, we would send an email with a reset link
-                    # For now, we'll just show a success message
-                    st.success(f"If an account exists with the email {email}, we will send a password reset link. Please check your email.")
+                # Show the same message regardless of whether the email exists
+                st.success(f"If an account exists with the email {email}, a password reset link has been sent. Please check your email.")
+                
+                # Since this is a demo, show a simulated email for convenience
+                if token:  # Only if the email actually exists
+                    reset_url = f"{st.experimental_get_query_params().get('base_url', [''])[0]}/pages/reset_password_confirm.py?token={token}"
+                    if not reset_url.startswith("http"):
+                        reset_url = f"http://{reset_url}"
                     
-                    # Provide instructions for the demo
-                    st.info("""
-                    Since this is a demo application, no actual email will be sent. 
+                    st.info("### Simulated Email:")
+                    st.markdown(f"""
+                    **From:** Analytics Assist <noreply@analytics-assist.com>  
+                    **To:** {email}  
+                    **Subject:** Reset Your Password
                     
-                    In a production environment, this would:
-                    1. Generate a unique token
-                    2. Store the token in the database with an expiration time
-                    3. Send an email with a link containing the token
-                    4. The link would direct to a page where the user can set a new password
+                    ---
                     
-                    For demonstration purposes, you can use the login page with your current credentials.
+                    Dear User,
+                    
+                    You requested a password reset for your Analytics Assist account. Please click the link below to reset your password:
+                    
+                    [Reset Password]({reset_url})
+                    
+                    This link will expire in 24 hours. If you did not request a password reset, please ignore this email.
+                    
+                    ---
+                    
+                    For demo purposes, you can click the link below to reset your password:
                     """)
-                else:
-                    # Don't reveal if the email exists for security reasons
-                    # Show the same message regardless
-                    st.success(f"If an account exists with the email {email}, we will send a password reset link. Please check your email.")
+                    
+                    if st.button("Go to Password Reset Page"):
+                        st.experimental_set_query_params(token=token)
+                        st.switch_page("pages/reset_password_confirm.py")
     
     st.markdown("---")
     st.markdown(

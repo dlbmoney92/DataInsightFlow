@@ -2,6 +2,7 @@ import os
 import json
 import datetime
 import time
+import hashlib
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, LargeBinary, MetaData, Table, inspect
@@ -52,6 +53,17 @@ users = Table(
     Column('is_trial', Integer, default=0),  # Boolean (0 or 1)
     Column('trial_start_date', DateTime, nullable=True),
     Column('trial_end_date', DateTime, nullable=True)
+)
+
+password_reset_tokens = Table(
+    'password_reset_tokens',
+    metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, nullable=False),
+    Column('token', String(255), nullable=False, unique=True),
+    Column('created_at', DateTime, default=datetime.datetime.utcnow),
+    Column('expires_at', DateTime, nullable=False),
+    Column('used', Integer, default=0)  # Boolean (0 or 1)
 )
 
 datasets = Table(
@@ -116,11 +128,18 @@ def initialize_database():
     """Create database tables if they don't exist."""
     inspector = inspect(engine)
     
-    # Check if tables exist and create them if they don't
+    # Check if essential tables exist and create them if they don't
     if not inspector.has_table('datasets') or not inspector.has_table('users'):
         metadata.create_all(engine)
         st.success("Database initialized successfully.")
         return True
+    
+    # Check for password_reset_tokens table specifically
+    if not inspector.has_table('password_reset_tokens'):
+        metadata.tables['password_reset_tokens'].create(engine)
+        st.info("Password reset functionality initialized.")
+        return True
+        
     return False
 
 # Session factory with connection pooling and thread safety
@@ -883,3 +902,133 @@ def check_valid_credentials(email, password_hash):
     if user and user['password_hash'] == password_hash:
         return user
     return None
+
+# Password reset functionality
+def create_password_reset_token(email):
+    """Create a password reset token and store it in the database.
+    
+    Args:
+        email: The email of the user requesting password reset
+        
+    Returns:
+        The token if successful, None otherwise
+    """
+    user = get_user_by_email(email)
+    if not user:
+        # Don't reveal if email exists or not for security
+        return None
+        
+    session = Session()
+    try:
+        # Generate a random token
+        token = hashlib.sha256(os.urandom(32)).hexdigest()
+        
+        # Set expiration time (24 hours from now)
+        expires_at = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        
+        # Insert the token into the database
+        session.execute(
+            password_reset_tokens.insert().values(
+                user_id=user['id'],
+                token=token,
+                expires_at=expires_at,
+                used=0
+            )
+        )
+        
+        session.commit()
+        return token
+    except Exception as e:
+        session.rollback()
+        st.error(f"Error creating password reset token: {str(e)}")
+        return None
+    finally:
+        session.close()
+
+def validate_password_reset_token(token):
+    """Check if a password reset token is valid and not expired.
+    
+    Args:
+        token: The token to validate
+        
+    Returns:
+        The user_id if valid, None otherwise
+    """
+    session = Session()
+    try:
+        # Get the token from the database
+        token_record = session.query(password_reset_tokens).filter(
+            password_reset_tokens.c.token == token,
+            password_reset_tokens.c.used == 0,
+            password_reset_tokens.c.expires_at > datetime.datetime.utcnow()
+        ).first()
+        
+        if token_record:
+            return token_record.user_id
+        return None
+    except Exception as e:
+        st.error(f"Error validating password reset token: {str(e)}")
+        return None
+    finally:
+        session.close()
+
+def mark_token_as_used(token):
+    """Mark a password reset token as used.
+    
+    Args:
+        token: The token to mark as used
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    session = Session()
+    try:
+        session.execute(
+            password_reset_tokens.update().where(
+                password_reset_tokens.c.token == token
+            ).values(
+                used=1
+            )
+        )
+        
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        st.error(f"Error marking token as used: {str(e)}")
+        return False
+    finally:
+        session.close()
+
+def update_user_password(user_id, new_password_hash):
+    """Update a user's password.
+    
+    Args:
+        user_id: The ID of the user
+        new_password_hash: The new password hash
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    session = Session()
+    try:
+        # Convert user_id to int if needed
+        if hasattr(user_id, 'item'):
+            user_id_int = int(user_id)
+        else:
+            user_id_int = user_id
+            
+        session.execute(
+            users.update().where(users.c.id == user_id_int).values(
+                password_hash=new_password_hash
+            )
+        )
+        
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        st.error(f"Error updating password: {str(e)}")
+        return False
+    finally:
+        session.close()
