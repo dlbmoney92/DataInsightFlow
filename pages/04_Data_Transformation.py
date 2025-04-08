@@ -2076,8 +2076,37 @@ else:
                 comparison_col = st.selectbox("Select column for comparison", df.columns, key="compare_col")
                 
                 if comparison_col:
-                    comparison_viz = create_before_after_comparison(original_df, df, comparison_col)
-                    st.plotly_chart(comparison_viz, use_container_width=True)
+                    # Get the most recent transformation details
+                    if st.session_state.transformations:
+                        latest_transform = st.session_state.transformations[-1]
+                        transform_details = latest_transform.get('details', {})
+                        # Use the selected column as the affected column for visualization
+                        columns_affected = [comparison_col]
+                        
+                        comparison_viz = create_before_after_comparison(
+                            original_df, 
+                            df, 
+                            transform_details,
+                            columns_affected
+                        )
+                        
+                        # Display the appropriate visualization based on data type
+                        if comparison_col in comparison_viz:
+                            col_viz = comparison_viz[comparison_col]
+                            viz_type = col_viz.get('type')
+                            
+                            if viz_type == 'numeric':
+                                st.plotly_chart(col_viz['histogram'], use_container_width=True)
+                                st.plotly_chart(col_viz['boxplot'], use_container_width=True)
+                            elif viz_type == 'categorical':
+                                st.plotly_chart(col_viz['bar_chart'], use_container_width=True)
+                            elif viz_type == 'datetime':
+                                if 'time_chart' in col_viz:
+                                    st.plotly_chart(col_viz['time_chart'], use_container_width=True)
+                        else:
+                            st.warning(f"No visualization available for column: {comparison_col}")
+                    else:
+                        st.warning("No transformations have been applied yet.")
             else:
                 st.info("Apply transformations to see visualizations.")
     
