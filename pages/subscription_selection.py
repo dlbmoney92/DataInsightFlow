@@ -1,14 +1,39 @@
-import os
 import streamlit as st
+
+# Set page configuration - must be the first Streamlit command
+st.set_page_config(
+    page_title="Choose a Plan | Analytics Assist",
+    page_icon="💰",
+    layout="wide"
+)
+
+import os
 from utils.subscription import SUBSCRIPTION_PLANS, format_price
 from utils.database import update_user_subscription, start_user_trial, get_user_by_id
 from utils.payment import get_stripe_checkout_session
 from utils.auth_redirect import require_auth
 from utils.global_config import apply_global_css
+from utils.custom_navigation import render_navigation, initialize_navigation
+
+# Apply global CSS
+apply_global_css()
+
+# Initialize navigation
+initialize_navigation()
+
+# Hide Streamlit's default multipage navigation menu
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Render custom navigation bar
+render_navigation()
 
 def app():
-    # Apply global CSS
-    apply_global_css()
     
     # Check if user is logged in
     if not require_auth():

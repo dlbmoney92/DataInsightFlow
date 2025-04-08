@@ -1,11 +1,36 @@
 import streamlit as st
+
+# Set page configuration - must be the first Streamlit command
+st.set_page_config(
+    page_title="Payment Success | Analytics Assist",
+    page_icon="✅",
+    layout="wide"
+)
+
 from utils.auth_redirect import require_auth
 from utils.global_config import apply_global_css
+from utils.custom_navigation import render_navigation, initialize_navigation
+
+# Apply global CSS
+apply_global_css()
+
+# Initialize navigation
+initialize_navigation()
+
+# Hide Streamlit's default multipage navigation menu
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Render custom navigation bar
+render_navigation()
 
 def app():
     """Handle successful payment redirect from Stripe."""
-    # Apply global CSS
-    apply_global_css()
     
     # Check if user is logged in
     if not require_auth():

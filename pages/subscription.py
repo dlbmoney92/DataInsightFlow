@@ -1,7 +1,35 @@
 import streamlit as st
+
+# Set page configuration - must be the first Streamlit command
+st.set_page_config(
+    page_title="Subscription Plans | Analytics Assist",
+    page_icon="💰",
+    layout="wide"
+)
+
 import datetime
 from utils.subscription import SUBSCRIPTION_PLANS, format_price
 from utils.database import update_user_subscription, get_user_by_id, start_user_trial
+from utils.global_config import apply_global_css
+from utils.custom_navigation import render_navigation, initialize_navigation
+
+# Apply global CSS
+apply_global_css()
+
+# Initialize navigation
+initialize_navigation()
+
+# Hide Streamlit's default multipage navigation menu
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Render custom navigation bar
+render_navigation()
 
 def app():
     st.title("Subscription Plans")

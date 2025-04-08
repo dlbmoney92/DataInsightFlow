@@ -15,9 +15,9 @@ import plotly.graph_objects as go
 from utils.ai_learning import display_learning_preferences_form, get_ai_learning_stats
 from utils.access_control import check_access
 from utils.ai_providers import get_ai_manager, AIProvider
+from utils.custom_navigation import render_navigation, initialize_navigation
 from utils.auth_redirect import require_auth
 from utils.global_config import apply_global_css
-from utils.custom_navigation import render_navigation, initialize_navigation
 
 # Apply global CSS
 apply_global_css()
