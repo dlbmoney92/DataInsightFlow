@@ -114,8 +114,13 @@ def create_categorical_plot(df, column, plot_type='bar'):
     
     return fig
 
-def create_correlation_heatmap(df):
-    """Create a correlation heatmap for numeric columns."""
+def create_correlation_heatmap(df, method='pearson'):
+    """Create a correlation heatmap for numeric columns.
+    
+    Args:
+        df: The DataFrame to analyze
+        method: Correlation method ('pearson', 'spearman', or 'kendall')
+    """
     if df is None or df.empty:
         return None
     
@@ -126,7 +131,7 @@ def create_correlation_heatmap(df):
         return None
     
     # Calculate correlation matrix
-    corr_matrix = numeric_df.corr()
+    corr_matrix = numeric_df.corr(method=method)
     
     # Create heatmap
     fig = px.imshow(
@@ -401,7 +406,8 @@ def create_visualization_from_suggestion(df, suggestion):
         return create_time_series_plot(df, columns[0], columns[1], group_col)
     
     elif chart_type == 'correlation_heatmap':
-        return create_correlation_heatmap(df)
+        method = suggestion.get('method', 'pearson')
+        return create_correlation_heatmap(df, method=method)
     
     elif chart_type == 'missing_values_heatmap':
         return create_missing_values_heatmap(df)

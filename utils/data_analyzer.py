@@ -35,6 +35,16 @@ def generate_summary_stats(df):
         numeric_stats['min'] = df[numeric_cols].min()
         numeric_stats['max'] = df[numeric_cols].max()
     
+    # Create a formatted numeric summary dataframe for display
+    numeric_summary = None
+    if not numeric_stats.empty:
+        # Create a descriptive stats dataframe
+        numeric_summary = df[numeric_cols].describe().T
+        # Add additional stats
+        if not numeric_summary.empty:
+            numeric_summary['missing'] = df[numeric_cols].isna().sum()
+            numeric_summary['missing_pct'] = (df[numeric_cols].isna().sum() / len(df) * 100).round(2)
+    
     # Categorical column stats
     cat_cols = df.select_dtypes(exclude=['number', 'datetime']).columns
     cat_stats = {}
@@ -42,7 +52,10 @@ def generate_summary_stats(df):
     for col in cat_cols:
         if df[col].nunique() < 50:  # Only for columns with reasonable number of categories
             value_counts = df[col].value_counts().head(10).to_dict()
-            cat_stats[col] = value_counts
+            cat_stats[col] = {
+                'count': int(df[col].nunique()),
+                'value_counts': value_counts
+            }
     
     # Datetime column stats
     date_cols = df.select_dtypes(include=['datetime']).columns
@@ -64,14 +77,20 @@ def generate_summary_stats(df):
                            for col, count, percent in zip(df.columns, na_counts, na_percent)},
         'column_types': {col: str(dtype) for col, dtype in zip(df.columns, dtypes)},
         'numeric_stats': numeric_stats.to_dict() if not numeric_stats.empty else {},
+        'numeric_summary': numeric_summary,
         'categorical_stats': cat_stats,
         'datetime_stats': date_stats
     }
     
     return summary
 
-def analyze_column_correlations(df):
-    """Analyze correlations between numeric columns."""
+def analyze_column_correlations(df, method='pearson'):
+    """Analyze correlations between numeric columns.
+    
+    Args:
+        df: The DataFrame to analyze
+        method: Correlation method ('pearson', 'spearman', or 'kendall')
+    """
     if df is None or df.empty:
         return None
     
@@ -81,7 +100,7 @@ def analyze_column_correlations(df):
         return None
     
     # Calculate correlation matrix
-    corr_matrix = numeric_df.corr()
+    corr_matrix = numeric_df.corr(method=method)
     
     # Find strongly correlated columns (positive or negative)
     strong_correlations = []
@@ -99,13 +118,23 @@ def analyze_column_correlations(df):
                     'strength': 'strong positive' if corr_value > 0 else 'strong negative'
                 })
     
+    # Format top correlations as a DataFrame for easy display
+    top_correlations = pd.DataFrame(strong_correlations)
+    
     return {
-        'correlation_matrix': corr_matrix.to_dict(),
-        'strong_correlations': strong_correlations
+        'correlation_matrix': corr_matrix,
+        'strong_correlations': strong_correlations,
+        'top_correlations': top_correlations if not top_correlations.empty else pd.DataFrame(columns=['column1', 'column2', 'correlation', 'strength'])
     }
 
-def detect_outliers(df):
-    """Detect outliers in numeric columns using Z-score method."""
+def detect_outliers(df, method='zscore', threshold=3.0):
+    """Detect outliers in numeric columns.
+    
+    Args:
+        df: The DataFrame to analyze
+        method: The method to use for outlier detection ('zscore', 'iqr', or 'modified_zscore')
+        threshold: The threshold value for identifying outliers
+    """
     if df is None or df.empty:
         return None
     
@@ -121,15 +150,47 @@ def detect_outliers(df):
         if df[column].isna().sum() > 0.5 * len(df):
             continue
         
-        # Calculate Z-scores
-        z_scores = np.abs(stats.zscore(df[column].dropna()))
+        # Get non-missing values
+        values = df[column].dropna()
         
-        # Consider values with Z-score > 3 as outliers
-        outlier_indices = np.where(z_scores > 3)[0]
+        # Skip if too few values
+        if len(values) < 5:
+            continue
         
+        # Detect outliers based on selected method
+        outlier_indices = []
+        
+        if method == 'zscore':
+            # Calculate Z-scores
+            z_scores = np.abs(stats.zscore(values))
+            outlier_indices = np.where(z_scores > threshold)[0]
+            
+        elif method == 'iqr':
+            # Use Interquartile Range method
+            q1 = values.quantile(0.25)
+            q3 = values.quantile(0.75)
+            iqr = q3 - q1
+            lower_bound = q1 - (threshold * iqr)
+            upper_bound = q3 + (threshold * iqr)
+            outlier_indices = values[(values < lower_bound) | (values > upper_bound)].index
+            
+        elif method == 'modified_zscore':
+            # Modified Z-score using median
+            median = values.median()
+            mad = np.median(np.abs(values - median))
+            if mad > 0:  # Avoid division by zero
+                modified_z_scores = 0.6745 * np.abs(values - median) / mad
+                outlier_indices = values[modified_z_scores > threshold].index
+        
+        # Store outliers if any were found
         if len(outlier_indices) > 0:
-            original_indices = df[column].dropna().index[outlier_indices]
-            outlier_values = df.loc[original_indices, column].values
+            # For 'zscore' method, we need to map back to the original indices
+            if method == 'zscore':
+                original_indices = values.index[outlier_indices]
+                outlier_values = values.iloc[outlier_indices].values
+            else:
+                original_indices = outlier_indices
+                outlier_values = values.loc[outlier_indices].values
             
             outliers[column] = {
                 'count': len(outlier_indices),

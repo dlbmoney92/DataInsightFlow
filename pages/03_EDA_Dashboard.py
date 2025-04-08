@@ -143,8 +143,12 @@ else:
             cat_stats = analyze_categorical_distributions(df)
             if cat_stats:
                 for col, stats in cat_stats.items():
-                    st.write(f"**{col}** - {stats['count']} unique values")
-                    st.dataframe(stats['value_counts'].head(10))
+                    st.write(f"**{col}** - {stats['unique_values']} unique values")
+                    st.dataframe(pd.DataFrame({
+                        'Value': stats['top_categories'].keys(),
+                        'Count': stats['top_categories'].values(),
+                        'Percentage': stats['top_percentages'].values()
+                    }))
                     
                     # Bar chart for categorical column
                     fig = create_categorical_plot(df, col)
@@ -372,16 +376,18 @@ else:
         
         # Create a summary table of outliers by column
         outlier_summary = []
-        for col, values in outliers.items():
-            outlier_count = len(values)
-            pct_outliers = (outlier_count / len(df)) * 100
-            outlier_summary.append({
-                "Column": col,
-                "Outlier Count": outlier_count,
-                "% Outliers": f"{pct_outliers:.2f}%",
-                "Min Outlier": min(values) if outlier_count > 0 else None,
-                "Max Outlier": max(values) if outlier_count > 0 else None
-            })
+        if outliers:
+            for col, stats in outliers.items():
+                outlier_count = stats['count']
+                pct_outliers = stats['percent']
+                values = stats['values']
+                outlier_summary.append({
+                    "Column": col,
+                    "Outlier Count": outlier_count,
+                    "% Outliers": f"{pct_outliers:.2f}%",
+                    "Min Outlier": min(values) if values else None,
+                    "Max Outlier": max(values) if values else None
+                })
             
         if outlier_summary:
             outlier_df = pd.DataFrame(outlier_summary)
@@ -396,27 +402,34 @@ else:
                 fig = px.box(df, y=selected_col, title=f"Box Plot with Outliers: {selected_col}")
                 
                 # Highlight the outliers
-                if outliers[selected_col]:
-                    outlier_indices = outliers[selected_col]
-                    outlier_values = df.loc[outlier_indices, selected_col]
+                if outliers[selected_col] and outliers[selected_col]['count'] > 0:
+                    outlier_indices = outliers[selected_col]['indices']
                     
-                    # Add scatter points for outliers
-                    fig.add_trace(
-                        go.Scatter(
-                            x=[0] * len(outlier_values),
-                            y=outlier_values,
-                            mode="markers",
-                            marker=dict(color="red", size=8, symbol="circle"),
-                            name="Outliers"
+                    # Get outlier values
+                    if isinstance(outlier_indices, list) and outlier_indices:
+                        outlier_values = df.loc[outlier_indices, selected_col]
+                        
+                        # Add scatter points for outliers
+                        fig.add_trace(
+                            go.Scatter(
+                                x=[0] * len(outlier_values),
+                                y=outlier_values,
+                                mode="markers",
+                                marker=dict(color="red", size=8, symbol="circle"),
+                                name="Outliers"
+                            )
                         )
-                    )
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
                 # Option to show the actual outlier values
                 with st.expander("Show outlier records"):
-                    if outliers[selected_col]:
-                        st.dataframe(df.loc[outliers[selected_col]])
+                    if outliers[selected_col] and outliers[selected_col]['count'] > 0:
+                        outlier_indices = outliers[selected_col]['indices']
+                        if isinstance(outlier_indices, list) and outlier_indices:
+                            st.dataframe(df.loc[outlier_indices])
+                        else:
+                            st.info(f"No outlier indices available for {selected_col}.")
                     else:
                         st.info(f"No outliers detected in {selected_col} with the current settings.")
         else:
