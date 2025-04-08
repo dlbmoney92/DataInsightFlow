@@ -67,6 +67,29 @@ st.markdown("""
 # Render custom navigation bar
 render_navigation()
 
+def local_local_register_transformation(transformation_name, transformation_details, original_df, df, columns_affected):
+    """Local version of register_transformation that can handle the current call signature."""
+    # This is a helper function to correctly call the register_transformation function 
+    # with the expected parameters in the correct order
+    from utils.transformations import register_transformation
+    
+    # Extract function name from transformation details, or use a default
+    function_name = transformation_details.get("type", "custom_transformation")
+    
+    # Ensure columns is a list
+    if isinstance(columns_affected, str):
+        columns_affected = [columns_affected]
+    
+    # Call the actual register_transformation with the correct parameters
+    return local_register_transformation(
+        df=df, 
+        name=transformation_name,
+        description=json.dumps(transformation_details),
+        function=function_name,
+        columns=columns_affected,
+        params=transformation_details
+    )
+
 # Check authentication
 if not require_auth():
     st.stop()
@@ -223,7 +246,7 @@ else:
                         }
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -326,7 +349,7 @@ else:
                         }
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -390,7 +413,7 @@ else:
                         }
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -456,7 +479,7 @@ else:
                         }
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -577,7 +600,7 @@ else:
                         df = transformed_df
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -623,7 +646,7 @@ else:
                         }
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -708,7 +731,7 @@ else:
                         }
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -810,7 +833,7 @@ else:
                         }
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -861,7 +884,7 @@ else:
                     }
                     
                     # Register transformation
-                    register_transformation(
+                    local_register_transformation(
                         st.session_state.transformations,
                         st.session_state.transformation_history,
                         transformation_name,
@@ -973,7 +996,7 @@ else:
                         }
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -1159,7 +1182,7 @@ else:
                         df = transformed_df
                         
                         # Register transformation
-                        register_transformation(
+                        local_register_transformation(
                             st.session_state.transformations,
                             st.session_state.transformation_history,
                             transformation_name,
@@ -1251,7 +1274,7 @@ else:
                                     }
                                     
                                     # Register transformation
-                                    register_transformation(
+                                    local_register_transformation(
                                         st.session_state.transformations,
                                         st.session_state.transformation_history,
                                         transformation_name,
@@ -1380,7 +1403,7 @@ else:
                                     }
                                     
                                     # Register transformation
-                                    register_transformation(
+                                    local_register_transformation(
                                         st.session_state.transformations,
                                         st.session_state.transformation_history,
                                         transformation_name,
@@ -1537,7 +1560,7 @@ else:
                                 }
                                 
                                 # Register transformation
-                                register_transformation(
+                                local_register_transformation(
                                     st.session_state.transformations,
                                     st.session_state.transformation_history,
                                     transformation_name,
@@ -1613,7 +1636,7 @@ else:
                                 }
                                 
                                 # Register transformation
-                                register_transformation(
+                                local_register_transformation(
                                     st.session_state.transformations,
                                     st.session_state.transformation_history,
                                     transformation_name,
@@ -1705,7 +1728,7 @@ else:
                             }
                             
                             # Register transformation
-                            register_transformation(
+                            local_register_transformation(
                                 st.session_state.transformations,
                                 st.session_state.transformation_history,
                                 transformation_name,
@@ -1767,7 +1790,7 @@ else:
                                 }
                                 
                                 # Register transformation
-                                register_transformation(
+                                local_register_transformation(
                                     st.session_state.transformations,
                                     st.session_state.transformation_history,
                                     transformation_name,

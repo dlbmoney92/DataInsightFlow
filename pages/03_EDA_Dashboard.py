@@ -336,7 +336,23 @@ else:
                 y_col = st.selectbox("Select Y-axis column", numeric_cols, key="corr_y")
                 
             # Create scatter plot for the selected correlation
-            fig = px.scatter(df, x=x_col, y=y_col, trendline="ols", 
+            # Make a copy of the dataframe and ensure column names are unique
+            plot_df = df.copy()
+            # Check for duplicate column names
+            if plot_df.columns.duplicated().any():
+                # Rename duplicate columns by adding a suffix
+                renamed_cols = []
+                for i, col in enumerate(plot_df.columns):
+                    if col in renamed_cols:
+                        suffix = 1
+                        while f"{col}_{suffix}" in renamed_cols:
+                            suffix += 1
+                        plot_df = plot_df.rename(columns={col: f"{col}_{suffix}"})
+                        renamed_cols.append(f"{col}_{suffix}")
+                    else:
+                        renamed_cols.append(col)
+            
+            fig = px.scatter(plot_df, x=x_col, y=y_col, trendline="ols", 
                            title=f"Correlation between {x_col} and {y_col}")
             
             st.plotly_chart(fig, use_container_width=True)
