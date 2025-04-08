@@ -60,7 +60,21 @@ def generate_column_cleaning_suggestions(df, column_name, column_type):
             json_response=True,
             max_tokens=1000
         )
-        return result.get('recommendations', []) if isinstance(result, dict) and 'recommendations' in result else result
+        
+        # Check if we got a recommendations key or direct array
+        if isinstance(result, dict) and 'recommendations' in result:
+            return result.get('recommendations', [])
+        elif isinstance(result, list):
+            return result
+        else:
+            # Handle unexpected response format
+            st.warning(f"Unexpected suggestion format: {type(result)}")
+            # If result is a dict but without recommendations key, return it as a list with one item
+            if isinstance(result, dict):
+                # Convert to array format if it has the expected keys
+                if all(key in result for key in ['operation', 'description', 'rationale']):
+                    return [result]
+            return []
     except Exception as e:
         st.error(f"Error generating cleaning suggestions: {str(e)}")
         return []

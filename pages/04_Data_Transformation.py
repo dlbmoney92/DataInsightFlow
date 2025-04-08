@@ -1884,9 +1884,19 @@ else:
                 with st.spinner("Generating AI suggestions..."):
                     suggestions = generate_column_cleaning_suggestions(df, selected_col_for_ai, col_type)
                     
-                    # Display suggestions
+                    # Display suggestions in a better format
                     st.markdown(f"### Suggestions for '{selected_col_for_ai}'")
-                    st.markdown(suggestions)
+                    
+                    # Check if we got suggestions back
+                    if suggestions and isinstance(suggestions, list):
+                        for i, suggestion in enumerate(suggestions):
+                            with st.expander(f"{i+1}. {suggestion.get('operation', 'Suggestion')}", expanded=True):
+                                st.markdown(f"**Description:** {suggestion.get('description', 'N/A')}")
+                                st.markdown(f"**Rationale:** {suggestion.get('rationale', 'N/A')}")
+                                st.markdown(f"**Code Action:** `{suggestion.get('code_action', 'N/A')}`")
+                                st.divider()
+                    else:
+                        st.info("No suggestions available for this column.")
             
             # Data preview section
             st.subheader("Data Preview")
