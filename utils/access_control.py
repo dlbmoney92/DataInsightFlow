@@ -170,7 +170,7 @@ def check_access(feature_type, feature_name=None):
     return False
 
 def get_dataset_count(user_id):
-    """Get the number of datasets for a user."""
+    """Get the number of datasets for a user, excluding sample datasets."""
     def _count_datasets_operation():
         from sqlalchemy import text
         
@@ -184,8 +184,13 @@ def get_dataset_count(user_id):
         else:
             user_id_int = user_id
             
-        # Build query
-        query = text("SELECT COUNT(*) FROM datasets WHERE user_id = :user_id")
+        # Build query - exclude datasets marked as samples (names starting with 'Sample:')
+        query = text("""
+            SELECT COUNT(*) 
+            FROM datasets 
+            WHERE user_id = :user_id 
+            AND name NOT LIKE 'Sample:%'
+        """)
         
         # Execute query using the DATABASE_URL environment variable
         import os

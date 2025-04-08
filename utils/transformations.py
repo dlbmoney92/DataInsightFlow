@@ -96,41 +96,80 @@ def apply_transformations(df, transformations=None):
         columns = transform['columns']
         params = transform['params'] if 'params' in transform else {}
         
-        # Apply the transformation function
-        if function_name == 'impute_missing_mean':
-            df_transformed = impute_missing_mean(df_transformed, columns)
-        elif function_name == 'impute_missing_median':
-            df_transformed = impute_missing_median(df_transformed, columns)
-        elif function_name == 'impute_missing_mode':
-            df_transformed = impute_missing_mode(df_transformed, columns)
-        elif function_name == 'impute_missing_constant':
-            df_transformed = impute_missing_constant(df_transformed, columns, params.get('value'))
-        elif function_name == 'remove_outliers':
-            df_transformed = remove_outliers(df_transformed, columns, method=params.get('method', 'zscore'))
-        elif function_name == 'normalize':
-            df_transformed = normalize_columns(df_transformed, columns, method=params.get('method', 'minmax'))
-        elif function_name == 'standardize_data':
-            df_transformed = standardize_data(df_transformed, columns)
-        elif function_name == 'encode_categorical':
-            df_transformed = encode_categorical(df_transformed, columns, method=params.get('method', 'onehot'))
-        elif function_name == 'format_dates':
-            df_transformed = format_dates(df_transformed, columns, format=params.get('format'))
-        elif function_name == 'to_datetime':
-            df_transformed = to_datetime(df_transformed, columns)
-        elif function_name == 'drop_columns':
-            df_transformed = drop_columns(df_transformed, columns)
-        elif function_name == 'rename_columns':
-            df_transformed = rename_columns(df_transformed, params.get('mapping', {}))
-        elif function_name == 'create_bins':
-            df_transformed = create_bins(df_transformed, columns[0], params.get('num_bins', 5), params.get('new_column_name'))
-        elif function_name == 'log_transform':
-            df_transformed = log_transform(df_transformed, columns)
-        elif function_name == 'convert_numeric_to_datetime':
-            df_transformed = convert_numeric_to_datetime(df_transformed, columns)
-        elif function_name == 'round_off':
-            df_transformed = round_off(df_transformed, columns, params.get('decimals', 2))
-        elif function_name == 'standardize_category_names':
-            df_transformed = standardize_category_names(df_transformed, columns, params.get('case', 'upper'))
+        try:
+            # Apply the transformation function and handle different return patterns
+            result = None
+            
+            if function_name == 'impute_missing_mean':
+                result = impute_missing_mean(df_transformed, columns)
+            elif function_name == 'impute_missing_median':
+                result = impute_missing_median(df_transformed, columns)
+            elif function_name == 'impute_missing_mode':
+                result = impute_missing_mode(df_transformed, columns)
+            elif function_name == 'impute_missing_constant':
+                result = impute_missing_constant(df_transformed, columns, params.get('value'))
+            elif function_name == 'remove_outliers':
+                result = remove_outliers(df_transformed, columns, method=params.get('method', 'zscore'))
+            elif function_name == 'normalize':
+                result = normalize_columns(df_transformed, columns, method=params.get('method', 'minmax'))
+            elif function_name == 'standardize_data':
+                result = standardize_data(df_transformed, columns, 
+                                       method=params.get('method', 'zscore'),
+                                       custom_mapping=params.get('custom_mapping'))
+            elif function_name == 'encode_categorical':
+                result = encode_categorical(df_transformed, columns, method=params.get('method', 'onehot'))
+            elif function_name == 'format_dates':
+                result = format_dates(df_transformed, columns[0], output_format=params.get('output_format'))
+            elif function_name == 'to_datetime':
+                result = to_datetime(df_transformed, columns[0], format=params.get('format'))
+            elif function_name == 'drop_columns':
+                result = drop_columns(df_transformed, columns)
+            elif function_name == 'rename_columns':
+                result = rename_columns(df_transformed, params.get('mapping', {}))
+            elif function_name == 'create_bins':
+                result = create_bins(
+                    df_transformed, 
+                    columns[0], 
+                    num_bins=params.get('num_bins', 5), 
+                    new_column_name=params.get('new_column_name'),
+                    method=params.get('method', 'equal_width'),
+                    bin_edges=params.get('bin_edges'),
+                    labels=params.get('labels')
+                )
+            elif function_name == 'log_transform':
+                result = log_transform(
+                    df_transformed, 
+                    columns,
+                    base=params.get('base'),
+                    handle_zeros=params.get('handle_zeros', True)
+                )
+            elif function_name == 'convert_numeric_to_datetime':
+                result = convert_numeric_to_datetime(
+                    df_transformed, 
+                    columns[0],
+                    component=params.get('component')
+                )
+            elif function_name == 'round_off':
+                result = round_off(df_transformed, columns, decimals=params.get('decimals', 2))
+            elif function_name == 'standardize_category_names':
+                result = standardize_category_names(
+                    df_transformed, 
+                    columns, 
+                    method=params.get('method', 'upper'),
+                    custom_mapping=params.get('custom_mapping')
+                )
+                
+            # Handle different return types (some functions now return (df, stats) tuple)
+            if result is not None:
+                if isinstance(result, tuple) and len(result) > 0:
+                    df_transformed = result[0]  # Extract the DataFrame from the tuple
+                else:
+                    df_transformed = result
+                    
+        except Exception as e:
+            st.error(f"Error applying transformation {function_name}: {str(e)}")
+            # Continue with other transformations
+            continue
     
     return df_transformed
 
@@ -325,10 +364,32 @@ def rename_columns(df, mapping):
     
     return df_out, stats
 
-def create_bins(df, column, num_bins=5, new_column_name=None):
-    """Create bins from a numeric column."""
-    if column not in df.columns or not pd.api.types.is_numeric_dtype(df[column]):
-        return df
+def create_bins(df, column, num_bins=5, new_column_name=None, method="equal_width", bin_edges=None, labels=None):
+    """
+    Create bins from a numeric column.
+    
+    Parameters:
+    - df: DataFrame containing the data
+    - column: Column to bin
+    - num_bins: Number of bins to create (default=5)
+    - new_column_name: Name for the new binned column (default=None, will use column_bins)
+    - method: Binning method ('equal_width', 'equal_frequency', or 'custom')
+    - bin_edges: Custom bin edges if method='custom'
+    - labels: Custom labels for the bins
+    
+    Returns:
+    - df_out: DataFrame with binned column added
+    - stats: Dictionary with binning statistics
+    """
+    stats = {"success": 0, "failed": 0, "error": None}
+    
+    if column not in df.columns:
+        stats["error"] = f"Column {column} not found in dataframe"
+        return df, stats
+    
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        stats["error"] = f"Column {column} is not numeric"
+        return df, stats
     
     df_out = df.copy()
     
@@ -336,25 +397,76 @@ def create_bins(df, column, num_bins=5, new_column_name=None):
     if new_column_name is None:
         new_column_name = f"{column}_bins"
     
-    # Create bins
-    df_out[new_column_name] = pd.cut(df[column], bins=num_bins)
+    try:
+        # Create bins based on the method
+        if method == "equal_width":
+            # Equal width binning (default pd.cut behavior)
+            df_out[new_column_name] = pd.cut(df[column], bins=num_bins, labels=labels)
+        
+        elif method == "equal_frequency":
+            # Equal frequency binning (quantile-based)
+            df_out[new_column_name] = pd.qcut(df[column], q=num_bins, labels=labels, duplicates='drop')
+        
+        elif method == "custom" and bin_edges is not None:
+            # Custom binning with user-defined edges
+            df_out[new_column_name] = pd.cut(df[column], bins=bin_edges, labels=labels)
+        
+        else:
+            # Default to equal width binning
+            df_out[new_column_name] = pd.cut(df[column], bins=num_bins, labels=labels)
+        
+        # Count successful binning
+        stats["success"] = df_out[new_column_name].notna().sum()
+        stats["failed"] = df_out[new_column_name].isna().sum()
+        
+    except Exception as e:
+        stats["error"] = str(e)
     
-    return df_out
+    return df_out, stats
 
-def log_transform(df, columns):
-    """Apply log transformation to specified columns."""
+def log_transform(df, columns, base=None, handle_zeros=True):
+    """Apply log transformation to specified columns.
+    
+    Args:
+        df: DataFrame containing the data
+        columns: List of column names to transform
+        base: The logarithm base to use (None for natural log, 10 for log10, 2 for log2)
+        handle_zeros: Whether to handle zeros and negative values by adding a constant
+        
+    Returns:
+        Tuple of (transformed DataFrame, stats)
+    """
     df_out = df.copy()
+    stats = {"success": 0, "failed": 0, "error": None}
     
     for column in columns:
         if column in df.columns and pd.api.types.is_numeric_dtype(df[column]):
-            # Handle zeros and negative values by adding a small constant
-            min_val = df[column].min()
-            constant = 1 if min_val >= 0 else abs(min_val) + 1
-            
-            # Apply log transformation
-            df_out[f"{column}_log"] = np.log(df[column] + constant)
+            try:
+                # Handle zeros and negative values if requested
+                constant = 0
+                if handle_zeros:
+                    min_val = df[column].min()
+                    if min_val <= 0:  # Handle zeros and negative values
+                        constant = abs(min_val) + 1
+                
+                # Apply log transformation with the specified base
+                if base == 10:
+                    df_out[f"{column}_log"] = np.log10(df[column] + constant)
+                elif base == 2:
+                    df_out[f"{column}_log"] = np.log2(df[column] + constant)
+                else:  # Default to natural log
+                    df_out[f"{column}_log"] = np.log(df[column] + constant)
+                
+                # Count successful transformations
+                stats["success"] += df_out[f"{column}_log"].notna().sum()
+                stats["failed"] += df_out[f"{column}_log"].isna().sum()
+                
+            except Exception as e:
+                stats["error"] = f"Error transforming column {column}: {str(e)}"
+        else:
+            stats["error"] = f"Column {column} not found or not numeric"
     
-    return df_out
+    return df_out, stats
 
 def convert_numeric_to_datetime(df, column, component=None):
     """Convert numeric values (e.g., Unix timestamps) to datetime or extract components.
@@ -422,48 +534,167 @@ def convert_numeric_to_datetime(df, column, component=None):
     
     return df_out, stats
 
-def standardize_data(df, columns):
-    """Standardize data (z-score normalization)."""
+def standardize_data(df, columns, method="zscore", custom_mapping=None):
+    """Standardize data using various methods.
+    
+    Args:
+        df: DataFrame
+        columns: List of columns to standardize
+        method: Standardization method ('zscore', 'minmax', 'robust', 'quantile', 'custom')
+        custom_mapping: Custom mapping for the 'custom' method
+        
+    Returns:
+        Tuple of (transformed DataFrame, stats)
+    """
     df_out = df.copy()
+    stats = {"success": 0, "failed": 0, "error": None}
     
     for column in columns:
         if column in df.columns and pd.api.types.is_numeric_dtype(df[column]):
-            mean = df[column].mean()
-            std = df[column].std()
-            if std > 0:  # Avoid division by zero
-                df_out[column] = (df[column] - mean) / std
+            try:
+                if method == "zscore":
+                    # Z-score normalization
+                    mean = df[column].mean()
+                    std = df[column].std()
+                    if std > 0:  # Avoid division by zero
+                        df_out[column] = (df[column] - mean) / std
+                    else:
+                        stats["error"] = f"Cannot standardize column {column}: Standard deviation is zero"
+                
+                elif method == "minmax":
+                    # Min-max scaling to [0, 1]
+                    min_val = df[column].min()
+                    max_val = df[column].max()
+                    if max_val > min_val:  # Avoid division by zero
+                        df_out[column] = (df[column] - min_val) / (max_val - min_val)
+                    else:
+                        stats["error"] = f"Cannot standardize column {column}: All values are identical"
+                
+                elif method == "robust":
+                    # Robust scaling using median and IQR
+                    median = df[column].median()
+                    q1 = df[column].quantile(0.25)
+                    q3 = df[column].quantile(0.75)
+                    iqr = q3 - q1
+                    if iqr > 0:  # Avoid division by zero
+                        df_out[column] = (df[column] - median) / iqr
+                    else:
+                        stats["error"] = f"Cannot standardize column {column}: IQR is zero"
+                
+                elif method == "quantile":
+                    # Quantile transformation (uniform distribution)
+                    from sklearn.preprocessing import QuantileTransformer
+                    qt = QuantileTransformer(output_distribution='uniform')
+                    df_out[column] = qt.fit_transform(df[[column]])
+                
+                elif method == "custom" and custom_mapping is not None:
+                    # Custom mapping
+                    df_out[column] = df[column].map(custom_mapping)
+                
+                # Count successful transformations
+                stats["success"] += df_out[column].notna().sum()
+                stats["failed"] += df_out[column].isna().sum()
+                
+            except Exception as e:
+                stats["error"] = f"Error standardizing column {column}: {str(e)}"
+        else:
+            stats["error"] = f"Column {column} not found or not numeric"
     
-    return df_out
+    return df_out, stats
 
 def round_off(df, columns, decimals=2):
-    """Round numeric values to specified number of decimal places."""
+    """Round numeric values to specified number of decimal places.
+    
+    Args:
+        df: DataFrame containing the data
+        columns: List of column names to round
+        decimals: Number of decimal places to round to (default=2)
+        
+    Returns:
+        Tuple of (transformed DataFrame, stats)
+    """
     df_out = df.copy()
+    stats = {"success": 0, "failed": 0, "error": None}
+    
+    if not isinstance(columns, list):
+        columns = [columns]  # Convert single column to list
     
     for column in columns:
         if column in df.columns and pd.api.types.is_numeric_dtype(df[column]):
-            df_out[column] = df[column].round(decimals)
+            try:
+                df_out[column] = df[column].round(decimals)
+                
+                # Count successful transformations
+                stats["success"] += df_out[column].notna().sum()
+                stats["failed"] += df_out[column].isna().sum()
+            except Exception as e:
+                stats["error"] = f"Error rounding column {column}: {str(e)}"
+        else:
+            stats["error"] = f"Column {column} not found or not numeric"
     
-    return df_out
+    return df_out, stats
 
-def standardize_category_names(df, columns, case='upper'):
-    """Standardize category names by converting to specified case and removing extra spaces."""
+def standardize_category_names(df, columns, method='upper', custom_mapping=None):
+    """Standardize category names by converting to specified case, removing extra spaces, or applying custom mappings.
+    
+    Args:
+        df: DataFrame
+        columns: List of columns to standardize
+        method: Standardization method ('upper', 'lower', 'title', 'strip', 'custom')
+        custom_mapping: Custom mapping dictionary for the 'custom' method
+        
+    Returns:
+        Tuple of (transformed DataFrame, stats)
+    """
     df_out = df.copy()
+    stats = {"success": 0, "failed": 0, "error": None}
+    
+    if not isinstance(columns, list):
+        columns = [columns]  # Convert single column to list
     
     for column in columns:
-        if column in df.columns and pd.api.types.is_string_dtype(df[column]):
-            # Convert to appropriate case
-            if case.lower() == 'upper':
-                df_out[column] = df[column].str.upper()
-            elif case.lower() == 'lower':
-                df_out[column] = df[column].str.lower()
-            elif case.lower() == 'title':
-                df_out[column] = df[column].str.title()
-            
-            # Remove extra spaces
-            df_out[column] = df_out[column].str.strip()
-            df_out[column] = df_out[column].str.replace(r'\s+', ' ', regex=True)
+        if column in df.columns:
+            try:
+                # Handle string columns
+                if pd.api.types.is_string_dtype(df[column]) or df[column].dtype == 'object':
+                    # Apply the appropriate transformation
+                    if method.lower() == 'upper':
+                        df_out[column] = df[column].str.upper()
+                        df_out[column] = df[column].str.strip()
+                        df_out[column] = df[column].str.replace(r'\s+', ' ', regex=True)
+                    
+                    elif method.lower() == 'lower':
+                        df_out[column] = df[column].str.lower()
+                        df_out[column] = df[column].str.strip()
+                        df_out[column] = df[column].str.replace(r'\s+', ' ', regex=True)
+                    
+                    elif method.lower() == 'title':
+                        df_out[column] = df[column].str.title()
+                        df_out[column] = df[column].str.strip()
+                        df_out[column] = df[column].str.replace(r'\s+', ' ', regex=True)
+                    
+                    elif method.lower() == 'strip':
+                        # Just remove extra spaces
+                        df_out[column] = df[column].str.strip()
+                        df_out[column] = df[column].str.replace(r'\s+', ' ', regex=True)
+                    
+                    elif method.lower() == 'custom' and custom_mapping is not None:
+                        # Apply custom mapping
+                        df_out[column] = df[column].map(custom_mapping)
+                    
+                    # Count successful transformations
+                    stats["success"] += df_out[column].notna().sum()
+                    stats["failed"] += df_out[column].isna().sum()
+                    
+                else:
+                    stats["error"] = f"Column {column} is not a string/object column"
+                    
+            except Exception as e:
+                stats["error"] = f"Error standardizing column {column}: {str(e)}"
+        else:
+            stats["error"] = f"Column {column} not found in dataframe"
     
-    return df_out
+    return df_out, stats
 
 def to_datetime(df, column, format=None):
     """Convert a column to datetime format.
