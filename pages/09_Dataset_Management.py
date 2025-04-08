@@ -31,8 +31,12 @@ def app():
     subscription_tier = st.session_state.get("subscription_tier", "free")
     dataset_limit = check_access("dataset_count")
     
-    # Display usage information
+    # Display dataset usage information
     st.info(f"You are currently using {current_count} datasets out of your {dataset_limit if dataset_limit > 0 else 'unlimited'} dataset limit.")
+    
+    # Get file size limit based on subscription tier
+    file_size_limit = check_access("file_size_limit")
+    st.info(f"Maximum file size: {file_size_limit} MB")
     
     # Progress bar for dataset usage
     if dataset_limit > 0:  # Only show progress bar if there's a limit

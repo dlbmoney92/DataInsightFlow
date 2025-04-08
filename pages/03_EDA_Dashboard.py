@@ -32,6 +32,7 @@ from utils.ai_suggestions import suggest_visualizations
 from utils.auth_redirect import require_auth
 from utils.custom_navigation import render_navigation, initialize_navigation
 from utils.global_config import apply_global_css
+from utils.access_control import check_access
 import base64
 
 # Apply global CSS
@@ -67,6 +68,17 @@ Use this interactive dashboard to explore and visualize your data.
 Generate statistical summaries, create visualizations, and identify patterns and outliers.
 """)
 
+# Display available features based on subscription tier
+subscription_tier = st.session_state.get("subscription_tier", "free")
+if subscription_tier == "free":
+    st.info("Free tier includes basic statistics and correlation analysis. Upgrade to access advanced visualizations, outlier detection, and full EDA reports.")
+elif subscription_tier == "basic":
+    st.info("Basic tier includes statistics, correlation analysis, distribution plots, and outlier detection. Upgrade to Pro for advanced features and AI-powered insights.")
+elif subscription_tier == "pro":
+    st.info("Pro tier includes all analysis features. Thanks for your support!")
+elif subscription_tier == "enterprise":
+    st.info("Enterprise tier includes all analysis features with highest data limits. Thank you for choosing our Enterprise solution!")
+
 # Check if dataset is loaded
 if "dataset" not in st.session_state or st.session_state.dataset is None:
     st.warning("No dataset loaded. Please upload or select a dataset first.")
@@ -90,16 +102,49 @@ else:
     - **Project**: {st.session_state.current_project.get('name', 'Unnamed project')}
     """)
     
-    # Create tabs for different EDA features
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📊 Summary Stats", 
-        "📈 Visualizations", 
-        "🔍 Correlations", 
-        "⚠️ Outliers", 
-        "📑 Full Report"
-    ])
+    # Get available analysis features based on subscription tier
+    available_analysis = check_access("analysis", None)
     
-    with tab1:
+    # Create tabs for different EDA features
+    tabs_list = ["📊 Summary Stats", "🔍 Correlations"]
+    
+    # Add additional tabs based on subscription tier
+    if check_access("analysis", "distribution"):
+        tabs_list.append("📈 Visualizations")
+    
+    if check_access("analysis", "outlier_detection"):
+        tabs_list.append("⚠️ Outliers")
+    
+    if check_access("analysis", "trend_analysis") or st.session_state.subscription_tier == "enterprise":
+        tabs_list.append("📑 Full Report")
+    
+    # Create tabs
+    tabs = st.tabs(tabs_list)
+    
+    # Track which tabs are available and their indexes
+    tab_info = {
+        "Summary Stats": {"index": 0, "available": True},
+        "Correlations": {"index": 1, "available": True},
+        "Visualizations": {"index": -1, "available": "📈 Visualizations" in tabs_list},
+        "Outliers": {"index": -1, "available": "⚠️ Outliers" in tabs_list},
+        "Full Report": {"index": -1, "available": "📑 Full Report" in tabs_list}
+    }
+    
+    # Assign indexes to optional tabs
+    tab_index = 2
+    if tab_info["Visualizations"]["available"]:
+        tab_info["Visualizations"]["index"] = tab_index
+        tab_index += 1
+        
+    if tab_info["Outliers"]["available"]:
+        tab_info["Outliers"]["index"] = tab_index
+        tab_index += 1
+        
+    if tab_info["Full Report"]["available"]:
+        tab_info["Full Report"]["index"] = tab_index
+    
+    # Summary Stats tab (always available)
+    with tabs[tab_info["Summary Stats"]["index"]]:
         st.header("Summary Statistics")
         
         # Summary statistics section
@@ -196,8 +241,10 @@ else:
             else:
                 st.success("No missing values found in the dataset!")
     
-    with tab2:
-        st.header("Data Visualizations")
+    # Visualizations tab (conditional based on subscription)
+    if tab_info["Visualizations"]["available"]:
+        with tabs[tab_info["Visualizations"]["index"]]:
+            st.header("Data Visualizations")
         
         # Create an AI suggestion section
         with st.expander("🤖 AI-Suggested Visualizations", expanded=True):
@@ -294,7 +341,8 @@ else:
         elif viz_type == "Time Series" and not temporal_cols:
             st.info("No temporal columns found in the dataset for time series visualization.")
             
-    with tab3:
+    # Correlations tab (always available)
+    with tabs[tab_info["Correlations"]["index"]]:
         st.header("Correlation Analysis")
         
         # Only perform correlation analysis if there are at least 2 numeric columns
@@ -363,8 +411,10 @@ else:
         else:
             st.info("At least 2 numeric columns are required for correlation analysis.")
     
-    with tab4:
-        st.header("Outlier Detection")
+    # Outliers tab (conditional based on subscription)
+    if tab_info["Outliers"]["available"]:
+        with tabs[tab_info["Outliers"]["index"]]:
+            st.header("Outlier Detection")
         
         # Choose outlier detection method
         outlier_method = st.radio(
@@ -459,8 +509,10 @@ else:
         else:
             st.info("No outliers detected with the current settings.")
     
-    with tab5:
-        st.header("Complete EDA Report")
+    # Full Report tab (conditional based on subscription)
+    if tab_info["Full Report"]["available"]:
+        with tabs[tab_info["Full Report"]["index"]]:
+            st.header("Complete EDA Report")
         
         # Generate a comprehensive EDA report
         with st.spinner("Generating EDA report..."):
