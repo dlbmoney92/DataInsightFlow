@@ -1,4 +1,12 @@
 import streamlit as st
+
+# Set page configuration - must be the first Streamlit command
+st.set_page_config(
+    page_title="EDA Dashboard | Analytics Assist",
+    page_icon="📊",
+    layout="wide"
+)
+
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -22,13 +30,27 @@ from utils.visualization import (
 )
 from utils.ai_suggestions import suggest_visualizations
 from utils.auth_redirect import require_auth
+from utils.custom_navigation import render_navigation, initialize_navigation
+from utils.global_config import apply_global_css
 import base64
 
-st.set_page_config(
-    page_title="EDA Dashboard | Analytics Assist",
-    page_icon="📊",
-    layout="wide"
-)
+# Apply global CSS
+apply_global_css()
+
+# Initialize navigation
+initialize_navigation()
+
+# Hide Streamlit's default multipage navigation menu
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Render custom navigation bar
+render_navigation()
 
 # Check authentication first
 if not require_auth():
@@ -39,697 +61,394 @@ if "user" in st.session_state:
     st.sidebar.success(f"Logged in as: {st.session_state.user.get('email', 'User')}")
     st.sidebar.info(f"Subscription: {st.session_state.subscription_tier.capitalize()}")
 
-# Check if dataset exists in session state
-if 'dataset' not in st.session_state or st.session_state.dataset is None:
-    st.warning("Please upload a dataset first.")
-    st.button("Go to Upload Page", on_click=lambda: st.switch_page("pages/01_Upload_Data.py"))
-    st.stop()
-
-# Header and description
 st.title("Exploratory Data Analysis Dashboard")
 st.markdown("""
-Discover insights from your data with automatic visualizations and statistical analysis.
-This dashboard provides a comprehensive overview of your dataset.
+Use this interactive dashboard to explore and visualize your data. 
+Generate statistical summaries, create visualizations, and identify patterns and outliers.
 """)
 
-# Get data from session state
-df = st.session_state.dataset
-column_types = st.session_state.column_types
-file_name = st.session_state.file_name
-
-# Create tabs for different EDA sections
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📊 Overview", 
-    "📈 Distributions", 
-    "🔍 Correlations", 
-    "🧮 Advanced Analysis",
-    "📋 Full Report"
-])
-
-# Tab 1: Overview
-with tab1:
-    st.subheader("Dataset Summary")
+# Check if dataset is loaded
+if "dataset" not in st.session_state or st.session_state.dataset is None:
+    st.warning("No dataset loaded. Please upload or select a dataset first.")
     
-    # Generate summary statistics
-    summary_stats = generate_summary_stats(df)
-    
-    # Display basic info
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Rows", summary_stats['basic_info']['rows'])
-    
-    with col2:
-        st.metric("Columns", summary_stats['basic_info']['columns'])
-    
-    with col3:
-        missing_vals = sum(info['count'] for info in summary_stats['missing_values'].values())
-        total_cells = summary_stats['basic_info']['rows'] * summary_stats['basic_info']['columns']
-        missing_pct = round(missing_vals / total_cells * 100, 2) if total_cells > 0 else 0
-        st.metric("Missing Values", f"{missing_vals} ({missing_pct}%)")
-    
-    # Missing values visualization
-    st.subheader("Missing Values Heatmap")
-    missing_fig = create_missing_values_heatmap(df)
-    if missing_fig:
-        st.plotly_chart(missing_fig, use_container_width=True, key="missing_values_heatmap")
-    else:
-        st.info("No missing values to display.")
-    
-    # Column type breakdown
-    st.subheader("Column Types")
-    
-    # Count column types
-    type_counts = {}
-    for col_type in column_types.values():
-        type_counts[col_type] = type_counts.get(col_type, 0) + 1
-    
-    # Create pie chart for column types
-    type_df = pd.DataFrame({
-        'Type': list(type_counts.keys()),
-        'Count': list(type_counts.values())
-    })
-    
-    fig = px.pie(
-        type_df, 
-        values='Count', 
-        names='Type', 
-        title='Column Types Distribution',
-        color_discrete_sequence=px.colors.qualitative.Plotly
-    )
-    
-    fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True, key="column_types_pie")
-    
-    # AI-suggested visualizations
-    st.subheader("AI-Suggested Visualizations")
-    
-    if 'visualization_suggestions' not in st.session_state:
-        with st.spinner("Generating visualization suggestions..."):
-            visualization_suggestions = suggest_visualizations(df)
-            st.session_state.visualization_suggestions = visualization_suggestions
-    else:
-        visualization_suggestions = st.session_state.visualization_suggestions
-    
-    if visualization_suggestions:
-        # Display the top 3 suggestions
-        # Convert to list first to ensure we can slice it safely
-        suggestions_list = list(visualization_suggestions)
-        max_suggestions = min(3, len(suggestions_list))
-        
-        for i in range(max_suggestions):
-            suggestion = suggestions_list[i]
-            # Check if suggestion is a dictionary
-            if isinstance(suggestion, dict):
-                st.markdown(f"### {suggestion.get('title', f'Suggestion {i+1}')}")
-                st.markdown(suggestion.get('description', ''))
-            else:
-                # If it's not a dictionary (e.g., a string), handle it differently
-                st.markdown(f"### Suggestion {i+1}")
-                st.markdown(str(suggestion) if suggestion else "")
-            
-            # Create visualization from suggestion only if it's a dictionary
-            if isinstance(suggestion, dict):
-                from utils.visualization import create_visualization_from_suggestion
-                fig = create_visualization_from_suggestion(df, suggestion)
-                
-                if fig:
-                    st.plotly_chart(fig, use_container_width=True, key=f"ai_suggestion_{i}")
-                else:
-                    st.error("Could not create this visualization. Some columns may be incompatible.")
-            else:
-                st.warning("Visualization not available for this suggestion format.")
-    else:
-        st.info("No visualization suggestions available.")
-
-# Tab 2: Distributions
-with tab2:
-    st.subheader("Column Distributions")
-    
-    # Create column selectors
     col1, col2 = st.columns(2)
-    
     with col1:
-        # Numeric columns for distribution plots
-        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-        if numeric_cols:
-            selected_num_col = st.selectbox("Select numeric column", numeric_cols)
-            dist_plot_type = st.selectbox(
-                "Plot type", 
-                ["histogram", "box", "violin"],
-                format_func=lambda x: x.title()
-            )
+        if st.button("Upload Data", use_container_width=True):
+            st.switch_page("pages/01_Upload_Data.py")
+    with col2:
+        if st.button("Data Preview", use_container_width=True):
+            st.switch_page("pages/02_Data_Preview.py")
+else:
+    # Get the dataset from session state
+    df = st.session_state.dataset
+    
+    # Display basic dataset info in sidebar
+    st.sidebar.subheader("Dataset Info")
+    st.sidebar.info(f"""
+    - **Rows**: {df.shape[0]}
+    - **Columns**: {df.shape[1]}
+    - **Project**: {st.session_state.current_project.get('name', 'Unnamed project')}
+    """)
+    
+    # Create tabs for different EDA features
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📊 Summary Stats", 
+        "📈 Visualizations", 
+        "🔍 Correlations", 
+        "⚠️ Outliers", 
+        "📑 Full Report"
+    ])
+    
+    with tab1:
+        st.header("Summary Statistics")
+        
+        # Summary statistics section
+        summary_stats = generate_summary_stats(df)
+        
+        # Create columns based on data types
+        numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        temporal_cols = [col for col in df.columns if pd.api.types.is_datetime64_any_dtype(df[col])]
+        
+        # Choose analysis type
+        analysis_type = st.radio(
+            "Choose analysis type:",
+            ["Numeric Columns", "Categorical Columns", "Temporal Columns", "Missing Values"],
+            horizontal=True
+        )
+        
+        if analysis_type == "Numeric Columns" and numeric_cols:
+            st.subheader("Numeric Columns")
+            
+            # Display numeric statistics
+            st.dataframe(summary_stats["numeric_summary"])
+            
+            # Skewness analysis
+            skew_results = detect_skewness(df)
+            if skew_results and len(skew_results) > 0:
+                st.subheader("Distribution Skewness")
+                skew_df = pd.DataFrame(skew_results)
+                st.dataframe(skew_df)
+            
+            # Histogram with custom column selection
+            st.subheader("Distribution Plot")
+            selected_num_col = st.selectbox("Select a numeric column", numeric_cols)
+            fig = create_distribution_plot(df, selected_num_col)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        elif analysis_type == "Categorical Columns" and categorical_cols:
+            st.subheader("Categorical Columns")
+            
+            # Display categorical statistics
+            cat_stats = analyze_categorical_distributions(df)
+            if cat_stats:
+                for col, stats in cat_stats.items():
+                    st.write(f"**{col}** - {stats['count']} unique values")
+                    st.dataframe(stats['value_counts'].head(10))
+                    
+                    # Bar chart for categorical column
+                    fig = create_categorical_plot(df, col)
+                    st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No categorical columns found in the dataset.")
+            
+        elif analysis_type == "Temporal Columns" and temporal_cols:
+            st.subheader("Temporal Columns")
+            
+            # Display temporal statistics
+            for col in temporal_cols:
+                st.write(f"**{col}**")
+                st.write(f"- Min date: {df[col].min()}")
+                st.write(f"- Max date: {df[col].max()}")
+                st.write(f"- Range: {(df[col].max() - df[col].min()).days} days")
+                
+                # Time series plot
+                st.subheader(f"Time Series Plot - {col}")
+                
+                # Choose a numeric column for the y-axis
+                y_col = st.selectbox(f"Select y-axis for {col}", numeric_cols)
+                
+                # Create time series plot
+                fig = create_time_series_plot(df, col, y_col)
+                st.plotly_chart(fig, use_container_width=True)
+        
+        elif analysis_type == "Missing Values":
+            st.subheader("Missing Values Analysis")
+            
+            # Calculate missing values
+            missing_data = df.isnull().sum().reset_index()
+            missing_data.columns = ['Column', 'Missing Values']
+            missing_data['Percentage'] = (missing_data['Missing Values'] / len(df)) * 100
+            missing_data = missing_data.sort_values('Missing Values', ascending=False)
+            
+            # Display missing values table
+            st.dataframe(missing_data)
+            
+            # Create missing values heatmap
+            if df.isnull().values.any():  # Only create if there are missing values
+                st.subheader("Missing Values Heatmap")
+                fig = create_missing_values_heatmap(df)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.success("No missing values found in the dataset!")
+    
+    with tab2:
+        st.header("Data Visualizations")
+        
+        # Create an AI suggestion section
+        with st.expander("🤖 AI-Suggested Visualizations", expanded=True):
+            visualizations = suggest_visualizations(df)
+            st.write(visualizations)
+        
+        # Choose a visualization type
+        viz_type = st.selectbox(
+            "Select visualization type",
+            ["Distribution Plot", "Categorical Plot", "Scatter Plot", "Pair Plot", "Box Plot", "Time Series"]
+        )
+        
+        if viz_type == "Distribution Plot":
+            # Column selection for distribution plot
+            col = st.selectbox("Select column for distribution plot", numeric_cols)
             
             # Create distribution plot
-            num_fig = create_distribution_plot(df, selected_num_col, dist_plot_type)
-            if num_fig:
-                st.plotly_chart(num_fig, use_container_width=True, key=f"num_dist_{selected_num_col}_{dist_plot_type}")
+            fig = create_distribution_plot(df, col)
+            st.plotly_chart(fig, use_container_width=True)
             
-            # Show statistics for the selected column
-            if selected_num_col in numeric_cols:
-                stats = df[selected_num_col].describe()
-                st.markdown(f"**Statistics for {selected_num_col}**")
-                st.write(stats)
+        elif viz_type == "Categorical Plot":
+            if categorical_cols:
+                # Column selection for categorical plot
+                col = st.selectbox("Select categorical column", categorical_cols)
                 
-                # Check for skewness
-                skew = df[selected_num_col].skew()
-                st.markdown(f"**Skewness: {skew:.2f}**")
-                if abs(skew) > 1:
-                    st.warning(f"This column is highly skewed ({'right' if skew > 0 else 'left'}-skewed)")
-                elif abs(skew) > 0.5:
-                    st.info(f"This column is moderately skewed ({'right' if skew > 0 else 'left'}-skewed)")
-                else:
-                    st.success("This column is approximately symmetrically distributed")
-        else:
-            st.info("No numeric columns found in the dataset.")
-    
-    with col2:
-        # Categorical columns for bar/pie charts
-        cat_cols = df.select_dtypes(exclude=['number', 'datetime']).columns.tolist()
-        if cat_cols:
-            selected_cat_col = st.selectbox("Select categorical column", cat_cols)
-            cat_plot_type = st.selectbox(
-                "Plot type", 
-                ["bar", "pie", "treemap"],
-                format_func=lambda x: "Bar Chart" if x == "bar" else "Pie Chart" if x == "pie" else "Treemap"
-            )
-            
-            # Create categorical plot
-            cat_fig = create_categorical_plot(df, selected_cat_col, cat_plot_type)
-            if cat_fig:
-                st.plotly_chart(cat_fig, use_container_width=True, key=f"cat_plot_{selected_cat_col}_{cat_plot_type}")
-            
-            # Show value counts for the selected column
-            if selected_cat_col in cat_cols:
-                value_counts = df[selected_cat_col].value_counts().reset_index()
-                value_counts.columns = [selected_cat_col, 'Count']
-                st.markdown(f"**Value Counts for {selected_cat_col}**")
+                # Create categorical plot
+                fig = create_categorical_plot(df, col)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No categorical columns found in the dataset.")
                 
-                # Calculate percentages
-                value_counts['Percentage'] = (value_counts['Count'] / value_counts['Count'].sum() * 100).round(2)
-                
-                # Show top 10 values if there are many
-                if len(value_counts) > 10:
-                    st.write(value_counts.head(10))
-                    st.info(f"Showing top 10 out of {len(value_counts)} unique values")
-                else:
-                    st.write(value_counts)
-        else:
-            st.info("No categorical columns found in the dataset.")
-    
-    # Detect and display outliers for numeric columns
-    st.subheader("Outlier Detection")
-    outliers = detect_outliers(df)
-    
-    if outliers:
-        # Create a summary table of outliers
-        outlier_summary = []
-        for col, info in outliers.items():
-            outlier_summary.append({
-                'Column': col,
-                'Outlier Count': info['count'],
-                'Percentage': f"{info['percent']:.2f}%"
-            })
-        
-        outlier_df = pd.DataFrame(outlier_summary)
-        st.write(outlier_df)
-        
-        # Select a column to view outliers
-        if outlier_summary:
-            selected_outlier_col = st.selectbox(
-                "Select column to view outliers", 
-                [row['Column'] for row in outlier_summary]
-            )
+        elif viz_type == "Scatter Plot":
+            # Column selection for scatter plot
+            col1 = st.selectbox("Select X-axis column", numeric_cols, key="scatter_x")
+            col2 = st.selectbox("Select Y-axis column", numeric_cols, key="scatter_y")
             
-            if selected_outlier_col in outliers:
-                # Display a boxplot highlighting outliers
-                fig = px.box(
-                    df, 
-                    y=selected_outlier_col,
-                    title=f"Boxplot with Outliers for {selected_outlier_col}",
-                    points="outliers",
-                    color_discrete_sequence=['#4F8BF9']
+            # Optional color by column
+            color_col = st.selectbox("Color by (optional)", ["None"] + categorical_cols)
+            color_col = None if color_col == "None" else color_col
+            
+            # Create scatter plot
+            fig = create_scatter_plot(df, col1, col2, color_column=color_col)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        elif viz_type == "Pair Plot":
+            # Column selection for pair plot (limit to 5 columns for performance)
+            if len(numeric_cols) > 5:
+                selected_cols = st.multiselect(
+                    "Select columns for pair plot (max 5 recommended)", 
+                    numeric_cols,
+                    default=numeric_cols[:3]
                 )
                 
-                st.plotly_chart(fig, use_container_width=True, key=f"outlier_box_{selected_outlier_col}")
+                if len(selected_cols) > 5:
+                    st.warning("Too many columns selected. This might make the visualization slow. Consider selecting fewer columns.")
+            else:
+                selected_cols = numeric_cols
                 
-                # Display the actual outlier values
-                outlier_values = outliers[selected_outlier_col]['values']
-                st.markdown(f"**Outlier values for {selected_outlier_col}**")
-                st.write(outlier_values)
+            # Optional color by column
+            color_col = st.selectbox("Color by (optional)", ["None"] + categorical_cols)
+            color_col = None if color_col == "None" else color_col
+            
+            if selected_cols:
+                # Create pair plot
+                fig = create_pair_plot(df, selected_cols, color_column=color_col)
+                st.plotly_chart(fig, use_container_width=True)
                 
-                # Recommendation for outliers
-                st.info(
-                    "Recommendations: Consider applying a transformation such as log transform for skewed data, "
-                    "or capping/removing outliers if they are errors."
-                )
-    else:
-        st.info("No significant outliers detected in numeric columns.")
-
-# Tab 3: Correlations
-with tab3:
-    # Check if there are numeric columns for correlation analysis
-    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-    
-    if len(numeric_cols) < 2:
-        st.info("Correlation analysis requires at least 2 numeric columns. Your dataset doesn't have enough numeric columns.")
-    else:
-        st.subheader("Correlation Matrix")
-        
-        # Create correlation heatmap
-        corr_fig = create_correlation_heatmap(df)
-        if corr_fig:
-            st.plotly_chart(corr_fig, use_container_width=True, key="correlation_heatmap")
-        
-        # Analyze correlations for strong relationships
-        correlation_analysis = analyze_column_correlations(df)
-        
-        if correlation_analysis and correlation_analysis['strong_correlations']:
-            st.subheader("Strong Correlations")
+        elif viz_type == "Box Plot":
+            # Column selection for box plot
+            numeric_col = st.selectbox("Select numeric column", numeric_cols)
             
-            # Create a DataFrame of strong correlations
-            strong_corrs = correlation_analysis['strong_correlations']
-            strong_corr_df = pd.DataFrame(strong_corrs)
-            
-            # Format the correlation values
-            strong_corr_df['correlation'] = strong_corr_df['correlation'].round(3)
-            
-            # Sort by absolute correlation value
-            strong_corr_df = strong_corr_df.sort_values(
-                by='correlation', 
-                key=lambda x: x.abs(), 
-                ascending=False
-            )
-            
-            st.write(strong_corr_df)
-            
-            # Option to visualize a specific correlation with scatter plot
-            if not strong_corr_df.empty:
-                st.subheader("Visualize Correlation")
-                
-                # Select columns for scatter plot
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    scatter_x = st.selectbox("X-axis", numeric_cols, index=0)
-                
-                with col2:
-                    remaining_cols = [col for col in numeric_cols if col != scatter_x]
-                    scatter_y = st.selectbox("Y-axis", remaining_cols, index=0 if remaining_cols else None)
-                
-                if scatter_x and scatter_y:
-                    # Optional color by categorical column
-                    cat_cols = df.select_dtypes(exclude=['number', 'datetime']).columns.tolist()
-                    color_col = st.selectbox(
-                        "Color by (optional)", 
-                        ["None"] + cat_cols
-                    )
-                    
-                    color_col = None if color_col == "None" else color_col
-                    
-                    # Create scatter plot
-                    scatter_fig = create_scatter_plot(
-                        df, 
-                        scatter_x, 
-                        scatter_y, 
-                        color_col
-                    )
-                    
-                    if scatter_fig:
-                        st.plotly_chart(scatter_fig, use_container_width=True, key=f"scatter_{scatter_x}_{scatter_y}")
-                        
-                        # Calculate and display correlation coefficient
-                        corr_val = df[[scatter_x, scatter_y]].corr().iloc[0, 1]
-                        st.markdown(f"**Correlation coefficient: {corr_val:.4f}**")
-                        
-                        # Interpretation of correlation
-                        if abs(corr_val) > 0.7:
-                            strength = "strong"
-                        elif abs(corr_val) > 0.3:
-                            strength = "moderate"
-                        else:
-                            strength = "weak"
-                            
-                        direction = "positive" if corr_val > 0 else "negative"
-                        
-                        st.markdown(
-                            f"This is a **{strength} {direction}** correlation. "
-                            f"{'As one variable increases, the other tends to increase as well.' if corr_val > 0 else 'As one variable increases, the other tends to decrease.'}"
-                        )
-        else:
-            st.info("No strong correlations found in the dataset.")
-        
-        # Pair Plot for selected variables
-        st.subheader("Pair Plot")
-        st.markdown("Select up to 4 numeric variables to visualize their relationships")
-        
-        selected_pair_cols = st.multiselect(
-            "Select columns for pair plot",
-            numeric_cols,
-            default=numeric_cols[:min(4, len(numeric_cols))]
-        )
-        
-        if len(selected_pair_cols) > 1:
-            # Optional color by categorical column
-            cat_cols = df.select_dtypes(exclude=['number', 'datetime']).columns.tolist()
-            pair_color_col = st.selectbox(
-                "Color by (optional)", 
-                ["None"] + cat_cols,
-                key="pair_color"
-            )
-            
-            pair_color_col = None if pair_color_col == "None" else pair_color_col
-            
-            # Create pair plot
-            with st.spinner("Generating pair plot..."):
-                pair_fig = create_pair_plot(
-                    df, 
-                    selected_pair_cols,
-                    pair_color_col
-                )
-                
-                if pair_fig:
-                    st.plotly_chart(pair_fig, use_container_width=True, key="pair_plot")
-        else:
-            st.info("Please select at least 2 columns for the pair plot.")
-
-# Tab 4: Advanced Analysis
-with tab4:
-    st.subheader("Time Series Analysis")
-    
-    # Check for datetime columns
-    date_cols = df.select_dtypes(include=['datetime']).columns.tolist()
-    
-    # Also check for columns that might be dates but not detected
-    for col in df.columns:
-        if col not in date_cols:
-            try:
-                pd.to_datetime(df[col], errors='raise')
-                date_cols.append(col)
-            except:
-                pass
-    
-    if date_cols:
-        # Time series plot
-        selected_date_col = st.selectbox("Select date column", date_cols)
-        
-        # Only show numeric columns for time series values
-        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-        
-        if numeric_cols:
-            selected_value_col = st.selectbox("Select value to plot", numeric_cols)
-            
-            # Optional grouping by categorical column
-            cat_cols = df.select_dtypes(exclude=['number', 'datetime']).columns.tolist()
-            group_col = st.selectbox(
-                "Group by (optional)", 
-                ["None"] + cat_cols
-            )
-            
+            # Optional grouping column
+            group_col = st.selectbox("Group by (optional)", ["None"] + categorical_cols)
             group_col = None if group_col == "None" else group_col
             
-            # Convert to datetime if not already
-            df_copy = df.copy()
-            if not pd.api.types.is_datetime64_dtype(df_copy[selected_date_col]):
-                try:
-                    df_copy[selected_date_col] = pd.to_datetime(df_copy[selected_date_col])
-                except:
-                    st.error(f"Could not convert {selected_date_col} to datetime.")
-                    st.stop()
+            # Create box plot
+            if group_col:
+                fig = px.box(df, x=group_col, y=numeric_col, color=group_col,
+                           title=f"Box Plot of {numeric_col} by {group_col}")
+            else:
+                fig = px.box(df, y=numeric_col, title=f"Box Plot of {numeric_col}")
+                
+            st.plotly_chart(fig, use_container_width=True)
+            
+        elif viz_type == "Time Series" and temporal_cols:
+            # Column selection for time series
+            time_col = st.selectbox("Select time column", temporal_cols)
+            value_col = st.selectbox("Select value column", numeric_cols)
             
             # Create time series plot
-            ts_fig = create_time_series_plot(
-                df_copy, 
-                selected_date_col, 
-                selected_value_col, 
-                group_col
-            )
+            fig = create_time_series_plot(df, time_col, value_col)
+            st.plotly_chart(fig, use_container_width=True)
             
-            if ts_fig:
-                st.plotly_chart(ts_fig, use_container_width=True, key=f"timeseries_{selected_date_col}_{selected_value_col}")
-                
-                # Time trends analysis
-                st.subheader("Time Trends Analysis")
-                
-                if group_col is None:
-                    # Calculate rolling mean for trend analysis
-                    window_size = st.slider(
-                        "Rolling window size", 
-                        min_value=2, 
-                        max_value=min(50, len(df_copy) // 2),
-                        value=min(7, len(df_copy) // 4)
-                    )
-                    
-                    # Sort by date
-                    df_time = df_copy.sort_values(by=selected_date_col)
-                    
-                    # Calculate rolling statistics
-                    rolling_mean = df_time[selected_value_col].rolling(window=window_size).mean()
-                    
-                    # Create trend plot
-                    trend_fig = go.Figure()
-                    
-                    # Add raw data
-                    trend_fig.add_trace(
-                        go.Scatter(
-                            x=df_time[selected_date_col],
-                            y=df_time[selected_value_col],
-                            mode='lines',
-                            name='Raw data',
-                            line=dict(color='lightgrey')
-                        )
-                    )
-                    
-                    # Add rolling mean
-                    trend_fig.add_trace(
-                        go.Scatter(
-                            x=df_time[selected_date_col],
-                            y=rolling_mean,
-                            mode='lines',
-                            name=f'Rolling mean (window={window_size})',
-                            line=dict(color='red', width=2)
-                        )
-                    )
-                    
-                    trend_fig.update_layout(
-                        title=f"Trend Analysis for {selected_value_col}",
-                        xaxis_title=selected_date_col,
-                        yaxis_title=selected_value_col,
-                        height=400
-                    )
-                    
-                    st.plotly_chart(trend_fig, use_container_width=True, key=f"trend_{selected_value_col}_{window_size}")
-                    
-                    # Check for seasonality if enough data points
-                    if len(df_copy) > 30:
-                        st.subheader("Seasonality Check")
-                        
-                        # Basic seasonality check using autocorrelation
-                        # (Simplified approach for demonstration)
-                        try:
-                            from pandas.plotting import autocorrelation_plot
-                            import matplotlib.pyplot as plt
-                            
-                            # Create matplotlib figure
-                            fig, ax = plt.subplots(figsize=(10, 6))
-                            autocorrelation_plot(df_time[selected_value_col].dropna(), ax=ax)
-                            ax.set_title(f"Autocorrelation Plot for {selected_value_col}")
-                            
-                            # Convert to Streamlit-compatible format
-                            st.pyplot(fig)
-                            
-                            st.markdown(
-                                "**Interpreting the Autocorrelation Plot**: "
-                                "Peaks in the plot suggest potential seasonal patterns. "
-                                "If there's a recurring pattern of peaks at regular intervals, "
-                                "this could indicate seasonality in your data."
-                            )
-                        except Exception as e:
-                            st.error(f"Could not generate autocorrelation plot: {str(e)}")
-            else:
-                st.error("Could not create time series plot. Please check your data.")
-        else:
-            st.warning("No numeric columns available for time series analysis.")
-    else:
-        st.info(
-            "No datetime columns detected in your dataset. "
-            "Time series analysis requires at least one date/time column."
-        )
-    
-    # Categorical data analysis
-    st.subheader("Categorical Data Analysis")
-    
-    cat_cols = df.select_dtypes(exclude=['number', 'datetime']).columns.tolist()
-    
-    if cat_cols:
-        cat_distributions = analyze_categorical_distributions(df)
+        elif viz_type == "Time Series" and not temporal_cols:
+            st.info("No temporal columns found in the dataset for time series visualization.")
+            
+    with tab3:
+        st.header("Correlation Analysis")
         
-        if cat_distributions:
-            # Select a categorical column to analyze
-            selected_cat_col = st.selectbox(
-                "Select categorical column to analyze",
-                list(cat_distributions.keys())
+        # Only perform correlation analysis if there are at least 2 numeric columns
+        if len(numeric_cols) >= 2:
+            # Correlation coefficient type
+            corr_method = st.radio(
+                "Correlation method:",
+                ["pearson", "spearman", "kendall"],
+                index=0,
+                horizontal=True,
+                help=("Pearson: linear correlation, "
+                      "Spearman: rank correlation, "
+                      "Kendall: ordinal correlation")
             )
             
-            if selected_cat_col in cat_distributions:
-                cat_info = cat_distributions[selected_cat_col]
-                
-                # Display basic info
-                st.markdown(f"**Unique values**: {cat_info['unique_values']}")
-                
-                # Check if imbalanced
-                if cat_info['is_imbalanced']:
-                    st.warning(
-                        f"This column is imbalanced. The dominant category '{cat_info['dominant_category']}' "
-                        f"represents a large portion of the data."
-                    )
-                
-                # Display distribution
-                cat_dist_fig = px.bar(
-                    x=list(cat_info['top_categories'].keys()),
-                    y=list(cat_info['top_categories'].values()),
-                    title=f"Top Categories in {selected_cat_col}",
-                    labels={'x': selected_cat_col, 'y': 'Count'}
-                )
-                
-                cat_dist_fig.update_layout(height=400)
-                st.plotly_chart(cat_dist_fig, use_container_width=True, key=f"cat_dist_{selected_cat_col}")
-                
-                # Cross-tabulation with another categorical column
-                if len(cat_cols) > 1:
-                    st.subheader("Cross-Tabulation")
-                    
-                    other_cat_cols = [col for col in cat_cols if col != selected_cat_col]
-                    cross_tab_col = st.selectbox(
-                        "Select another categorical column for cross-tabulation",
-                        other_cat_cols
-                    )
-                    
-                    if cross_tab_col:
-                        # Create cross-tabulation
-                        cross_tab = pd.crosstab(
-                            df[selected_cat_col], 
-                            df[cross_tab_col],
-                            normalize='index'  # Row percentages
-                        )
-                        
-                        # Display as heatmap
-                        cross_tab_fig = px.imshow(
-                            cross_tab,
-                            color_continuous_scale='RdBu_r',
-                            title=f"Cross-Tabulation: {selected_cat_col} vs {cross_tab_col} (Row %)",
-                            labels=dict(x=cross_tab_col, y=selected_cat_col, color="Proportion")
-                        )
-                        
-                        cross_tab_fig.update_layout(height=500)
-                        st.plotly_chart(cross_tab_fig, use_container_width=True, key=f"crosstab_{selected_cat_col}_{cross_tab_col}")
-                        
-                        # Chi-square test for independence
-                        from scipy.stats import chi2_contingency
-                        
-                        contingency_table = pd.crosstab(df[selected_cat_col], df[cross_tab_col])
-                        chi2, p, dof, expected = chi2_contingency(contingency_table)
-                        
-                        st.markdown(f"**Chi-square test for independence**")
-                        st.markdown(f"- Chi-square statistic: {chi2:.4f}")
-                        st.markdown(f"- p-value: {p:.4f}")
-                        
-                        if p < 0.05:
-                            st.markdown(
-                                "**Result**: There appears to be a significant relationship between "
-                                f"'{selected_cat_col}' and '{cross_tab_col}' (p < 0.05)"
-                            )
-                        else:
-                            st.markdown(
-                                "**Result**: There does not appear to be a significant relationship between "
-                                f"'{selected_cat_col}' and '{cross_tab_col}' (p >= 0.05)"
-                            )
-        else:
-            st.info("No categorical data analysis available.")
-    else:
-        st.info("No categorical columns detected in your dataset.")
-
-# Tab 5: Full Report
-with tab5:
-    st.subheader("Full EDA Report")
-    
-    st.markdown("""
-    Generate a comprehensive Exploratory Data Analysis (EDA) report for your dataset.
-    This may take a few moments depending on the size of your dataset.
-    """)
-    
-    if st.button("Generate Full EDA Report"):
-        with st.spinner("Generating full EDA report... This may take a minute."):
-            # Generate pandas profiling report
-            report_data = generate_quick_eda_report(df)
+            # Compute the correlation matrix
+            corr_results = analyze_column_correlations(df, method=corr_method)
             
-            if report_data:
-                # Display report in an iframe
-                report_html = base64.b64decode(report_data).decode('utf-8')
+            # Display correlation matrix as a table
+            st.subheader("Correlation Matrix")
+            st.dataframe(corr_results["correlation_matrix"])
+            
+            # Display correlation heatmap
+            st.subheader("Correlation Heatmap")
+            fig = create_correlation_heatmap(df, method=corr_method)
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Display top correlated pairs
+            st.subheader("Top Correlated Pairs")
+            st.dataframe(corr_results["top_correlations"])
+            
+            # Option to visualize a specific correlation
+            st.subheader("Visualize Correlation")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                x_col = st.selectbox("Select X-axis column", numeric_cols, key="corr_x")
+            with col2:
+                y_col = st.selectbox("Select Y-axis column", numeric_cols, key="corr_y")
                 
-                # Create an iframe to display the report
-                st.components.v1.html(
-                    f"""
-                    <iframe 
-                        srcdoc="{report_html.replace('"', '&quot;')}" 
-                        width="100%" 
-                        height="800px" 
-                        style="border:none;">
-                    </iframe>
-                    """,
-                    height=800
-                )
+            # Create scatter plot for the selected correlation
+            fig = px.scatter(df, x=x_col, y=y_col, trendline="ols", 
+                           title=f"Correlation between {x_col} and {y_col}")
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Display the correlation coefficient
+            corr_value = df[x_col].corr(df[y_col], method=corr_method)
+            st.info(f"Correlation coefficient ({corr_method}): {corr_value:.4f}")
+        else:
+            st.info("At least 2 numeric columns are required for correlation analysis.")
+    
+    with tab4:
+        st.header("Outlier Detection")
+        
+        # Choose outlier detection method
+        outlier_method = st.radio(
+            "Outlier detection method:",
+            ["Z-Score", "IQR (Interquartile Range)", "Modified Z-Score"],
+            horizontal=True
+        )
+        
+        # Set threshold based on method
+        if outlier_method == "Z-Score":
+            threshold = st.slider("Z-Score threshold", 1.0, 5.0, 3.0, 0.1)
+            method = "zscore"
+        elif outlier_method == "IQR (Interquartile Range)":
+            threshold = st.slider("IQR multiplier", 1.0, 3.0, 1.5, 0.1)
+            method = "iqr"
+        else:  # Modified Z-Score
+            threshold = st.slider("Modified Z-Score threshold", 1.0, 5.0, 3.5, 0.1)
+            method = "modified_zscore"
+            
+        # Detect outliers
+        outliers = detect_outliers(df, method=method, threshold=threshold)
+        
+        # Display outlier summary
+        st.subheader("Outlier Summary")
+        
+        # Create a summary table of outliers by column
+        outlier_summary = []
+        for col, values in outliers.items():
+            outlier_count = len(values)
+            pct_outliers = (outlier_count / len(df)) * 100
+            outlier_summary.append({
+                "Column": col,
+                "Outlier Count": outlier_count,
+                "% Outliers": f"{pct_outliers:.2f}%",
+                "Min Outlier": min(values) if outlier_count > 0 else None,
+                "Max Outlier": max(values) if outlier_count > 0 else None
+            })
+            
+        if outlier_summary:
+            outlier_df = pd.DataFrame(outlier_summary)
+            st.dataframe(outlier_df)
+            
+            # Visualize outliers for a selected column
+            st.subheader("Visualize Outliers")
+            selected_col = st.selectbox("Select column to visualize outliers", list(outliers.keys()))
+            
+            if selected_col in outliers:
+                # Create a box plot to show outliers
+                fig = px.box(df, y=selected_col, title=f"Box Plot with Outliers: {selected_col}")
                 
-                # Download link
-                from utils.export import generate_report_download_link
-                report_link = generate_report_download_link(report_html, "eda_report.html")
-                st.markdown(report_link, unsafe_allow_html=True)
-            else:
-                st.error("Failed to generate EDA report. Please try again or use individual analysis tabs.")
-
-# Navigation buttons
-st.markdown("---")
-col1, col2 = st.columns(2)
-
-with col1:
-    if st.button("← Back to Data Preview", key="back_to_preview"):
-        st.switch_page("pages/02_Data_Preview.py")
-
-with col2:
-    if st.button("Continue to Data Transformation →", key="continue_to_transform"):
-        st.switch_page("pages/04_Data_Transformation.py")
-
-# Add a sidebar with explanations
-with st.sidebar:
-    st.header("EDA Explained")
+                # Highlight the outliers
+                if outliers[selected_col]:
+                    outlier_indices = outliers[selected_col]
+                    outlier_values = df.loc[outlier_indices, selected_col]
+                    
+                    # Add scatter points for outliers
+                    fig.add_trace(
+                        go.Scatter(
+                            x=[0] * len(outlier_values),
+                            y=outlier_values,
+                            mode="markers",
+                            marker=dict(color="red", size=8, symbol="circle"),
+                            name="Outliers"
+                        )
+                    )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Option to show the actual outlier values
+                with st.expander("Show outlier records"):
+                    if outliers[selected_col]:
+                        st.dataframe(df.loc[outliers[selected_col]])
+                    else:
+                        st.info(f"No outliers detected in {selected_col} with the current settings.")
+        else:
+            st.info("No outliers detected with the current settings.")
     
-    st.markdown("""
-    ### What is EDA?
-    
-    Exploratory Data Analysis (EDA) is the process of analyzing and visualizing data to understand its main characteristics.
-    
-    ### Why is it important?
-    
-    - Reveals patterns, anomalies, and relationships
-    - Helps identify data quality issues
-    - Guides feature selection for modeling
-    - Informs data transformation decisions
-    
-    ### Tips for EDA
-    
-    1. **Start with distributions** to understand individual variables
-    
-    2. **Look for correlations** to find relationships between variables
-    
-    3. **Identify outliers** that might affect your analysis
-    
-    4. **Check for missing values** and understand their patterns
-    
-    5. **Explore categorical data** to find imbalances and relationships
-    """)
-    
+    with tab5:
+        st.header("Complete EDA Report")
+        
+        # Generate a comprehensive EDA report
+        with st.spinner("Generating EDA report..."):
+            report_html = generate_quick_eda_report(df)
+            
+            # Display the report
+            st.components.v1.html(report_html, height=600, scrolling=True)
+            
+            # Provide a download link for the report
+            st.download_button(
+                label="Download EDA Report",
+                data=report_html,
+                file_name="eda_report.html",
+                mime="text/html"
+            )
+            
+    # Add navigation buttons
     st.markdown("---")
-    st.markdown(
-        "👉 Use the **AI-Suggested Visualizations** in the Overview tab "
-        "for automated insights about your data."
-    )
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("← Data Preview", use_container_width=True):
+            st.switch_page("pages/02_Data_Preview.py")
+    with col2:
+        if st.button("Home", use_container_width=True):
+            st.switch_page("app.py")
+    with col3:
+        if st.button("Data Transformation →", use_container_width=True):
+            st.switch_page("pages/04_Data_Transformation.py")

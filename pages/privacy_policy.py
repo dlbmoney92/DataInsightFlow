@@ -144,9 +144,8 @@ def app():
     
     If you have any questions about this Privacy Policy, please contact us at:
     
-    **Email:** privacy@analyticsassist.com  
-    **Address:** Analytics Assist Headquarters, 123 Data Street, Techville, CA 94321  
-    **Phone:** (555) 123-4567
+    **Email:** dariusbell@bellcontractingservices.com
+    
     
     ---
     

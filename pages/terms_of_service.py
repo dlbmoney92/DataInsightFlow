@@ -105,7 +105,7 @@ def app():
     
     ### 12. Contact Us
     
-    If you have any questions about these Terms, please contact us at support@analyticsassist.com.
+    If you have any questions about these Terms, please contact us at dariusbell@bellcontractingservices.com.
     
     ### 13. AI and Machine Learning Features
     

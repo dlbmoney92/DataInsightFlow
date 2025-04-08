@@ -10,7 +10,19 @@ from utils.ai_providers import get_ai_manager, AIProvider
 
 def app():
     st.title("AI Learning System")
-    
+    # Initialize navigation
+    initialize_navigation()
+
+    # Hide Streamlit’s default multipage navigation menu
+    st.markdown("""
+        <style>
+            [data-testid="stSidebarNav"] {
+                display: none !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    # Render custom navigation bar
+    render_navigation()
     # Check if user is logged in
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
         st.warning("Please log in to access the AI Learning System.")

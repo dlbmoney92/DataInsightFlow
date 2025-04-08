@@ -1,12 +1,4 @@
 import streamlit as st
-
-# Set page configuration - must be the first Streamlit command
-st.set_page_config(
-    page_title="Upload Data | Analytics Assist",
-    page_icon="📁",
-    layout="wide"
-)
-
 import pandas as pd
 import numpy as np
 import os
@@ -22,15 +14,11 @@ from utils.database import save_dataset, list_datasets, get_dataset
 from utils.access_control import check_access
 from utils.custom_navigation import render_navigation, render_developer_login, logout_developer, initialize_navigation
 from utils.auth_redirect import require_auth
-from utils.global_config import apply_global_css
-
-# Apply global CSS
-apply_global_css()
 
 # Initialize navigation
 initialize_navigation()
 
-# Hide Streamlit's default multipage navigation menu
+# Hide Streamlit’s default multipage navigation menu
 st.markdown("""
     <style>
         [data-testid="stSidebarNav"] {
@@ -38,9 +26,13 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-
 # Render custom navigation bar
 render_navigation()
+st.set_page_config(
+    page_title="Upload Data | Analytics Assist",
+    page_icon="📁",
+    layout="wide"
+)
 
 # Check authentication
 if not require_auth():
@@ -412,73 +404,75 @@ datasets_list = list_datasets()
 
 if datasets_list:
     # Create a DataFrame for displaying the datasets
-    datasets_df = pd.DataFrame(datasets_list)
+    datasets_df = pd.DataFrame([
+        {'ID': ds['id'], 'Name': ds['name'], 'Rows': ds['row_count'], 
+         'Columns': ds['column_count'], 'Created': ds['created_at'].strftime('%Y-%m-%d %H:%M')}
+        for ds in datasets_list
+    ])
     
-    # Format the creation date and rename columns for display
-    if 'created_at' in datasets_df.columns:
-        datasets_df['created_at'] = pd.to_datetime(datasets_df['created_at']).dt.strftime('%Y-%m-%d %H:%M')
+    st.dataframe(datasets_df)
     
-    # Rename columns for better display
-    display_df = datasets_df.rename(columns={
-        'id': 'ID',
-        'name': 'Name',
-        'description': 'Description',
-        'file_name': 'File Name',
-        'file_type': 'File Type',
-        'created_at': 'Created At'
-    })
+    # Select a dataset to load
+    selected_dataset_id = st.selectbox("Select a dataset to load", 
+                                      options=[ds['id'] for ds in datasets_list],
+                                      format_func=lambda x: next((ds['name'] for ds in datasets_list if ds['id'] == x), ''))
     
-    # Convert file type to uppercase
-    if 'File Type' in display_df.columns:
-        display_df['File Type'] = display_df['File Type'].str.upper()
-    
-    # Display the datasets in a table
-    st.dataframe(
-        display_df[['Name', 'File Name', 'File Type', 'Created At']],
-        hide_index=True,
-        use_container_width=True
-    )
-    
-    # Selection for loading existing dataset
-    selected_dataset_name = st.selectbox(
-        "Select a dataset to load",
-        [""] + list(datasets_df['name'])
-    )
-    
-    if selected_dataset_name:
-        selected_dataset = datasets_df[datasets_df['name'] == selected_dataset_name].iloc[0]
-        
-        # Button to load the selected dataset
-        if st.button("Load Selected Dataset"):
-            with st.spinner(f"Loading {selected_dataset_name}..."):
-                # Get the dataset from the database
-                dataset_result = get_dataset(selected_dataset['id'])
+    if st.button("Load Selected Dataset"):
+        with st.spinner("Loading dataset from database..."):
+            dataset_data = get_dataset(selected_dataset_id)
+            
+            if dataset_data:
+                # Store in session state
+                st.session_state.dataset = dataset_data['dataset']
+                st.session_state.file_name = dataset_data['file_name']
+                st.session_state.column_types = dataset_data['column_types']
+                st.session_state.dataset_id = dataset_data['id']
                 
-                if dataset_result and 'df' in dataset_result:
-                    # Store in session state
-                    st.session_state.dataset = dataset_result['df']
-                    st.session_state.file_name = selected_dataset['file_name']
-                    st.session_state.column_types = dataset_result.get('column_types', {})
-                    st.session_state.dataset_id = selected_dataset['id']
-                    
-                    # Create a current project
-                    st.session_state.current_project = {
-                        'name': selected_dataset['name'],
-                        'file_name': selected_dataset['file_name'],
-                        'created_at': selected_dataset['created_at'],
-                        'dataset_id': selected_dataset['id']
-                    }
-                    
-                    # Reset transformations
-                    st.session_state.transformations = []
-                    st.session_state.transformation_history = []
-                    
-                    # Success message
-                    st.success(f"Successfully loaded {selected_dataset['name']}!")
-                    
-                    # Refresh to show the data
-                    st.rerun()
-                else:
-                    st.error("Failed to load the dataset. Please try again.")
+                # Reset transformations
+                st.session_state.transformations = []
+                st.session_state.transformation_history = []
+                
+                # Create a new project
+                st.session_state.current_project = {
+                    'name': dataset_data['name'],
+                    'file_name': dataset_data['file_name'],
+                    'created_at': dataset_data['created_at'].strftime('%Y-%m-%d %H:%M:%S'),
+                    'dataset_id': dataset_data['id']
+                }
+                
+                st.success(f"Successfully loaded dataset '{dataset_data['name']}' with {dataset_data['row_count']} rows and {dataset_data['column_count']} columns.")
+                st.rerun()
 else:
-    st.info("You don't have any saved datasets yet. Upload a new file or use a sample dataset to get started.")
+    st.info("No existing datasets found. Upload a new dataset or use a sample dataset.")
+
+
+# Add a sidebar with tips
+with st.sidebar:
+    st.header("Tips for Data Upload")
+    
+    st.markdown("""
+    ### Best Practices:
+    
+    1. **Clean headers**: Make sure column names are clear and have no special characters
+    
+    2. **Check for errors**: Pre-clean your data if it has obvious errors
+    
+    3. **File size**: Large files may take longer to process
+    
+    4. **Data types**: The system will attempt to auto-detect data types, but you can adjust them in the next step
+    
+    5. **Missing values**: The system will handle missing values, but it's good to be aware of them
+    """)
+    
+    st.markdown("---")
+    
+    st.markdown("""
+    ### What happens next?
+    
+    After uploading, you'll be able to:
+    1. Review and confirm data types
+    2. Get automatic data insights
+    3. Apply transformations
+    4. Visualize your data
+    5. Export your findings
+    """)

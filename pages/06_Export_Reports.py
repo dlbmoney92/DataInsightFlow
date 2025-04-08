@@ -1,4 +1,12 @@
 import streamlit as st
+
+# Set page configuration - must be the first Streamlit command
+st.set_page_config(
+    page_title="Export Reports | Analytics Assist",
+    page_icon="📤",
+    layout="wide"
+)
+
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -17,12 +25,36 @@ from utils.export import (
     save_project,
     load_project
 )
+from utils.auth_redirect import require_auth
+from utils.custom_navigation import render_navigation, initialize_navigation
+from utils.global_config import apply_global_css
 
-st.set_page_config(
-    page_title="Export Reports | Analytics Assist",
-    page_icon="📤",
-    layout="wide"
-)
+# Apply global CSS
+apply_global_css()
+
+# Initialize navigation
+initialize_navigation()
+
+# Hide Streamlit's default multipage navigation menu
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Render custom navigation bar
+render_navigation()
+
+# Check authentication first
+if not require_auth():
+    st.stop()  # Stop if not authenticated
+
+# Show user info if authenticated
+if "user" in st.session_state:
+    st.sidebar.success(f"Logged in as: {st.session_state.user.get('email', 'User')}")
+    st.sidebar.info(f"Subscription: {st.session_state.subscription_tier.capitalize()}")
 
 # Check if dataset exists in session state
 if 'dataset' not in st.session_state or st.session_state.dataset is None:
@@ -37,588 +69,682 @@ Save your analysis results, export transformed data, and generate reports to sha
 This page allows you to preserve your work and communicate your findings effectively.
 """)
 
-# Get data from session state
+# Get the dataset
 df = st.session_state.dataset
-transformations = st.session_state.transformations if 'transformations' in st.session_state else []
-insights = st.session_state.insights if 'insights' in st.session_state else []
 
-# Create tabs for different export options
-tab1, tab2, tab3 = st.tabs([
-    "📊 Export Data", 
-    "📝 Generate Reports", 
-    "💾 Save Project"
-])
+# Sidebar
+st.sidebar.subheader("Dataset Info")
+st.sidebar.info(f"""
+- **Rows**: {df.shape[0]}
+- **Columns**: {df.shape[1]}
+- **Project**: {st.session_state.current_project.get('name', 'Unnamed project')}
+""")
 
-# Tab 1: Export Data
+# Main content
+tab1, tab2, tab3 = st.tabs(["Export Data", "Generate Reports", "Save & Load Work"])
+
 with tab1:
-    st.subheader("Export Transformed Data")
-    st.markdown("""
-    Export your cleaned and transformed dataset in various formats for use in other tools.
-    """)
+    st.header("Export Processed Data")
     
-    # Preview of the data to be exported
-    st.markdown("### Data Preview")
+    # Data preview
+    st.subheader("Data Preview")
     st.dataframe(df.head(5), use_container_width=True)
     
-    # Data statistics
-    col1, col2, col3 = st.columns(3)
+    # Export options
+    st.subheader("Export Options")
     
-    with col1:
-        st.metric("Rows", df.shape[0])
-    
-    with col2:
-        st.metric("Columns", df.shape[1])
-    
-    with col3:
-        missing_vals = df.isna().sum().sum()
-        missing_pct = round(missing_vals / (df.shape[0] * df.shape[1]) * 100, 2)
-        st.metric("Missing Values", f"{missing_vals} ({missing_pct}%)")
-    
-    # Options for export
-    st.markdown("### Export Options")
-    
-    # Export format selection
-    export_format = st.selectbox(
-        "Select export format",
-        ["Excel (.xlsx)", "CSV (.csv)", "JSON (.json)"]
+    # Row selection
+    row_option = st.radio(
+        "Rows to export",
+        ["All rows", "First N rows", "Sample rows", "Filter rows"]
     )
     
-    # Customization options
-    with st.expander("Customization Options"):
-        # Option to include/exclude columns
-        include_all_columns = st.checkbox("Include all columns", value=True)
-        
-        if not include_all_columns:
-            selected_columns = st.multiselect(
-                "Select columns to include",
-                options=df.columns.tolist(),
-                default=df.columns.tolist()[:5]  # Default to first 5 columns
+    if row_option == "First N rows":
+        n_rows = st.slider("Number of rows", 1, min(1000, df.shape[0]), 100)
+        export_df = df.head(n_rows)
+    elif row_option == "Sample rows":
+        n_rows = st.slider("Number of rows", 1, min(1000, df.shape[0]), 100)
+        export_df = df.sample(n_rows)
+    elif row_option == "Filter rows":
+        column = st.selectbox("Filter column", df.columns)
+        if pd.api.types.is_numeric_dtype(df[column]):
+            min_val = float(df[column].min())
+            max_val = float(df[column].max())
+            filter_range = st.slider(
+                "Value range",
+                min_val, max_val, (min_val, max_val)
             )
+            export_df = df[(df[column] >= filter_range[0]) & (df[column] <= filter_range[1])]
         else:
-            selected_columns = df.columns.tolist()
-        
-        # Option to filter rows
-        filter_rows = st.checkbox("Filter rows", value=False)
-        
-        filtered_df = df.copy()
-        
-        if filter_rows and len(selected_columns) > 0:
-            filter_column = st.selectbox("Filter by column", options=selected_columns)
-            
-            if filter_column:
-                # Different filter options based on column type
-                if pd.api.types.is_numeric_dtype(df[filter_column]):
-                    # Numeric filter
-                    min_val = float(df[filter_column].min())
-                    max_val = float(df[filter_column].max())
-                    
-                    filter_range = st.slider(
-                        f"Range for {filter_column}",
-                        min_value=min_val,
-                        max_value=max_val,
-                        value=(min_val, max_val)
-                    )
-                    
-                    filtered_df = filtered_df[(filtered_df[filter_column] >= filter_range[0]) & 
-                                             (filtered_df[filter_column] <= filter_range[1])]
-                
-                elif pd.api.types.is_datetime64_dtype(df[filter_column]):
-                    # Date filter
-                    min_date = df[filter_column].min().date()
-                    max_date = df[filter_column].max().date()
-                    
-                    filter_date_range = st.date_input(
-                        f"Date range for {filter_column}",
-                        value=(min_date, max_date)
-                    )
-                    
-                    if len(filter_date_range) == 2:
-                        start_date, end_date = filter_date_range
-                        filtered_df = filtered_df[(filtered_df[filter_column].dt.date >= start_date) & 
-                                                 (filtered_df[filter_column].dt.date <= end_date)]
-                
-                else:
-                    # Categorical filter
-                    categories = df[filter_column].unique().tolist()
-                    selected_categories = st.multiselect(
-                        f"Select values for {filter_column}",
-                        options=categories,
-                        default=categories
-                    )
-                    
-                    if selected_categories:
-                        filtered_df = filtered_df[filtered_df[filter_column].isin(selected_categories)]
-        
-        # Limit to selected columns
-        if selected_columns:
-            filtered_df = filtered_df[selected_columns]
-        
-        # Preview filtered data
-        st.markdown("### Filtered Data Preview")
-        st.dataframe(filtered_df.head(5), use_container_width=True)
-        st.info(f"The export will contain {filtered_df.shape[0]} rows and {filtered_df.shape[1]} columns.")
+            unique_values = df[column].unique()
+            selected_values = st.multiselect("Select values", unique_values, unique_values[:3])
+            export_df = df[df[column].isin(selected_values)]
+    else:  # All rows
+        export_df = df
     
-    # Export button
-    if st.button("Generate Export"):
-        if export_format == "Excel (.xlsx)":
-            # Generate Excel download link
-            excel_link = generate_excel_download_link(filtered_df, "analytics_assist_export.xlsx")
-            st.markdown(excel_link, unsafe_allow_html=True)
-        
-        elif export_format == "CSV (.csv)":
-            # Generate CSV download link
-            csv_link = generate_csv_download_link(filtered_df, "analytics_assist_export.csv")
+    # Column selection
+    col_option = st.radio(
+        "Columns to export",
+        ["All columns", "Select columns"]
+    )
+    
+    if col_option == "Select columns":
+        selected_columns = st.multiselect("Select columns", df.columns, df.columns[:5])
+        export_df = export_df[selected_columns]
+    
+    # Format selection
+    st.subheader("Export Format")
+    
+    format_cols = st.columns(3)
+    
+    with format_cols[0]:
+        if st.button("Export as CSV", use_container_width=True):
+            csv_link = generate_csv_download_link(export_df, filename=f"{st.session_state.current_project.get('name', 'data')}.csv")
             st.markdown(csv_link, unsafe_allow_html=True)
-        
-        elif export_format == "JSON (.json)":
-            # Generate JSON download link
-            json_link = generate_json_download_link(filtered_df, "analytics_assist_export.json")
+    
+    with format_cols[1]:
+        if st.button("Export as Excel", use_container_width=True):
+            excel_link = generate_excel_download_link(export_df, filename=f"{st.session_state.current_project.get('name', 'data')}.xlsx")
+            st.markdown(excel_link, unsafe_allow_html=True)
+    
+    with format_cols[2]:
+        if st.button("Export as JSON", use_container_width=True):
+            json_link = generate_json_download_link(export_df, filename=f"{st.session_state.current_project.get('name', 'data')}.json")
             st.markdown(json_link, unsafe_allow_html=True)
     
-    # Transformation log export
-    if transformations:
-        st.markdown("### Export Transformation Log")
-        st.markdown("""
-        Export the log of all transformations applied to your dataset.
-        This is useful for documenting your data cleaning process.
-        """)
-        
-        log_link = generate_transformation_log(transformations, "transformation_log.json")
-        st.markdown(log_link, unsafe_allow_html=True)
+    # Export transformation history
+    if 'transformations' in st.session_state and st.session_state.transformations:
+        st.subheader("Export Transformation Log")
+        if st.button("Export Transformation History"):
+            transformation_link = generate_transformation_log(
+                st.session_state.transformations, 
+                filename=f"{st.session_state.current_project.get('name', 'data')}_transformations.json"
+            )
+            st.markdown(transformation_link, unsafe_allow_html=True)
 
-# Tab 2: Generate Reports
 with tab2:
-    st.subheader("Generate Analysis Reports")
-    st.markdown("""
-    Create comprehensive reports summarizing your data analysis, insights, and transformations.
-    These reports can be shared with stakeholders or used for documentation.
-    """)
+    st.header("Generate Analysis Reports")
     
-    # Report types
+    # Report options
+    st.subheader("Report Type")
+    
     report_type = st.selectbox(
         "Select report type",
-        [
-            "Comprehensive Summary Report",
-            "Data Profile Report",
-            "Insights Report",
-            "Transformation Report"
-        ]
+        ["Summary Report", "Data Quality Report", "Insight Report", "Custom Report"]
     )
     
-    # Comprehensive Summary Report
-    if report_type == "Comprehensive Summary Report":
-        st.markdown("### Comprehensive Summary Report")
-        st.markdown("""
-        This report includes:
-        - Dataset summary
-        - Data sample
-        - Key insights
-        - Applied transformations
-        - Statistical summaries
-        """)
-        
-        # Options for the report
-        include_insights = st.checkbox("Include AI-generated insights", value=True)
+    if report_type == "Summary Report":
         include_transformations = st.checkbox("Include transformation history", value=True)
+        include_insights = st.checkbox("Include insights", value=True)
         include_visualizations = st.checkbox("Include visualizations", value=True)
         
-        # Generate and download report
-        if st.button("Generate Comprehensive Report"):
-            with st.spinner("Generating comprehensive report..."):
-                # Generate summary report
+        transformations = st.session_state.transformations if 'transformations' in st.session_state and include_transformations else []
+        insights = st.session_state.generated_insights if 'generated_insights' in st.session_state and include_insights else []
+        
+        if st.button("Generate Summary Report"):
+            with st.spinner("Generating report..."):
                 report_html = export_summary_report(
-                    df,
-                    transformations if include_transformations else [],
-                    insights if include_insights else [],
-                    include_visualizations
+                    df, 
+                    transformations, 
+                    insights
                 )
                 
-                # Create download link
-                from utils.export import generate_report_download_link
-                report_link = generate_report_download_link(report_html, "comprehensive_report.html")
+                download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.html">Download Summary Report</a>'
+                st.markdown(download_link, unsafe_allow_html=True)
+    
+    elif report_type == "Data Quality Report":
+        # Options for data quality report
+        include_missing_values = st.checkbox("Include missing values analysis", value=True)
+        include_outliers = st.checkbox("Include outlier analysis", value=True)
+        include_distributions = st.checkbox("Include distribution analysis", value=True)
+        
+        if st.button("Generate Data Quality Report"):
+            with st.spinner("Generating report..."):
+                # Create data quality report
+                missing_data = df.isnull().sum()
+                missing_pct = 100 * missing_data / len(df)
+                missing_analysis = pd.concat([missing_data, missing_pct], axis=1)
+                missing_analysis.columns = ['Missing Values', '% Missing']
                 
-                st.success("Report generated successfully!")
-                st.markdown(report_link, unsafe_allow_html=True)
-    
-    # Data Profile Report
-    elif report_type == "Data Profile Report":
-        st.markdown("### Data Profile Report")
-        st.markdown("""
-        This report includes:
-        - Detailed data type information
-        - Distribution visualizations
-        - Correlation analyses
-        - Missing value summaries
-        - Descriptive statistics
-        """)
-        
-        # Generate and download report
-        if st.button("Generate Profile Report"):
-            with st.spinner("Generating profile report... This may take a minute."):
-                try:
-                    from utils.data_analyzer import generate_quick_eda_report
+                report_html = """
+                <html>
+                <head>
+                    <title>Data Quality Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .section { margin-bottom: 20px; }
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { border: 1px solid #ddd; padding: 8px; }
+                        th { background-color: #f2f2f2; }
+                        tr:nth-child(even) { background-color: #f9f9f9; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Data Quality Report</h1>
+                        <p>Generated on {date} for project: {project}</p>
+                    </div>
                     
-                    # Generate profile report
-                    report_data = generate_quick_eda_report(df)
+                    <div class="section">
+                        <h2>Dataset Overview</h2>
+                        <p>Rows: {rows}</p>
+                        <p>Columns: {cols}</p>
+                        <p>Memory Usage: {memory} MB</p>
+                    </div>
+                """.format(
+                    date=datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    project=st.session_state.current_project.get('name', 'Unnamed project'),
+                    rows=df.shape[0],
+                    cols=df.shape[1],
+                    memory=round(df.memory_usage(deep=True).sum() / (1024 * 1024), 2)
+                )
+                
+                if include_missing_values:
+                    report_html += """
+                    <div class="section">
+                        <h2>Missing Values Analysis</h2>
+                        <table>
+                            <tr>
+                                <th>Column</th>
+                                <th>Missing Values</th>
+                                <th>% Missing</th>
+                            </tr>
+                    """
                     
-                    if report_data:
-                        # Decode the base64 report
-                        report_html = base64.b64decode(report_data).decode('utf-8')
+                    for index, row in missing_analysis[missing_analysis['Missing Values'] > 0].iterrows():
+                        report_html += f"""
+                            <tr>
+                                <td>{index}</td>
+                                <td>{row['Missing Values']}</td>
+                                <td>{row['% Missing']:.2f}%</td>
+                            </tr>
+                        """
+                    
+                    report_html += """
+                        </table>
+                    </div>
+                    """
+                
+                if include_outliers:
+                    report_html += """
+                    <div class="section">
+                        <h2>Outlier Analysis</h2>
+                        <table>
+                            <tr>
+                                <th>Column</th>
+                                <th>Min</th>
+                                <th>Max</th>
+                                <th>Mean</th>
+                                <th>Std Dev</th>
+                                <th>Lower Bound</th>
+                                <th>Upper Bound</th>
+                                <th>Outliers</th>
+                            </tr>
+                    """
+                    
+                    for col in df.select_dtypes(include=np.number).columns:
+                        mean = df[col].mean()
+                        std = df[col].std()
+                        lower_bound = mean - 3 * std
+                        upper_bound = mean + 3 * std
+                        outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)].shape[0]
                         
-                        # Create download link
-                        from utils.export import generate_report_download_link
-                        report_link = generate_report_download_link(report_html, "profile_report.html")
+                        report_html += f"""
+                            <tr>
+                                <td>{col}</td>
+                                <td>{df[col].min():.2f}</td>
+                                <td>{df[col].max():.2f}</td>
+                                <td>{mean:.2f}</td>
+                                <td>{std:.2f}</td>
+                                <td>{lower_bound:.2f}</td>
+                                <td>{upper_bound:.2f}</td>
+                                <td>{outliers} ({100*outliers/df.shape[0]:.2f}%)</td>
+                            </tr>
+                        """
+                    
+                    report_html += """
+                        </table>
+                    </div>
+                    """
+                
+                if include_distributions:
+                    report_html += """
+                    <div class="section">
+                        <h2>Distribution Analysis</h2>
+                        <table>
+                            <tr>
+                                <th>Column</th>
+                                <th>Data Type</th>
+                                <th>Unique Values</th>
+                                <th>Distribution</th>
+                            </tr>
+                    """
+                    
+                    for col in df.columns:
+                        dtype = df[col].dtype
+                        unique = df[col].nunique()
                         
-                        st.success("Profile report generated successfully!")
-                        st.markdown(report_link, unsafe_allow_html=True)
-                    else:
-                        st.error("Failed to generate profile report.")
-                except Exception as e:
-                    st.error(f"Error generating profile report: {str(e)}")
+                        if pd.api.types.is_numeric_dtype(df[col]):
+                            distribution = "Numeric"
+                        elif pd.api.types.is_categorical_dtype(df[col]) or df[col].dtype == 'object':
+                            distribution = "Categorical"
+                        elif pd.api.types.is_datetime64_any_dtype(df[col]):
+                            distribution = "Datetime"
+                        else:
+                            distribution = "Other"
+                        
+                        report_html += f"""
+                            <tr>
+                                <td>{col}</td>
+                                <td>{dtype}</td>
+                                <td>{unique}</td>
+                                <td>{distribution}</td>
+                            </tr>
+                        """
+                    
+                    report_html += """
+                        </table>
+                    </div>
+                    """
+                
+                report_html += """
+                </body>
+                </html>
+                """
+                
+                download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_data_quality.html">Download Data Quality Report</a>'
+                st.markdown(download_link, unsafe_allow_html=True)
     
-    # Insights Report
-    elif report_type == "Insights Report":
-        st.markdown("### AI Insights Report")
-        st.markdown("""
-        This report includes:
-        - Key insights discovered by AI
-        - Importance ratings
-        - Recommended actions
-        """)
-        
-        if not insights:
-            st.warning("No insights available. Please generate insights in the Insights Dashboard first.")
+    elif report_type == "Insight Report":
+        if 'generated_insights' not in st.session_state or not st.session_state.generated_insights:
+            st.warning("No insights have been generated yet. Please go to the Insights Dashboard to generate insights first.")
         else:
-            # Generate and download report
-            if st.button("Generate Insights Report"):
-                with st.spinner("Generating insights report..."):
-                    # Sort insights by importance
-                    sorted_insights = sorted(insights, key=lambda x: x.get('importance', 0), reverse=True)
+            include_visualizations = st.checkbox("Include visualizations", value=True)
+            
+            if st.button("Generate Insight Report"):
+                with st.spinner("Generating report..."):
+                    insights = st.session_state.generated_insights
                     
-                    # Create HTML content for insights report
-                    html_content = f"""
-                    <!DOCTYPE html>
+                    report_html = """
                     <html>
                     <head>
-                        <title>Analytics Assist - Insights Report</title>
+                        <title>Insight Report</title>
                         <style>
-                            body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                            h1, h2, h3 {{ color: #4F8BF9; }}
-                            .insight {{ background-color: #f9f9f9; padding: 15px; margin-bottom: 15px; border-left: 4px solid #4F8BF9; }}
-                            .importance {{ font-weight: bold; }}
-                            .recommended-action {{ background-color: #e8f4f8; padding: 10px; margin-top: 10px; }}
+                            body { font-family: Arial, sans-serif; margin: 20px; }
+                            .header { text-align: center; margin-bottom: 30px; }
+                            .section { margin-bottom: 30px; }
+                            .insight { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+                            .insight-title { font-weight: bold; margin-bottom: 10px; font-size: 18px; }
+                            .insight-category { color: #666; font-style: italic; }
                         </style>
                     </head>
                     <body>
-                        <h1>Analytics Assist - Insights Report</h1>
-                        <p>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-                        
-                        <h2>Key Insights</h2>
-                    """
+                        <div class="header">
+                            <h1>Insight Report</h1>
+                            <p>Generated on {date} for project: {project}</p>
+                        </div>
+                    """.format(
+                        date=datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        project=st.session_state.current_project.get('name', 'Unnamed project')
+                    )
                     
-                    # Add each insight
-                    for i, insight in enumerate(sorted_insights):
-                        importance = insight.get('importance', 3)
-                        stars = '⭐' * importance
-                        
-                        html_content += f"""
-                        <div class="insight">
-                            <h3>{i+1}. {insight.get('title', 'Insight')}</h3>
-                            <p class="importance">Importance: {stars} ({importance}/5)</p>
-                            <p><strong>Type:</strong> {insight.get('type', 'general').title()}</p>
-                            <p>{insight.get('description', 'No description available')}</p>
+                    # Group insights by category
+                    categories = {}
+                    for insight in insights:
+                        category = insight.get('category', 'general')
+                        if category not in categories:
+                            categories[category] = []
+                        categories[category].append(insight)
+                    
+                    # Add insights by category
+                    for category, category_insights in categories.items():
+                        report_html += f"""
+                        <div class="section">
+                            <h2>{category.capitalize()} Insights</h2>
                         """
                         
-                        if 'recommended_action' in insight and insight['recommended_action']:
-                            html_content += f"""
-                            <div class="recommended-action">
-                                <p><strong>Recommended Action:</strong> {insight['recommended_action']}</p>
+                        for insight in category_insights:
+                            report_html += f"""
+                            <div class="insight">
+                                <div class="insight-title">{insight['title']}</div>
+                                <div class="insight-category">Category: {insight['category']}</div>
+                                <p>{insight['description']}</p>
                             </div>
                             """
                         
-                        html_content += "</div>"
+                        report_html += """
+                        </div>
+                        """
                     
-                    # Close HTML
-                    html_content += """
+                    report_html += """
                     </body>
                     </html>
                     """
                     
-                    # Create download link
-                    from utils.export import generate_report_download_link
-                    report_link = generate_report_download_link(html_content, "insights_report.html")
-                    
-                    st.success("Insights report generated successfully!")
-                    st.markdown(report_link, unsafe_allow_html=True)
-                    
-                    # Also offer JSON download option
-                    json_link = generate_insights_download_link(insights, "insights.json")
-                    st.markdown("Or download as JSON:")
-                    st.markdown(json_link, unsafe_allow_html=True)
+                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_insights.html">Download Insight Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
     
-    # Transformation Report
-    elif report_type == "Transformation Report":
-        st.markdown("### Transformation Report")
-        st.markdown("""
-        This report documents all the transformations applied to your data,
-        providing a complete audit trail of your data cleaning process.
-        """)
+    elif report_type == "Custom Report":
+        st.subheader("Custom Report Options")
         
-        if not transformations:
-            st.warning("No transformations available. Please apply transformations in the Data Transformation page first.")
-        else:
-            # Generate and download report
-            if st.button("Generate Transformation Report"):
-                with st.spinner("Generating transformation report..."):
-                    # Create HTML content for transformation report
-                    html_content = f"""
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <title>Analytics Assist - Transformation Report</title>
-                        <style>
-                            body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                            h1, h2, h3 {{ color: #4F8BF9; }}
-                            table {{ border-collapse: collapse; width: 100%; margin-bottom: 20px; }}
-                            th, td {{ padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }}
-                            th {{ background-color: #f2f2f2; }}
-                            .transformation {{ background-color: #f0f8ff; padding: 15px; margin-bottom: 15px; border-left: 4px solid #4F8BF9; }}
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Analytics Assist - Transformation Report</h1>
-                        <p>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+        # Title
+        title = st.text_input("Report Title", value=f"{st.session_state.current_project.get('name', 'Data')} Analysis Report")
+        
+        # Sections to include
+        include_overview = st.checkbox("Include Dataset Overview", value=True)
+        include_transformations = st.checkbox("Include Transformation History", value=True)
+        include_insights = st.checkbox("Include AI Insights", value=True)
+        include_stats = st.checkbox("Include Statistics", value=True)
+        include_visualizations = st.checkbox("Include Visualizations", value=True)
+        
+        # Custom text
+        custom_intro = st.text_area("Introduction Text", value="This report presents the analysis results for the dataset.")
+        custom_conclusion = st.text_area("Conclusion Text", value="The analysis provides valuable insights into the dataset patterns and characteristics.")
+        
+        if st.button("Generate Custom Report"):
+            with st.spinner("Generating report..."):
+                # Create the report HTML
+                report_html = f"""
+                <html>
+                <head>
+                    <title>{title}</title>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                        .header {{ text-align: center; margin-bottom: 30px; }}
+                        .section {{ margin-bottom: 30px; }}
+                        .insight {{ margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }}
+                        table {{ border-collapse: collapse; width: 100%; }}
+                        th, td {{ border: 1px solid #ddd; padding: 8px; }}
+                        th {{ background-color: #f2f2f2; }}
+                        tr:nth-child(even) {{ background-color: #f9f9f9; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>{title}</h1>
+                        <p>Generated on {datetime.now().strftime("%Y-%m-%d %H:%M")}</p>
+                    </div>
+                    
+                    <div class="section">
+                        <h2>Introduction</h2>
+                        <p>{custom_intro}</p>
+                    </div>
+                """
+                
+                if include_overview:
+                    report_html += f"""
+                    <div class="section">
+                        <h2>Dataset Overview</h2>
+                        <p>Rows: {df.shape[0]}</p>
+                        <p>Columns: {df.shape[1]}</p>
+                        <p>Memory Usage: {round(df.memory_usage(deep=True).sum() / (1024 * 1024), 2)} MB</p>
                         
-                        <h2>Transformation Summary</h2>
-                        <p>Total transformations applied: {len(transformations)}</p>
-                        
-                        <h2>Detailed Transformation Log</h2>
+                        <h3>Columns</h3>
+                        <table>
+                            <tr>
+                                <th>Column</th>
+                                <th>Data Type</th>
+                                <th>Non-Null Count</th>
+                                <th>Unique Values</th>
+                            </tr>
                     """
                     
-                    # Add each transformation
-                    for i, transform in enumerate(transformations):
-                        html_content += f"""
-                        <div class="transformation">
-                            <h3>{i+1}. {transform.get('name', 'Transformation')}</h3>
-                            <p><strong>Applied on:</strong> {transform.get('timestamp', '-')}</p>
-                            <p><strong>Description:</strong> {transform.get('description', '-')}</p>
-                            <p><strong>Affected columns:</strong> {', '.join(transform.get('columns', []))}</p>
+                    for col in df.columns:
+                        report_html += f"""
+                            <tr>
+                                <td>{col}</td>
+                                <td>{df[col].dtype}</td>
+                                <td>{df[col].count()} ({100 * df[col].count() / len(df):.1f}%)</td>
+                                <td>{df[col].nunique()}</td>
+                            </tr>
+                        """
+                    
+                    report_html += """
+                        </table>
+                    </div>
+                    """
+                
+                if include_transformations and 'transformations' in st.session_state and st.session_state.transformations:
+                    report_html += """
+                    <div class="section">
+                        <h2>Transformation History</h2>
+                        <table>
+                            <tr>
+                                <th>#</th>
+                                <th>Transformation</th>
+                                <th>Applied At</th>
+                            </tr>
+                    """
+                    
+                    for i, t in enumerate(st.session_state.transformations):
+                        report_html += f"""
+                            <tr>
+                                <td>{i+1}</td>
+                                <td>{t['name']}</td>
+                                <td>{t['timestamp']}</td>
+                            </tr>
+                        """
+                    
+                    report_html += """
+                        </table>
+                    </div>
+                    """
+                
+                if include_insights and 'generated_insights' in st.session_state and st.session_state.generated_insights:
+                    report_html += """
+                    <div class="section">
+                        <h2>AI Insights</h2>
+                    """
+                    
+                    for insight in st.session_state.generated_insights:
+                        report_html += f"""
+                        <div class="insight">
+                            <h3>{insight['title']}</h3>
+                            <p>{insight['description']}</p>
+                        </div>
+                        """
+                    
+                    report_html += """
+                    </div>
+                    """
+                
+                if include_stats:
+                    report_html += """
+                    <div class="section">
+                        <h2>Statistical Summary</h2>
+                        <table>
+                            <tr>
+                                <th>Statistic</th>
+                    """
+                    
+                    numeric_cols = df.select_dtypes(include=np.number).columns
+                    
+                    for col in numeric_cols:
+                        report_html += f"""
+                                <th>{col}</th>
+                        """
+                    
+                    report_html += """
+                            </tr>
+                    """
+                    
+                    stats = ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']
+                    desc = df.describe().transpose()
+                    
+                    for stat in stats:
+                        report_html += f"""
+                            <tr>
+                                <td>{stat}</td>
                         """
                         
-                        # Add parameters if available
-                        if 'params' in transform and transform['params']:
-                            html_content += "<p><strong>Parameters:</strong></p><ul>"
-                            for param, value in transform['params'].items():
-                                html_content += f"<li>{param}: {value}</li>"
-                            html_content += "</ul>"
+                        for col in numeric_cols:
+                            report_html += f"""
+                                <td>{desc.loc[col, stat]:.2f}</td>
+                            """
                         
-                        html_content += "</div>"
+                        report_html += """
+                            </tr>
+                        """
                     
-                    # Close HTML
-                    html_content += """
-                    </body>
-                    </html>
+                    report_html += """
+                        </table>
+                    </div>
                     """
-                    
-                    # Create download link
-                    from utils.export import generate_report_download_link
-                    report_link = generate_report_download_link(html_content, "transformation_report.html")
-                    
-                    st.success("Transformation report generated successfully!")
-                    st.markdown(report_link, unsafe_allow_html=True)
-                    
-                    # Also offer JSON download option
-                    json_link = generate_transformation_log(transformations, "transformation_log.json")
-                    st.markdown("Or download as JSON:")
-                    st.markdown(json_link, unsafe_allow_html=True)
+                
+                report_html += f"""
+                    <div class="section">
+                        <h2>Conclusion</h2>
+                        <p>{custom_conclusion}</p>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{title.replace(" ", "_")}.html">Download Custom Report</a>'
+                st.markdown(download_link, unsafe_allow_html=True)
 
-# Tab 3: Save Project
 with tab3:
-    st.subheader("Save & Load Projects")
-    st.markdown("""
-    Save your current project to return to it later, or load a previously saved project.
-    This allows you to continue your analysis across multiple sessions.
-    """)
+    st.header("Save & Load Work")
     
-    # Create columns for save and load
-    col1, col2 = st.columns(2)
+    # Save project
+    st.subheader("Save Current Analysis")
+    project_name = st.text_input("Project Name", value=st.session_state.current_project.get('name', 'My Analysis Project'))
     
-    with col1:
-        st.markdown("### Save Current Project")
-        
-        # Project name input
-        current_name = st.session_state.current_project['name'] if 'current_project' in st.session_state and st.session_state.current_project else "My Project"
-        project_name = st.text_input("Project name", value=current_name)
-        
-        # Save button
-        if st.button("Save Project"):
-            if not project_name:
-                st.error("Please enter a project name.")
-            else:
-                success = save_project(project_name, df, transformations, insights)
+    save_cols = st.columns(2)
+    
+    with save_cols[0]:
+        if st.button("Save to Database", use_container_width=True):
+            if 'dataset_id' in st.session_state:
+                from utils.database import save_version
                 
-                if success:
-                    # Update current project in session state
-                    st.session_state.current_project = {
-                        'name': project_name,
-                        'file_name': st.session_state.file_name if 'file_name' in st.session_state else "Unknown",
-                        'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    }
-                    
-                    st.success(f"Project '{project_name}' saved successfully!")
-                else:
-                    st.error("Failed to save project. Please try again.")
-    
-    with col2:
-        st.markdown("### Load Saved Project")
-        
-        # Check if there are saved projects
-        if 'projects' not in st.session_state or not st.session_state.projects:
-            st.info("No saved projects found.")
-        else:
-            # List of saved projects
-            project_names = [p['name'] for p in st.session_state.projects]
-            selected_project = st.selectbox("Select a project to load", project_names)
-            
-            # Load button
-            if st.button("Load Project"):
-                if not selected_project:
-                    st.error("Please select a project to load.")
-                else:
-                    success = load_project(selected_project)
-                    
-                    if success:
-                        st.success(f"Project '{selected_project}' loaded successfully!")
-                        st.rerun()
-                    else:
-                        st.error(f"Failed to load project '{selected_project}'. Please try again.")
-    
-    # Export project as file
-    st.markdown("### Export/Import Project File")
-    
-    # Create columns for export and import
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("#### Export Project File")
-        st.markdown("""
-        Export your entire project as a file that can be shared or imported later.
-        This includes the dataset, transformations, and insights.
-        """)
-        
-        if st.button("Export Project File"):
-            if 'current_project' not in st.session_state or not st.session_state.current_project:
-                st.error("No active project to export.")
-            else:
-                # Create project export data
-                project_export = {
-                    'name': st.session_state.current_project.get('name', 'Exported Project'),
-                    'created_at': st.session_state.current_project.get('created_at', datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
-                    'exported_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'dataset': df.to_dict() if df is not None else None,
-                    'transformations': transformations,
-                    'insights': insights
-                }
+                # Get version number
+                if 'saved_versions' not in st.session_state:
+                    st.session_state.saved_versions = []
                 
-                # Convert to JSON
-                json_str = json.dumps(project_export, indent=2, default=str)
+                version_number = len(st.session_state.saved_versions) + 1
+                description = f"Version {version_number} - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
                 
-                # Create download link
-                b64 = base64.b64encode(json_str.encode()).decode()
-                project_file_name = f"{st.session_state.current_project.get('name', 'project').replace(' ', '_')}.aap"  # .aap = Analytics Assist Project
-                href = f'<a href="data:file/json;base64,{b64}" download="{project_file_name}">Download Project File</a>'
-                
-                st.success("Project file created successfully!")
-                st.markdown(href, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("#### Import Project File")
-        st.markdown("""
-        Import a previously exported project file to continue your analysis.
-        """)
-        
-        # File uploader for project import
-        uploaded_project = st.file_uploader("Upload project file", type=['aap', 'json'])
-        
-        if uploaded_project is not None:
-            if st.button("Import Project"):
+                # Save version
                 try:
-                    # Load project data from file
-                    project_data = json.loads(uploaded_project.read())
+                    transformations = st.session_state.transformations if 'transformations' in st.session_state else []
                     
-                    # Check if it has the required structure
-                    if 'name' in project_data and 'dataset' in project_data:
-                        # Load dataset
-                        if project_data['dataset']:
-                            imported_df = pd.DataFrame.from_dict(project_data['dataset'])
-                            st.session_state.dataset = imported_df
+                    version_id = save_version(
+                        st.session_state.dataset_id,
+                        version_number,
+                        project_name,
+                        description,
+                        df,
+                        json.dumps(transformations)
+                    )
+                    
+                    # Store version in session state
+                    st.session_state.saved_versions.append({
+                        "id": version_id,
+                        "name": project_name,
+                        "description": description,
+                        "version": version_number,
+                        "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    })
+                    
+                    st.success(f"Project saved as Version {version_number}!")
+                except Exception as e:
+                    st.error(f"Error saving project: {str(e)}")
+            else:
+                st.error("Please save the dataset first by going to the Upload Data page.")
+    
+    with save_cols[1]:
+        if st.button("Save to Session", use_container_width=True):
+            try:
+                transformations = st.session_state.transformations if 'transformations' in st.session_state else []
+                insights = st.session_state.generated_insights if 'generated_insights' in st.session_state else []
+                
+                save_project(project_name, df, transformations, insights)
+                
+                st.success(f"Project '{project_name}' saved to session!")
+            except Exception as e:
+                st.error(f"Error saving project: {str(e)}")
+    
+    # Load project
+    st.subheader("Load Saved Work")
+    
+    # Load from database
+    if 'dataset_id' in st.session_state:
+        from utils.database import get_versions
+        
+        # Get all versions for the dataset
+        try:
+            versions = get_versions(st.session_state.dataset_id)
+            
+            if versions:
+                st.session_state.saved_versions = versions
+                
+                # Create a selection for versions
+                version_options = [f"Version {v['version']} - {v['name']} ({v['timestamp']})" for v in versions]
+                selected_version = st.selectbox("Select saved version", version_options)
+                
+                if st.button("Load Selected Version"):
+                    # Find the selected version
+                    version_index = version_options.index(selected_version)
+                    version = versions[version_index]
+                    
+                    # Load version
+                    from utils.database import get_version
+                    version_data = get_version(version['id'])
+                    
+                    if version_data and 'df' in version_data:
+                        # Update session state
+                        st.session_state.dataset = version_data['df']
                         
-                        # Load transformations
-                        if 'transformations' in project_data:
-                            st.session_state.transformations = project_data['transformations']
+                        # Parse transformations if available
+                        if 'transformations_applied' in version_data and version_data['transformations_applied']:
+                            try:
+                                st.session_state.transformations = json.loads(version_data['transformations_applied'])
+                            except:
+                                st.session_state.transformations = []
                         
-                        # Load insights
-                        if 'insights' in project_data:
-                            st.session_state.insights = project_data['insights']
-                        
-                        # Set current project
-                        st.session_state.current_project = {
-                            'name': project_data['name'],
-                            'file_name': uploaded_project.name,
-                            'created_at': project_data.get('created_at', datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
-                            'imported_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        }
-                        
-                        st.success(f"Project '{project_data['name']}' imported successfully!")
+                        st.success(f"Version {version['version']} loaded successfully!")
                         st.rerun()
                     else:
-                        st.error("Invalid project file format.")
-                except Exception as e:
-                    st.error(f"Error importing project: {str(e)}")
+                        st.error("Failed to load version data.")
+            else:
+                st.info("No saved versions found for this dataset.")
+        except Exception as e:
+            st.error(f"Error loading versions: {str(e)}")
+    
+    # Load from session
+    if 'saved_projects' in st.session_state and st.session_state.saved_projects:
+        project_names = list(st.session_state.saved_projects.keys())
+        selected_project = st.selectbox("Select session project", project_names)
+        
+        if st.button("Load Project from Session"):
+            try:
+                loaded_project = load_project(selected_project)
+                
+                if loaded_project:
+                    # Update session state
+                    st.session_state.dataset = loaded_project['df']
+                    st.session_state.transformations = loaded_project['transformations']
+                    st.session_state.generated_insights = loaded_project['insights']
+                    
+                    st.success(f"Project '{selected_project}' loaded successfully!")
+                    st.rerun()
+                else:
+                    st.error("Failed to load project.")
+            except Exception as e:
+                st.error(f"Error loading project: {str(e)}")
+    else:
+        st.info("No projects saved in session.")
 
-# Navigation buttons
+# Navigation buttons at the bottom
 st.markdown("---")
-col1, col2 = st.columns(2)
-
+col1, col2, col3 = st.columns(3)
 with col1:
-    if st.button("← Back to Insights Dashboard", key="back_to_insights"):
+    if st.button("← Insights Dashboard", use_container_width=True):
         st.switch_page("pages/05_Insights_Dashboard.py")
-
 with col2:
-    if st.button("Go to Version History →", key="go_to_version"):
+    if st.button("Home", use_container_width=True):
+        st.switch_page("app.py")
+with col3:
+    if st.button("Version History →", use_container_width=True):
         st.switch_page("pages/07_Version_History.py")
-
-# Add a sidebar with tips
-with st.sidebar:
-    st.header("Export & Sharing Tips")
-    
-    st.markdown("""
-    ### Why Export Your Analysis?
-    
-    - **Documentation**: Keep a record of your data cleaning process
-    - **Collaboration**: Share insights with team members
-    - **Presentation**: Create professional reports for stakeholders
-    - **Continuity**: Save your work to continue later
-    
-    ### Best Practices
-    
-    1. **Include metadata** in your reports (date, author, data source)
-    
-    2. **Export transformed data** for use in other tools
-    
-    3. **Save projects regularly** to avoid losing work
-    
-    4. **Export the transformation log** for data governance
-    
-    5. **Share insights** with context and recommendations
-    """)
-    
-    st.markdown("---")
-    
-    st.markdown("""
-    **Export formats**:
-    - **Excel**: Best for viewing and simple further analysis
-    - **CSV**: Most compatible with other tools
-    - **JSON**: Best for preserving data structures
-    - **HTML Reports**: Best for sharing with non-technical users
-    """)

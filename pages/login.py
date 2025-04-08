@@ -11,6 +11,15 @@ def app():
     
     # Initialize and render navigation
     initialize_navigation()
+
+    # Hide Streamlit’s default multipage navigation menu
+    st.markdown("""
+        <style>
+            [data-testid="stSidebarNav"] {
+                display: none !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
     render_navigation()
     
     # Main content area
