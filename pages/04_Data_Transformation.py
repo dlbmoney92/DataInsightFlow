@@ -638,7 +638,7 @@ else:
                             # Extract component
                             component_func = component.lower().replace(" ", "_")
                             
-                            transformed_df, stats = convert_numeric_to_datetime(df, selected_column, component_func)
+                            transformed_df, stats = convert_numeric_to_datetime(df, selected_column, component=component_func)
                             
                             transformation_name = f"Extract {component} from {selected_column}"
                             

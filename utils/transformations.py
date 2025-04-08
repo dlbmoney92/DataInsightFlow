@@ -242,30 +242,88 @@ def encode_categorical(df, columns, method='onehot'):
     
     return df_out
 
-def format_dates(df, columns, format=None):
-    """Format datetime columns."""
+def format_dates(df, column, output_format=None):
+    """Format datetime columns.
+    
+    Args:
+        df: DataFrame
+        column: Column name to format
+        output_format: Output date format string
+    
+    Returns:
+        Tuple of (transformed DataFrame, stats)
+    """
     df_out = df.copy()
+    stats = {"success": 0, "failed": 0}
     
-    for column in columns:
-        if column in df.columns:
-            # Try to convert to datetime
-            try:
-                if format:
-                    df_out[column] = pd.to_datetime(df[column], format=format)
-                else:
-                    df_out[column] = pd.to_datetime(df[column])
-            except:
-                pass
+    if column in df.columns:
+        # Try to convert to datetime first if not already datetime
+        try:
+            if not pd.api.types.is_datetime64_any_dtype(df[column]):
+                df_out[column] = pd.to_datetime(df[column])
+            
+            # Then format to the desired output
+            if output_format:
+                df_out[column] = df_out[column].dt.strftime(output_format)
+                
+            # Count successful conversions
+            stats["success"] = df_out[column].notna().sum()
+            stats["failed"] = df_out[column].isna().sum()
+        except Exception as e:
+            stats["error"] = str(e)
+    else:
+        stats["error"] = f"Column {column} not found in dataframe"
     
-    return df_out
+    return df_out, stats
 
 def drop_columns(df, columns):
-    """Drop specified columns from the DataFrame."""
-    return df.drop(columns=columns, errors='ignore')
+    """Drop specified columns from the DataFrame.
+    
+    Args:
+        df: DataFrame
+        columns: List of column names to drop
+    
+    Returns:
+        Tuple of (transformed DataFrame, stats)
+    """
+    df_out = df.copy()
+    
+    # Get columns that actually exist in the dataframe
+    valid_columns = [col for col in columns if col in df.columns]
+    
+    # Drop columns
+    df_out = df_out.drop(columns=valid_columns, errors='ignore')
+    
+    stats = {
+        "columns_before": len(df.columns),
+        "columns_after": len(df_out.columns),
+        "columns_dropped": len(valid_columns),
+        "dropped_columns": valid_columns
+    }
+    
+    return df_out, stats
 
 def rename_columns(df, mapping):
-    """Rename columns according to the provided mapping."""
-    return df.rename(columns=mapping)
+    """Rename columns according to the provided mapping.
+    
+    Args:
+        df: DataFrame
+        mapping: Dictionary of current_name -> new_name mappings
+    
+    Returns:
+        Tuple of (transformed DataFrame, stats)
+    """
+    df_out = df.copy()
+    
+    # Apply the renaming
+    df_out = df_out.rename(columns=mapping)
+    
+    stats = {
+        "columns_renamed": len(mapping),
+        "mapping": mapping
+    }
+    
+    return df_out, stats
 
 def create_bins(df, column, num_bins=5, new_column_name=None):
     """Create bins from a numeric column."""
@@ -298,17 +356,28 @@ def log_transform(df, columns):
     
     return df_out
 
-def convert_numeric_to_datetime(df, columns):
-    """Convert numeric values (e.g., Unix timestamps) to datetime."""
-    df_out = df.copy()
+def convert_numeric_to_datetime(df, column, component=None):
+    """Convert numeric values (e.g., Unix timestamps) to datetime or extract components.
     
-    for column in columns:
-        if column in df.columns:
-            try:
-                # Try to detect the format
-                first_valid = df[column].iloc[df[column].first_valid_index()] if not df[column].isna().all() else None
-                
-                if first_valid is not None:
+    Args:
+        df: DataFrame
+        column: Column name to convert
+        component: Optional datetime component to extract (year, month, etc.)
+    
+    Returns:
+        Tuple of (transformed DataFrame, stats)
+    """
+    df_out = df.copy()
+    stats = {"success": 0, "failed": 0}
+    
+    if column in df.columns:
+        try:
+            # Try to detect the format
+            first_valid = df[column].iloc[df[column].first_valid_index()] if not df[column].isna().all() else None
+            
+            if first_valid is not None:
+                # First convert to datetime if needed
+                if not pd.api.types.is_datetime64_any_dtype(df[column]):
                     if pd.api.types.is_numeric_dtype(df[column]):
                         # If it's numeric, assume it's a Unix timestamp
                         # Try both seconds and milliseconds
@@ -319,11 +388,39 @@ def convert_numeric_to_datetime(df, columns):
                     else:
                         # Otherwise just try standard conversion
                         df_out[column] = pd.to_datetime(df[column])
-            except Exception as e:
-                # If conversion fails, keep the original
-                pass
+                
+                # If a component is specified, extract it
+                if component:
+                    new_col = f"{column}_{component}"
+                    
+                    if component == 'year':
+                        df_out[new_col] = df_out[column].dt.year
+                    elif component == 'month':
+                        df_out[new_col] = df_out[column].dt.month
+                    elif component == 'day':
+                        df_out[new_col] = df_out[column].dt.day
+                    elif component == 'hour':
+                        df_out[new_col] = df_out[column].dt.hour
+                    elif component == 'minute':
+                        df_out[new_col] = df_out[column].dt.minute
+                    elif component == 'second':
+                        df_out[new_col] = df_out[column].dt.second
+                    elif component == 'day_of_week':
+                        df_out[new_col] = df_out[column].dt.dayofweek
+                    elif component == 'week_of_year':
+                        df_out[new_col] = df_out[column].dt.isocalendar().week
+                    elif component == 'quarter':
+                        df_out[new_col] = df_out[column].dt.quarter
+                
+                # Count successful conversions
+                stats["success"] = df_out[column].notna().sum()
+                stats["failed"] = df_out[column].isna().sum()
+        except Exception as e:
+            stats["error"] = str(e)
+    else:
+        stats["error"] = f"Column {column} not found in dataframe"
     
-    return df_out
+    return df_out, stats
 
 def standardize_data(df, columns):
     """Standardize data (z-score normalization)."""
@@ -368,19 +465,36 @@ def standardize_category_names(df, columns, case='upper'):
     
     return df_out
 
-def to_datetime(df, columns):
-    """Convert columns to datetime format."""
+def to_datetime(df, column, format=None):
+    """Convert a column to datetime format.
+    
+    Args:
+        df: DataFrame
+        column: Column name to convert
+        format: Optional datetime format string
+    
+    Returns:
+        Tuple of (transformed DataFrame, stats)
+    """
     df_out = df.copy()
+    stats = {"success": 0, "failed": 0}
     
-    for column in columns:
-        if column in df.columns:
-            try:
+    if column in df.columns:
+        try:
+            if format:
+                df_out[column] = pd.to_datetime(df[column], format=format)
+            else:
                 df_out[column] = pd.to_datetime(df[column])
-            except Exception as e:
-                # If conversion fails, keep the original
-                pass
+                
+            # Count successful conversions
+            stats["success"] = df_out[column].notna().sum()
+            stats["failed"] = df_out[column].isna().sum()
+        except Exception as e:
+            stats["error"] = str(e)
+    else:
+        stats["error"] = f"Column {column} not found in dataframe"
     
-    return df_out
+    return df_out, stats
 
 def get_column_stats_before_after(original_df, transformed_df, column):
     """Get statistics for a column before and after transformation."""
