@@ -67,27 +67,79 @@ st.markdown("""
 # Render custom navigation bar
 render_navigation()
 
+def local_register_transformation(transformations, transformation_history, transformation_name, transformation_details, original_df, df, columns_affected):
+    """
+    Register a transformation in the session state and save to transformation history.
+    """
+    # Get timestamp for the transformation
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Create a unique ID for the transformation
+    transformation_id = str(uuid.uuid4())
+    
+    # Create transformation record
+    transformation = {
+        "id": transformation_id,
+        "name": transformation_name,
+        "timestamp": timestamp,
+        "details": transformation_details,
+        "columns_affected": columns_affected if isinstance(columns_affected, list) else [columns_affected]
+    }
+    
+    # Add to transformations list
+    transformations.append(transformation)
+    
+    # Add to transformation history
+    transformation_history.append({
+        "id": transformation_id,
+        "name": transformation_name,
+        "timestamp": timestamp
+    })
+    
+    # Also save to database if dataset_id is available
+    if "dataset_id" in st.session_state:
+        try:
+            from utils.database import save_transformation
+            
+            # Extract function name from transformation details, or use a default
+            function_name = transformation_details.get("type", "custom_transformation")
+            
+            # Save the transformation to the database
+            save_transformation(
+                dataset_id=st.session_state.get("dataset_id"),
+                name=transformation_name,
+                description=json.dumps(transformation_details),
+                transformation_details={
+                    "function": function_name,
+                    "params": transformation_details
+                },
+                affected_columns=columns_affected if isinstance(columns_affected, list) else [columns_affected]
+            )
+        except Exception as e:
+            st.warning(f"Could not save transformation to database: {str(e)}")
+    
+    return True
+
 def local_local_register_transformation(transformation_name, transformation_details, original_df, df, columns_affected):
     """Local version of register_transformation that can handle the current call signature."""
-    # This is a helper function to correctly call the register_transformation function 
-    # with the expected parameters in the correct order
-    from utils.transformations import register_transformation
+    # This is a wrapper function to maintain backward compatibility
     
-    # Extract function name from transformation details, or use a default
-    function_name = transformation_details.get("type", "custom_transformation")
+    # Ensure session state lists exist
+    if "transformations" not in st.session_state:
+        st.session_state.transformations = []
     
-    # Ensure columns is a list
-    if isinstance(columns_affected, str):
-        columns_affected = [columns_affected]
+    if "transformation_history" not in st.session_state:
+        st.session_state.transformation_history = []
     
     # Call the actual register_transformation with the correct parameters
     return local_register_transformation(
-        df=df, 
-        name=transformation_name,
-        description=json.dumps(transformation_details),
-        function=function_name,
-        columns=columns_affected,
-        params=transformation_details
+        st.session_state.transformations,
+        st.session_state.transformation_history,
+        transformation_name,
+        transformation_details,
+        original_df,
+        df,
+        columns_affected
     )
 
 # Check authentication

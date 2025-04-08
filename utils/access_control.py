@@ -9,15 +9,15 @@ from utils.database import execute_with_retry
 FEATURE_ACCESS = {
     # Data Upload & Management
     "dataset_count": {
-        "free": 20,
-        "basic": 50,
-        "pro": 100,
+        "free": 1,      # Free: 1 dataset
+        "basic": 5,     # Basic: 5 datasets
+        "pro": 20,      # Pro: 20 datasets 
         "enterprise": -1  # Unlimited
     },
     "file_size_limit": {
-        "free": 5,  # MB
-        "basic": 50,  # MB
-        "pro": 200,  # MB
+        "free": 5,    # Free: 5MB limit
+        "basic": 50,  # Basic: 50MB limit
+        "pro": 200,   # Pro: 200MB limit
         "enterprise": 500  # MB
     },
     
@@ -35,21 +35,18 @@ FEATURE_ACCESS = {
     
     # Visualization
     "visualization": {
-        "free": ["bar_chart", "line_chart", "scatter_plot", "basic_table"],
+        "free": ["bar_chart", "line_chart", "scatter_plot", "basic_table"],  # Basic visualizations
         "basic": ["bar_chart", "line_chart", "scatter_plot", "basic_table",
-                 "histogram", "box_plot", "heatmap", "pie_chart"],
-        "pro": ["bar_chart", "line_chart", "scatter_plot", "basic_table",
-               "histogram", "box_plot", "heatmap", "pie_chart", 
-               "3d_plot", "map_viz", "network_graph", "animated_plot", 
-               "interactive_dashboard"],
+                 "histogram", "box_plot", "heatmap", "pie_chart"],  # 8 visualization types
+        "pro": "all",  # All visualization types
         "enterprise": "all"
     },
     
     # Export
     "export_format": {
-        "free": ["csv"],
-        "basic": ["csv", "excel", "pdf", "json"],
-        "pro": ["csv", "excel", "pdf", "json", "sql", "api"],
+        "free": ["csv"],  # CSV export only
+        "basic": ["csv", "excel", "pdf"],  # Excel, CSV, PDF exports
+        "pro": ["csv", "excel", "pdf", "json", "sql", "api"],  # All export formats
         "enterprise": "all"
     },
     

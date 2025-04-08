@@ -336,24 +336,24 @@ else:
                 y_col = st.selectbox("Select Y-axis column", numeric_cols, key="corr_y")
                 
             # Create scatter plot for the selected correlation
-            # Make a copy of the dataframe and ensure column names are unique
-            plot_df = df.copy()
-            # Check for duplicate column names
-            if plot_df.columns.duplicated().any():
-                # Rename duplicate columns by adding a suffix
-                renamed_cols = []
-                for i, col in enumerate(plot_df.columns):
-                    if col in renamed_cols:
-                        suffix = 1
-                        while f"{col}_{suffix}" in renamed_cols:
-                            suffix += 1
-                        plot_df = plot_df.rename(columns={col: f"{col}_{suffix}"})
-                        renamed_cols.append(f"{col}_{suffix}")
-                    else:
-                        renamed_cols.append(col)
+            # Handle duplicate column names by creating a pandas DataFrame with fixed column names
+            # This approach avoids the narwhals.exceptions.DuplicateError
             
-            fig = px.scatter(plot_df, x=x_col, y=y_col, trendline="ols", 
+            # Create a completely new pandas DataFrame with only the needed columns
+            import pandas as pd
+            plot_data = pd.DataFrame()
+            plot_data['x_values'] = df[x_col].values
+            plot_data['y_values'] = df[y_col].values
+            
+            # Use the new DataFrame with guaranteed unique column names for plotting
+            fig = px.scatter(plot_data, x='x_values', y='y_values', trendline="ols", 
                            title=f"Correlation between {x_col} and {y_col}")
+            
+            # Update axis labels to show the original column names
+            fig.update_layout(
+                xaxis_title=x_col,
+                yaxis_title=y_col
+            )
             
             st.plotly_chart(fig, use_container_width=True)
             
@@ -415,7 +415,15 @@ else:
             
             if selected_col in outliers:
                 # Create a box plot to show outliers
-                fig = px.box(df, y=selected_col, title=f"Box Plot with Outliers: {selected_col}")
+                # Create a simplified DataFrame with only the selected column to avoid duplicate column issues
+                import pandas as pd
+                box_data = pd.DataFrame()
+                box_data['value'] = df[selected_col].values
+                
+                fig = px.box(box_data, y='value', title=f"Box Plot with Outliers: {selected_col}")
+                
+                # Update y-axis label to show the original column name
+                fig.update_layout(yaxis_title=selected_col)
                 
                 # Highlight the outliers
                 if outliers[selected_col] and outliers[selected_col]['count'] > 0:
@@ -423,7 +431,7 @@ else:
                     
                     # Get outlier values
                     if isinstance(outlier_indices, list) and outlier_indices:
-                        outlier_values = df.loc[outlier_indices, selected_col]
+                        outlier_values = df.loc[outlier_indices, selected_col].values
                         
                         # Add scatter points for outliers
                         fig.add_trace(
@@ -456,18 +464,41 @@ else:
         
         # Generate a comprehensive EDA report
         with st.spinner("Generating EDA report..."):
-            report_html = generate_quick_eda_report(df)
-            
-            # Display the report
-            st.components.v1.html(report_html, height=600, scrolling=True)
-            
-            # Provide a download link for the report
-            st.download_button(
-                label="Download EDA Report",
-                data=report_html,
-                file_name="eda_report.html",
-                mime="text/html"
-            )
+            try:
+                # Create a copy of the dataframe with fixed column names for the report
+                report_df = df.copy()
+                
+                # Check for duplicate column names
+                if report_df.columns.duplicated().any():
+                    # Create a new dataframe with renamed columns that are guaranteed to be unique
+                    new_df = pd.DataFrame()
+                    seen_cols = {}
+                    for i, col in enumerate(report_df.columns):
+                        if col in seen_cols:
+                            new_col_name = f"{col}_{seen_cols[col]}"
+                            seen_cols[col] += 1
+                            new_df[new_col_name] = report_df.iloc[:, i]
+                        else:
+                            seen_cols[col] = 1
+                            new_df[col] = report_df.iloc[:, i]
+                    
+                    report_df = new_df
+                
+                report_html = generate_quick_eda_report(report_df)
+                
+                # Display the report
+                st.components.v1.html(report_html, height=600, scrolling=True)
+                
+                # Provide a download link for the report
+                st.download_button(
+                    label="Download EDA Report",
+                    data=report_html,
+                    file_name="eda_report.html",
+                    mime="text/html"
+                )
+            except Exception as e:
+                st.error(f"Error generating report: {str(e)}")
+                st.info("This error may be due to duplicate column names or other data structure issues. Try renaming columns in the Data Transformation tab.")
             
     # Add navigation buttons
     st.markdown("---")
