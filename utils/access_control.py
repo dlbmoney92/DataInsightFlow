@@ -111,22 +111,21 @@ def check_access(feature_type, feature_name=None):
     
     # Numeric limits (like dataset count)
     if isinstance(access_rules[tier], (int, float)):
+        # When requesting the actual limit value (no feature_name provided)
+        if feature_name is None:
+            return access_rules[tier]
+            
         # -1 means unlimited
         if access_rules[tier] == -1:
             return True
         
         # For dataset count, we need to check against the database
         if feature_type == "dataset_count":
-            if feature_name is not None:
-                # When checking if we can upload one more dataset
-                return int(feature_name) <= access_rules[tier]
-            else:
-                # When checking how many datasets a user can have
-                current_count = get_dataset_count(st.session_state.get("user_id", None))
-                return current_count < access_rules[tier]
+            # When checking if we can upload one more dataset
+            return int(feature_name) <= access_rules[tier]
         
         # For file size, feature_name would contain the file size in MB
-        if feature_type == "file_size_limit" and feature_name is not None:
+        if feature_type == "file_size_limit":
             return float(feature_name) <= access_rules[tier]
         
         return True

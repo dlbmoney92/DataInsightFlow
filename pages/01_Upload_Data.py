@@ -139,15 +139,19 @@ with col2:
         st.info(f"You are currently using {current_count} datasets out of your {dataset_limit} dataset limit.")
         progress_percentage = min(1.0, current_count / dataset_limit)
         st.progress(progress_percentage, f"Dataset Usage: {int(progress_percentage * 100)}%")
+    else:
+        st.info(f"You are currently using {current_count} datasets. Your subscription plan has unlimited datasets.")
     
     # Show file size limit information
-    st.info(f"Maximum file size: {file_size_limit} MB")
+    st.info(f"Maximum file size: {file_size_limit} MB per file")
     
     # Check if user can upload more datasets
     can_upload = dataset_limit <= 0 or current_count < dataset_limit
     
     if can_upload:
-        uploaded_file = st.file_uploader("", type=[ext[1:] for ext in supported_file_types])
+        # Create a formatted help text with the file size limit
+        file_uploader_help = f"Limit {file_size_limit}MB per file • CSV, XLSX, XLS, JSON, TXT, DOCX, PDF"
+        uploaded_file = st.file_uploader("", type=[ext[1:] for ext in supported_file_types], help=file_uploader_help)
     else:
         st.warning("Your current subscription plan doesn't allow uploading more datasets. Please upgrade your plan or delete some existing datasets.")
         col1, col2 = st.columns(2)

@@ -226,6 +226,20 @@ def infer_column_types(df):
         if df[column].isna().all():
             column_types[column] = 'unknown'
             continue
+        
+        # Special handling for columns that might contain dates or deadlines in their name
+        if any(keyword in column.lower() for keyword in ['date', 'deadline', 'time', 'day', 'month', 'year']):
+            # First try to check if it looks like a date column
+            sample = df[column].dropna().iloc[0] if not df[column].dropna().empty else None
+            if sample and isinstance(sample, str):
+                try:
+                    pd.to_datetime(df[column])
+                    column_types[column] = 'datetime'
+                    continue
+                except:
+                    # Even if conversion fails, if it has "date" or "deadline" in name, treat as text
+                    column_types[column] = 'text'
+                    continue
             
         # Check if it's a numeric column
         try:
@@ -240,7 +254,7 @@ def infer_column_types(df):
         except:
             pass
             
-        # Check if it's a datetime column
+        # Check if it's a datetime column for non-date-named columns
         try:
             pd.to_datetime(df[column])
             column_types[column] = 'datetime'
