@@ -1890,7 +1890,7 @@ else:
                     # Check if we got suggestions back
                     if suggestions and isinstance(suggestions, list):
                         for i, suggestion in enumerate(suggestions):
-                            with st.expander(f"{i+1}. {suggestion.get('operation', 'Suggestion')}", expanded=True):
+                            with st.expander(f"{i+1}. {suggestion.get('operation', 'Suggestion')}", expanded=False):
                                 st.markdown(f"**Description:** {suggestion.get('description', 'N/A')}")
                                 st.markdown(f"**Rationale:** {suggestion.get('rationale', 'N/A')}")
                                 st.markdown(f"**Code Action:** `{suggestion.get('code_action', 'N/A')}`")
