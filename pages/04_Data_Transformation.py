@@ -288,13 +288,23 @@ else:
                     
                     if execute_button:
                         # Perform outlier handling
-                        transformed_df, stats = remove_outliers(
+                        # Create a list with the selected column
+                        columns_to_check = [selected_column]
+                        
+                        # Call remove_outliers with the correct parameters
+                        transformed_df = remove_outliers(
                             df, 
-                            selected_column, 
+                            columns=columns_to_check, 
                             method=outlier_method.lower(), 
-                            threshold=threshold,
-                            handle_method=handle_method.lower()
+                            threshold=threshold
                         )
+                        
+                        # Calculate basic stats for reporting
+                        stats = {
+                            'original_rows': len(df),
+                            'transformed_rows': len(transformed_df),
+                            'rows_removed': len(df) - len(transformed_df)
+                        }
                         
                         # Generate transformation name
                         if outlier_method == "Percentile":

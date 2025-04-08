@@ -27,6 +27,17 @@ from utils.global_config import apply_global_css
 # Apply global CSS
 apply_global_css()
 
+# Check if we need to rerun based on flags set in callbacks
+if 'reload_after_sample' in st.session_state and st.session_state.reload_after_sample:
+    # Clear the flag and rerun
+    st.session_state.reload_after_sample = False
+    st.rerun()
+
+if 'reload_after_loading' in st.session_state and st.session_state.reload_after_loading:
+    # Clear the flag and rerun
+    st.session_state.reload_after_loading = False
+    st.rerun()
+
 # Initialize navigation
 initialize_navigation()
 
@@ -401,7 +412,8 @@ if uploaded_file is None:
         
         # Success message and redirect
         st.success(f"Successfully loaded sample dataset with {df.shape[0]} rows and {df.shape[1]} columns.")
-        st.rerun()
+        # Use a flag in session state instead of calling st.rerun() directly
+        st.session_state.reload_after_sample = True
 
 # Add a section to load existing datasets
 st.markdown("---")
@@ -476,8 +488,8 @@ if datasets_list:
                     # Success message
                     st.success(f"Successfully loaded {selected_dataset['name']}!")
                     
-                    # Refresh to show the data
-                    st.rerun()
+                    # Set a flag in session state instead of calling st.rerun() directly
+                    st.session_state.reload_after_loading = True
                 else:
                     # Provide more detailed error message
                     if dataset_result is None:
