@@ -180,6 +180,17 @@ def process_uploaded_file(uploaded_file):
     if uploaded_file is None:
         return None
         
+    # Check file size limit based on subscription tier
+    from utils.access_control import check_access
+    
+    # Get file size in MB
+    file_size_mb = uploaded_file.size / (1024 * 1024)
+    
+    # Check if file size is within the user's limit
+    if not check_access("file_size_limit", file_size_mb):
+        st.error(f"File size ({file_size_mb:.2f} MB) exceeds your subscription tier limit. Please upgrade your plan to upload larger files.")
+        return None
+        
     file_type = detect_file_type(uploaded_file.name)
     
     # Process based on file type

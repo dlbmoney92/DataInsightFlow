@@ -131,11 +131,17 @@ with col2:
     current_count = get_dataset_count(st.session_state.get("user_id", None))
     dataset_limit = check_access("dataset_count")
     
+    # Get the file size limit based on subscription tier
+    file_size_limit = check_access("file_size_limit")
+    
     # Show dataset usage information
     if dataset_limit > 0:  # Only show if there's a limit
         st.info(f"You are currently using {current_count} datasets out of your {dataset_limit} dataset limit.")
         progress_percentage = min(1.0, current_count / dataset_limit)
         st.progress(progress_percentage, f"Dataset Usage: {int(progress_percentage * 100)}%")
+    
+    # Show file size limit information
+    st.info(f"Maximum file size: {file_size_limit} MB")
     
     # Check if user can upload more datasets
     can_upload = dataset_limit <= 0 or current_count < dataset_limit
@@ -233,14 +239,18 @@ if uploaded_file is None:
     st.markdown("---")
     st.subheader("Getting Started")
     
-    st.markdown("""
+    # Get the file size limit based on subscription tier
+    from utils.access_control import check_access
+    file_size_limit = check_access("file_size_limit")
+    
+    st.markdown(f"""
     ### How to prepare your data
     
     For the best experience, make sure your data follows these guidelines:
     
     1. **Headers**: Include column headers in your data file
     2. **Formatting**: Avoid merged cells or complex formatting (for Excel files)
-    3. **Size**: For the free version, files should be under 100MB
+    3. **Size**: Your current subscription allows files up to {file_size_limit} MB
     
     ### Sample Datasets
     

@@ -117,8 +117,13 @@ def check_access(feature_type, feature_name=None):
         
         # For dataset count, we need to check against the database
         if feature_type == "dataset_count":
-            current_count = get_dataset_count(st.session_state.get("user_id", None))
-            return current_count < access_rules[tier]
+            if feature_name is not None:
+                # When checking if we can upload one more dataset
+                return int(feature_name) <= access_rules[tier]
+            else:
+                # When checking how many datasets a user can have
+                current_count = get_dataset_count(st.session_state.get("user_id", None))
+                return current_count < access_rules[tier]
         
         # For file size, feature_name would contain the file size in MB
         if feature_type == "file_size_limit" and feature_name is not None:
