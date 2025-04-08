@@ -214,6 +214,15 @@ if uploaded_file is not None:
                 # Success message
                 st.success(f"Successfully loaded {uploaded_file.name} with {df.shape[0]} rows and {df.shape[1]} columns.")
                 
+                # Clear any datasets cache from session state 
+                # to ensure the list refreshes when we next view it
+                if 'datasets_list' in st.session_state:
+                    del st.session_state.datasets_list
+                if 'datasets_df' in st.session_state:
+                    del st.session_state.datasets_df
+                if 'display_df' in st.session_state:
+                    del st.session_state.display_df
+                
                 # Preview the data
                 st.subheader("Data Preview")
                 st.dataframe(df.head(10))
@@ -426,6 +435,16 @@ if uploaded_file is None:
         
         # Success message and redirect
         st.success(f"Successfully loaded sample dataset with {df.shape[0]} rows and {df.shape[1]} columns.")
+        
+        # Clear any datasets cache from session state 
+        # to ensure the list refreshes when we next view it
+        if 'datasets_list' in st.session_state:
+            del st.session_state.datasets_list
+        if 'datasets_df' in st.session_state:
+            del st.session_state.datasets_df
+        if 'display_df' in st.session_state:
+            del st.session_state.display_df
+            
         # Use a flag in session state instead of calling st.rerun() directly
         st.session_state.reload_after_sample = True
 
@@ -433,30 +452,44 @@ if uploaded_file is None:
 st.markdown("---")
 st.subheader("Load Existing Dataset")
 
-# Get list of existing datasets
-datasets_list = list_datasets()
+# Only fetch the list of datasets once and store in session state 
+# to avoid reloading the entire list on every interaction
+if 'datasets_list' not in st.session_state:
+    with st.spinner("Loading datasets..."):
+        st.session_state.datasets_list = list_datasets()
+
+datasets_list = st.session_state.datasets_list
 
 if datasets_list:
-    # Create a DataFrame for displaying the datasets
-    datasets_df = pd.DataFrame(datasets_list)
-    
-    # Format the creation date and rename columns for display
-    if 'created_at' in datasets_df.columns:
-        datasets_df['created_at'] = pd.to_datetime(datasets_df['created_at']).dt.strftime('%Y-%m-%d %H:%M')
-    
-    # Rename columns for better display
-    display_df = datasets_df.rename(columns={
-        'id': 'ID',
-        'name': 'Name',
-        'description': 'Description',
-        'file_name': 'File Name',
-        'file_type': 'File Type',
-        'created_at': 'Created At'
-    })
-    
-    # Convert file type to uppercase
-    if 'File Type' in display_df.columns:
-        display_df['File Type'] = display_df['File Type'].str.upper()
+    # Create a DataFrame for displaying the datasets if not already cached
+    if 'datasets_df' not in st.session_state:
+        datasets_df = pd.DataFrame(datasets_list)
+        
+        # Format the creation date and rename columns for display
+        if 'created_at' in datasets_df.columns:
+            datasets_df['created_at'] = pd.to_datetime(datasets_df['created_at']).dt.strftime('%Y-%m-%d %H:%M')
+        
+        # Rename columns for better display
+        display_df = datasets_df.rename(columns={
+            'id': 'ID',
+            'name': 'Name',
+            'description': 'Description',
+            'file_name': 'File Name',
+            'file_type': 'File Type',
+            'created_at': 'Created At'
+        })
+        
+        # Convert file type to uppercase
+        if 'File Type' in display_df.columns:
+            display_df['File Type'] = display_df['File Type'].str.upper()
+            
+        # Store the processed dataframes in session state
+        st.session_state.datasets_df = datasets_df
+        st.session_state.display_df = display_df
+    else:
+        # Use cached dataframes
+        datasets_df = st.session_state.datasets_df
+        display_df = st.session_state.display_df
     
     # Display the datasets in a table
     st.dataframe(
@@ -474,8 +507,8 @@ if datasets_list:
     if selected_dataset_name:
         selected_dataset = datasets_df[datasets_df['name'] == selected_dataset_name].iloc[0]
         
-        # Button to load the selected dataset
-        if st.button("Load Selected Dataset"):
+        # Button to load the selected dataset - use a primary button for more visibility
+        if st.button("Load Selected Dataset", type="primary"):
             with st.spinner(f"Loading {selected_dataset_name}..."):
                 # Get the dataset from the database
                 dataset_result = get_dataset(selected_dataset['id'])

@@ -1028,7 +1028,8 @@ else:
                             num_bins=num_bins, 
                             method=method,
                             bin_edges=bin_edges,
-                            labels=labels
+                            labels=labels,
+                            new_column_name=f"{selected_column}_bins"
                         )
                         
                         # Generate transformation name
