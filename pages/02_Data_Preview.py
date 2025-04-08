@@ -14,6 +14,13 @@ st.set_page_config(
 # Initialize navigation
 initialize_navigation()
 
+# Check if a rerun is needed (from a previous action)
+if "need_rerun" in st.session_state and st.session_state.need_rerun:
+    # Clear the flag
+    st.session_state.need_rerun = False
+    # Execute rerun - this will be the last statement executed on this run
+    st.rerun()
+
 # Hide Streamlit’s default multipage navigation menu
 st.markdown("""
     <style>
@@ -45,7 +52,8 @@ if "user" in st.session_state:
 # Check if dataset exists in session state
 if 'dataset' not in st.session_state or st.session_state.dataset is None:
     st.warning("Please upload a dataset first.")
-    st.button("Go to Upload Page", on_click=lambda: st.switch_page("pages/01_Upload_Data.py"))
+    if st.button("Go to Upload Page"):
+        st.switch_page("pages/01_Upload_Data.py")
     st.stop()
 
 # Header and description
@@ -100,8 +108,8 @@ if duplicates > 0:
     if st.button("Remove Duplicates"):
         df = df.drop_duplicates()
         st.session_state.dataset = df
-        st.success(f"Removed {duplicates} duplicate rows")
-        st.rerun()
+        st.session_state.need_rerun = True
+        st.success(f"Removed {duplicates} duplicate rows. Page will refresh.")
 else:
     st.success("No duplicate rows found in the dataset!")
 
@@ -167,9 +175,9 @@ if st.button("Apply Column Types"):
     # Apply column types to the DataFrame
     updated_df = apply_column_types(df, edited_column_types)
     st.session_state.dataset = updated_df
+    st.session_state.need_rerun = True
     
-    st.success("Column types updated successfully!")
-    st.rerun()
+    st.success("Column types updated successfully! Page will refresh.")
 
 # Navigation buttons
 st.markdown("---")
