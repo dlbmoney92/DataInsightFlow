@@ -233,6 +233,9 @@ with tab2:
     # Check if user has access to report exports (requires at least the basic tier)
     can_export_reports = check_access("export_format", "pdf")
     
+    # Initialize report_type with a default value
+    report_type = None
+    
     if not can_export_reports:
         st.warning("Report generation requires a Basic subscription or higher. Please upgrade your subscription to access this feature.")
         
