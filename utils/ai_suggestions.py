@@ -258,6 +258,25 @@ Return your response in a properly formatted JSON array of visualization objects
 Make sure each visualization has chart_type, title, columns, description, and plotly_fig_type fields.
 The chart_type should be one of: histogram, scatter_plot, bar_chart, line_chart, pie_chart, box_plot, heatmap, correlation_heatmap, pair_plot, or similar.
 The columns field must be an array of column names, even if it's just one column.
+
+IMPORTANT: For JSON formatting, always use double quotes for properties and string values, and include commas between properties.
+Format properly as:
+[
+  {
+    "chart_type": "scatter_plot",
+    "title": "Units vs. Price",
+    "columns": ["Units", "Price"],
+    "description": "This scatter plot helps understand the relationship between units and price.",
+    "plotly_fig_type": "px.scatter"
+  },
+  {
+    "chart_type": "histogram",
+    "title": "Distribution of Revenue",
+    "columns": ["Revenue"],
+    "description": "Shows the distribution of revenue values.",
+    "plotly_fig_type": "px.histogram"
+  }
+]
 """
         result = ai_manager.generate_completion(
             prompt=prompt, 

@@ -1,0 +1,73 @@
+[
+0:{
+"chart_type":"scatter_plot"
+"title":"Units vs. Price"
+"columns":[
+0:"Units"
+1:"Price"
+]
+"description":"This scatter plot helps in understanding the relationship between the number of units sold and their respective prices. It may reveal patterns such as if higher priced items sell in larger or smaller quantities."
+"plotly_fig_type":"px.scatter"
+}
+1:{
+"chart_type":"histogram"
+"title":"Distribution of Revenue"
+"columns":[
+0:"Revenue"
+]
+"description":"A histogram of revenue can provide insights into the distribution of revenue amounts across different transactions, helping to identify common revenue values or outliers."
+"plotly_fig_type":"px.histogram"
+}
+2:{
+"chart_type":"bar_chart"
+"title":"Total Units Sold by Product"
+"columns":[
+0:"Product"
+1:"Units"
+]
+"description":"A bar chart representing the total number of units sold for each product can help in identifying the most popular products in terms of sales volume."
+"plotly_fig_type":"px.bar"
+}
+3:{
+"chart_type":"line_chart"
+"title":"Revenue Over Time"
+"columns":[
+0:"Date"
+1:"Revenue"
+]
+"description":"A line chart of revenue over time can reveal trends and patterns in sales performance, indicating seasons of high or low revenue collection."
+"plotly_fig_type":"px.line"
+}
+4:{
+"chart_type":"pie_chart"
+"title":"Revenue Share by Region"
+"columns":[
+0:"Region"
+1:"Revenue"
+]
+"description":"This pie chart can depict the proportion of total revenue contributed by each region, showing geographic areas of strength and opportunity."
+"plotly_fig_type":"px.pie"
+}
+5:{
+"chart_type":"box_plot"
+"title":"Price Distribution by Product"
+"columns":[
+0:"Product"
+1:"Price"
+]
+"description":"A box plot illustrating the spread of prices for each product can help identify price ranges, medians, and outliers."
+"plotly_fig_type":"px.box"
+}
+6:{
+"chart_type":"correlation_heatmap"
+"title":"Correlation Matrix of Numeric Features"
+"columns":[
+0:"Units"
+1:"Price"
+2:"CustomerID"
+3:"Revenue"
+]
+"description":"A correlation matrix heatmap will show the strength and direction of relationships between different numeric attributes in the dataset."
+"plotly_fig_type":"px.imshow"
+}
+]

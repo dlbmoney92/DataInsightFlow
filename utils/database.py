@@ -173,6 +173,10 @@ def save_dataset(name, description, file_name, file_type, df, column_types, user
         if user_id is None and "user_id" in st.session_state:
             user_id = st.session_state.user_id
         
+        # Convert numpy.int64 to regular Python int if needed
+        if user_id is not None and hasattr(user_id, 'item'):
+            user_id = int(user_id)
+        
         # Check if dataset with same name exists
         existing = session.query(datasets).filter(datasets.c.name == name)
         
@@ -414,6 +418,10 @@ def save_transformation(dataset_id, name, description, transformation_details, a
         transformation_json = json.dumps(transformation_details)
         affected_columns_json = json.dumps(affected_columns)
         
+        # Convert numpy.int64 to regular Python int if needed
+        if hasattr(dataset_id, 'item'):
+            dataset_id = int(dataset_id)
+        
         result = session.execute(
             transformations.insert().values(
                 dataset_id=dataset_id,
@@ -474,6 +482,10 @@ def save_version(dataset_id, version_number, name, description, df, transformati
         serialized_data = serialize_dataframe(df)
         transformations_json = json.dumps(transformations_applied)
         
+        # Convert numpy.int64 to regular Python int
+        if hasattr(dataset_id, 'item'):
+            dataset_id = int(dataset_id)
+        
         result = session.execute(
             versions.insert().values(
                 dataset_id=dataset_id,
@@ -482,8 +494,8 @@ def save_version(dataset_id, version_number, name, description, df, transformati
                 description=description,
                 data=serialized_data,
                 transformations_applied=transformations_json,
-                row_count=df.shape[0],
-                column_count=df.shape[1]
+                row_count=int(df.shape[0]),
+                column_count=int(df.shape[1])
             )
         )
         
@@ -574,6 +586,16 @@ def save_insight(dataset_id, name, insight_type, insight_details, importance=Non
     session = Session()
     try:
         insight_json = json.dumps(insight_details)
+        
+        # Convert numpy.int64 to regular Python int if needed
+        if hasattr(dataset_id, 'item'):
+            dataset_id = int(dataset_id)
+        
+        if version_id is not None and hasattr(version_id, 'item'):
+            version_id = int(version_id)
+            
+        if importance is not None and hasattr(importance, 'item'):
+            importance = float(importance)
         
         result = session.execute(
             insights.insert().values(
