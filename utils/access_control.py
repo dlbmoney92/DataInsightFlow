@@ -155,6 +155,12 @@ def get_dataset_count(user_id):
         if user_id is None:
             return 999
         
+        # Convert numpy.int64 to regular Python int if needed
+        if hasattr(user_id, 'item'):
+            user_id_int = int(user_id)
+        else:
+            user_id_int = user_id
+            
         # Build query
         query = text("SELECT COUNT(*) FROM datasets WHERE user_id = :user_id")
         
@@ -164,7 +170,7 @@ def get_dataset_count(user_id):
         
         if database_url:
             with sa.create_engine(database_url).connect() as conn:
-                result = conn.execute(query, {"user_id": user_id}).fetchone()
+                result = conn.execute(query, {"user_id": user_id_int}).fetchone()
                 return result[0] if result else 0
         else:
             st.error("Database connection information not found")
@@ -193,8 +199,14 @@ def check_and_handle_trial_expiration():
         
         user_id = st.session_state.get("user_id")
         if user_id:
+            # Convert numpy.int64 to regular Python int if needed
+            if hasattr(user_id, 'item'):
+                user_id_int = int(user_id)
+            else:
+                user_id_int = user_id
+                
             # Downgrade to free tier in DB
-            update_user_subscription(user_id, "free")
+            update_user_subscription(user_id_int, "free")
             
             # Update session state
             st.session_state.subscription_tier = "free"

@@ -446,7 +446,13 @@ def get_transformations(dataset_id):
     def _get_transformations_operation():
         session = Session()
         try:
-            results = session.query(transformations).filter(transformations.c.dataset_id == dataset_id).all()
+            # Convert numpy.int64 to regular Python int if needed
+            if hasattr(dataset_id, 'item'):
+                dataset_id_int = int(dataset_id)
+            else:
+                dataset_id_int = dataset_id
+                
+            results = session.query(transformations).filter(transformations.c.dataset_id == dataset_id_int).all()
             
             transformation_list = [
                 {
@@ -513,7 +519,13 @@ def get_version(version_id):
     def _get_version_operation():
         session = Session()
         try:
-            result = session.query(versions).filter(versions.c.id == version_id).first()
+            # Convert numpy.int64 to regular Python int if needed
+            if hasattr(version_id, 'item'):
+                version_id_int = int(version_id)
+            else:
+                version_id_int = version_id
+                
+            result = session.query(versions).filter(versions.c.id == version_id_int).first()
             
             if result:
                 df = deserialize_dataframe(result.data)
@@ -550,7 +562,13 @@ def get_versions(dataset_id):
     def _get_versions_operation():
         session = Session()
         try:
-            results = session.query(versions).filter(versions.c.dataset_id == dataset_id).all()
+            # Convert numpy.int64 to regular Python int if needed
+            if hasattr(dataset_id, 'item'):
+                dataset_id_int = int(dataset_id)
+            else:
+                dataset_id_int = dataset_id
+                
+            results = session.query(versions).filter(versions.c.dataset_id == dataset_id_int).all()
             
             version_list = [
                 {
@@ -622,10 +640,22 @@ def get_insights(dataset_id, version_id=None):
     def _get_insights_operation():
         session = Session()
         try:
-            query = session.query(insights).filter(insights.c.dataset_id == dataset_id)
+            # Convert numpy.int64 to regular Python int if needed
+            if hasattr(dataset_id, 'item'):
+                dataset_id_int = int(dataset_id)
+            else:
+                dataset_id_int = dataset_id
+                
+            # Also convert version_id if provided
+            if version_id is not None and hasattr(version_id, 'item'):
+                version_id_int = int(version_id)
+            else:
+                version_id_int = version_id
+                
+            query = session.query(insights).filter(insights.c.dataset_id == dataset_id_int)
             
-            if version_id is not None:
-                query = query.filter(insights.c.version_id == version_id)
+            if version_id_int is not None:
+                query = query.filter(insights.c.version_id == version_id_int)
             
             results = query.all()
             
@@ -724,7 +754,13 @@ def get_user_by_id(user_id):
     def _get_user_operation():
         session = Session()
         try:
-            result = session.query(users).filter(users.c.id == user_id).first()
+            # Convert numpy.int64 to regular Python int if needed
+            if hasattr(user_id, 'item'):
+                user_id_int = int(user_id)
+            else:
+                user_id_int = user_id
+                
+            result = session.query(users).filter(users.c.id == user_id_int).first()
             if result:
                 return {
                     'id': result.id,
@@ -766,8 +802,14 @@ def update_user_subscription(user_id, tier, subscription_start_date=None, subscr
         if subscription_end_date:
             values['subscription_end_date'] = subscription_end_date
         
+        # Convert numpy.int64 to regular Python int if needed
+        if hasattr(user_id, 'item'):
+            user_id_int = int(user_id)
+        else:
+            user_id_int = user_id
+            
         session.execute(
-            users.update().where(users.c.id == user_id).values(**values)
+            users.update().where(users.c.id == user_id_int).values(**values)
         )
         
         session.commit()
@@ -786,8 +828,14 @@ def start_user_trial(user_id, trial_days=7):
         now = datetime.datetime.utcnow()
         trial_end = now + datetime.timedelta(days=trial_days)
         
+        # Convert numpy.int64 to regular Python int if needed
+        if hasattr(user_id, 'item'):
+            user_id_int = int(user_id)
+        else:
+            user_id_int = user_id
+            
         session.execute(
-            users.update().where(users.c.id == user_id).values(
+            users.update().where(users.c.id == user_id_int).values(
                 is_trial=1,
                 trial_start_date=now,
                 trial_end_date=trial_end,
@@ -808,8 +856,14 @@ def update_last_login(user_id):
     """Update the last login timestamp for a user."""
     session = Session()
     try:
+        # Convert numpy.int64 to regular Python int if needed
+        if hasattr(user_id, 'item'):
+            user_id_int = int(user_id)
+        else:
+            user_id_int = user_id
+            
         session.execute(
-            users.update().where(users.c.id == user_id).values(
+            users.update().where(users.c.id == user_id_int).values(
                 last_login=datetime.datetime.utcnow()
             )
         )
