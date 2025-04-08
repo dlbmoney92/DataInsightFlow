@@ -115,15 +115,9 @@ and will automatically detect the structure of your data.
 # Uploader section
 st.subheader("Choose a file to upload")
 
-# Display supported file types
+# Use full width for the file uploader
 col1, col2 = st.columns(2)
 with col1:
-    st.markdown("**Supported file formats:**")
-    for file_type in supported_file_types:
-        st.markdown(f"- {file_type}")
-
-# File uploader
-with col2:
     # Check if user can upload based on their dataset count and subscription tier
     from utils.access_control import get_dataset_count
     
