@@ -7,6 +7,7 @@ st.set_page_config(
     layout="wide"
 )
 
+import os
 import datetime
 from utils.subscription import SUBSCRIPTION_PLANS, format_price
 from utils.database import update_user_subscription, get_user_by_id, start_user_trial
@@ -37,7 +38,8 @@ def app():
     # Check if user is logged in
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
         st.warning("Please log in to manage your subscription.")
-        st.button("Go to Login", on_click=lambda: st.switch_page("pages/login.py"))
+        if st.button("Go to Login"):
+            st.switch_page("pages/login.py")
         return
         
     # Check if we need to handle any session state flags
@@ -209,8 +211,8 @@ def display_plan(tier, current_tier):
                 # Set session state flag for downgrade and refresh
                 st.session_state.downgrade_requested = tier
                 downgrade_subscription(tier)
-                st.success("Successfully downgraded to Free plan.")
-                # Don't call st.rerun() directly in a callback
+                # Set a flag to show the success message on the next rerun
+                # Page will refresh automatically due to session state change
         # For paid plans, show monthly and yearly options
         else:
             col1, col2 = st.columns(2)
@@ -229,9 +231,15 @@ def upgrade_subscription(tier, billing_cycle):
     """Upgrade user subscription to a higher tier using Stripe."""
     from utils.payment import get_stripe_checkout_session
     
-    # Set success and cancel URLs - using hardcoded URLs instead of st.get_url()
-    success_url = f"/pages/payment_success.py?success=true&tier={tier}"
-    cancel_url = f"/pages/subscription.py?cancelled=true"
+    # Use absolute URLs for Stripe (relative URLs don't work with Stripe)
+    # Get the base URL from environment or use a default for development
+    base_url = os.environ.get("REPL_SLUG", "localhost:5000")
+    protocol = "https" if "replit" in base_url else "http"
+    success_url = f"{protocol}://{base_url}/pages/payment_success.py?success=true&tier={tier}"
+    cancel_url = f"{protocol}://{base_url}/pages/subscription.py?cancelled=true"
+    
+    print(f"Success URL: {success_url}")
+    print(f"Cancel URL: {cancel_url}")
     
     # Create checkout session
     checkout_result = get_stripe_checkout_session(

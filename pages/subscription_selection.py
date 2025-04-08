@@ -42,8 +42,14 @@ def app():
         user = get_user_by_id(st.session_state.user_id)
         st.session_state.user = user
         st.session_state.subscription_tier = user["subscription_tier"] 
-        # Redirect to home page
-        st.rerun()
+        # Redirect to home page using JavaScript instead of st.rerun()
+        st.markdown("""
+        <script>
+        setTimeout(function() {
+            window.location.href = "/";
+        }, 2000);
+        </script>
+        """, unsafe_allow_html=True)
     
     # Create a modal-like container
     with st.container():
@@ -148,7 +154,14 @@ def app():
                     start_user_trial(st.session_state.user_id)
                     st.session_state.trial_activated = True
                     st.success("Your 7-day Pro trial has been activated!")
-                    # Don't call st.rerun() directly in a callback
+                    # Use JavaScript to redirect after a short delay
+                    st.markdown("""
+                    <script>
+                    setTimeout(function() {
+                        window.location.href = window.location.pathname;
+                    }, 1500);
+                    </script>
+                    """, unsafe_allow_html=True)
             
             # Payment buttons
             col1, col2 = st.columns(2)

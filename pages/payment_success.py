@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 
 # Set page configuration - must be the first Streamlit command
@@ -10,6 +11,7 @@ st.set_page_config(
 from utils.auth_redirect import require_auth
 from utils.global_config import apply_global_css
 from utils.custom_navigation import render_navigation, initialize_navigation
+from utils.database import get_user_by_id
 
 # Apply global CSS
 apply_global_css()
@@ -40,6 +42,13 @@ def app():
     query_params = st.query_params
     success = query_params.get("success", "false") == "true"
     tier = query_params.get("tier", None)
+    
+    # Update user information after successful payment
+    if success and tier:
+        # Get updated user info
+        user = get_user_by_id(st.session_state.user_id)
+        st.session_state.user = user
+        st.session_state.subscription_tier = user["subscription_tier"]
     
     # Clear query params after reading
     if "success" in query_params or "tier" in query_params:
