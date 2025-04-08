@@ -4,6 +4,33 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from utils.global_config import apply_global_css, render_footer
+from utils.custom_navigation import render_navigation, initialize_navigation
+
+# Set the page configuration
+st.set_page_config(
+    page_title="Contact Us | Analytics Assist",
+    page_icon="📧",
+    layout="wide"
+)
+
+# Hide Streamlit's default menu
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize navigation
+initialize_navigation()
+
+# Render custom navigation bar
+render_navigation()
+
+# Additional sidebar elements
+with st.sidebar:
+    # Developer login form and logout are handled by the render_navigation function
+    pass
 
 def send_email(name, email, message):
     """Send email to admin"""

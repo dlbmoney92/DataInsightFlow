@@ -3,6 +3,34 @@ import hashlib
 from utils.database import get_user_by_id, execute_with_retry
 from utils.subscription import SUBSCRIPTION_PLANS, format_price, get_trial_days_remaining, get_subscription_expires_in_days
 from sqlalchemy import text
+from utils.global_config import apply_global_css, render_footer
+from utils.custom_navigation import render_navigation, initialize_navigation
+
+# Set the page configuration
+st.set_page_config(
+    page_title="My Account | Analytics Assist",
+    page_icon="👤",
+    layout="wide"
+)
+
+# Hide Streamlit's default menu
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize navigation
+initialize_navigation()
+
+# Render custom navigation bar
+render_navigation()
+
+# Additional sidebar elements
+with st.sidebar:
+    # Developer login form and logout are handled by the render_navigation function
+    pass
 
 def update_password(user_id, current_password, new_password):
     """Update user password."""
