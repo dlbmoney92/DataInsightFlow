@@ -137,8 +137,8 @@ if versions:
         # Fetch the version data
         version_data = get_version(version['id'])
         
-        if version_data and 'df' in version_data:
-            version_df = version_data['df']
+        if version_data and "dataset" in version_data and version_data["dataset"] is not None:
+            version_df = version_data['dataset']
             
             # Display the data preview
             st.subheader("Data Preview")
@@ -205,7 +205,7 @@ if versions:
                 csv_link = generate_csv_download_link(version_df, filename=f"Version_{version['version']}_{version['name']}.csv")
                 st.markdown(csv_link, unsafe_allow_html=True)
         else:
-            st.error("Could not retrieve version data.")
+            st.error("Could not retrieve version data. It may be corrupted or in an unsupported format.")
     
     with tab2:
         st.header("Compare Versions")
@@ -224,9 +224,9 @@ if versions:
             version_data = get_version(version['id'])
             compare_data = get_version(other_versions[compare_version]['id'])
             
-            if version_data and 'df' in version_data and compare_data and 'df' in compare_data:
-                version_df = version_data['df']
-                compare_df = compare_data['df']
+            if version_data and 'dataset' in version_data and version_data['dataset'] is not None and compare_data and 'dataset' in compare_data and compare_data['dataset'] is not None:
+                version_df = version_data['dataset']
+                compare_df = compare_data['dataset']
                 
                 # Display comparison
                 st.subheader("Structure Comparison")
@@ -364,8 +364,8 @@ if versions:
         # Fetch the version data
         version_data = get_version(version['id'])
         
-        if version_data and 'df' in version_data:
-            version_df = version_data['df']
+        if version_data and "dataset" in version_data and version_data["dataset"] is not None:
+            version_df = version_data['dataset']
             
             # Restore version
             st.subheader("Restore Version")
@@ -424,7 +424,7 @@ if versions:
                 except Exception as e:
                     st.error(f"Error creating new version: {str(e)}")
         else:
-            st.error("Could not retrieve version data.")
+            st.error("Could not retrieve version data. It may be corrupted or in an unsupported format.")
 else:
     st.info("No versions found for this dataset. Create a version by saving your work in the Export Reports page.")
     

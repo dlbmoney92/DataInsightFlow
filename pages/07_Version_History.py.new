@@ -137,8 +137,8 @@ if versions:
         # Fetch the version data
         version_data = get_version(version['id'])
         
-        if version_data and 'df' in version_data:
-            version_df = version_data['df']
+        if version_data and 'dataset' in version_data and version_data['dataset'] is not None:
+            version_df = version_data['dataset']
             
             # Display the data preview
             st.subheader("Data Preview")
@@ -161,7 +161,7 @@ if versions:
             st.subheader("Transformations Applied")
             if 'transformations_applied' in version_data and version_data['transformations_applied']:
                 try:
-                    transformations = json.loads(version_data['transformations_applied'])
+                    transformations = version_data['transformations_applied']
                     
                     if transformations:
                         # Create columns for the transformation history
@@ -188,8 +188,8 @@ if versions:
                             st.markdown("---")
                     else:
                         st.info("No transformations were applied to this version.")
-                except:
-                    st.warning("Could not parse transformation data.")
+                except Exception as e:
+                    st.warning(f"Could not parse transformation data: {str(e)}")
             else:
                 st.info("No transformations were applied to this version.")
             
@@ -205,7 +205,7 @@ if versions:
                 csv_link = generate_csv_download_link(version_df, filename=f"Version_{version['version']}_{version['name']}.csv")
                 st.markdown(csv_link, unsafe_allow_html=True)
         else:
-            st.error("Could not retrieve version data.")
+            st.error("Could not retrieve version data. It may be corrupted or in an unsupported format.")
     
     with tab2:
         st.header("Compare Versions")
@@ -224,9 +224,10 @@ if versions:
             version_data = get_version(version['id'])
             compare_data = get_version(other_versions[compare_version]['id'])
             
-            if version_data and 'df' in version_data and compare_data and 'df' in compare_data:
-                version_df = version_data['df']
-                compare_df = compare_data['df']
+            if (version_data and 'dataset' in version_data and version_data['dataset'] is not None and 
+                compare_data and 'dataset' in compare_data and compare_data['dataset'] is not None):
+                version_df = version_data['dataset']
+                compare_df = compare_data['dataset']
                 
                 # Display comparison
                 st.subheader("Structure Comparison")
@@ -354,7 +355,7 @@ if versions:
                 else:
                     st.warning("No common columns to compare data.")
             else:
-                st.error("Could not retrieve data for both versions.")
+                st.error("Could not retrieve data for both versions. One or both versions may be corrupted or in an unsupported format.")
         else:
             st.info("You need at least two versions to compare.")
     
@@ -364,112 +365,95 @@ if versions:
         # Fetch the version data
         version_data = get_version(version['id'])
         
-        if version_data and 'df' in version_data:
-            version_df = version_data['df']
+        if version_data and 'dataset' in version_data and version_data['dataset'] is not None:
+            version_df = version_data['dataset']
             
             # Restore version
             st.subheader("Restore Version")
             st.warning("Restoring will replace your current working dataset with this version.")
             
             if st.button("Restore This Version"):
-                # Update the session state
+                # Update session state
                 st.session_state.dataset = version_df
                 
-                # Parse transformations if available
-                if 'transformations_applied' in version_data and version_data['transformations_applied']:
-                    try:
-                        st.session_state.transformations = json.loads(version_data['transformations_applied'])
-                    except:
-                        st.session_state.transformations = []
-                else:
-                    st.session_state.transformations = []
+                if 'transformations_applied' in version_data:
+                    st.session_state.transformations = version_data['transformations_applied']
                 
-                st.success(f"Version {version['version']} restored. You are now working with this version.")
-                st.rerun()
-            
-            # Create a new version based on this one
-            st.subheader("Create New Version")
-            
-            version_name = st.text_input("Version Name", value=f"Based on Version {version['version']}")
-            version_desc = st.text_area("Version Description", value=f"Created from Version {version['version']} on {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-            
-            if st.button("Create New Version"):
-                try:
-                    # Get the next version number
-                    next_version = max([v['version'] for v in versions]) + 1
-                    
-                    # Get transformations
-                    transformations = []
-                    if 'transformations_applied' in version_data and version_data['transformations_applied']:
-                        try:
-                            transformations = version_data['transformations_applied']
-                        except:
-                            transformations = json.dumps([])
-                    
-                    # Save as a new version
-                    new_version_id = save_version(
-                        st.session_state.dataset_id,
-                        next_version,
-                        version_name,
-                        version_desc,
-                        version_df,
-                        transformations
-                    )
-                    
-                    if new_version_id:
-                        st.success(f"New version created with ID: {new_version_id}")
-                        st.rerun()
-                    else:
-                        st.error("Failed to create new version.")
-                except Exception as e:
-                    st.error(f"Error creating new version: {str(e)}")
+                st.success(f"Successfully restored Version {version['version']}: {version['name']}")
+                st.info("The restored version is now loaded as your current working dataset.")
         else:
-            st.error("Could not retrieve version data.")
+            st.error("Could not retrieve version data. It may be corrupted or in an unsupported format.")
+        
+        # Version metadata
+        st.subheader("Version Metadata")
+        
+        # Display additional metadata
+        st.json({
+            'id': version['id'],
+            'version_number': version['version'],
+            'name': version['name'],
+            'description': version['description'],
+            'created_at': str(version['created_at']),
+            'row_count': version.get('row_count', 'Unknown'),
+            'column_count': version.get('column_count', 'Unknown'),
+            'transformations_count': version.get('transformations_count', 0)
+        })
+        
+    # Save new version section
+    st.header("Create New Version")
+    
+    # Version details form
+    with st.form("save_version_form"):
+        version_name = st.text_input("Version Name", f"Version {len(versions) + 1}")
+        version_description = st.text_area("Version Description", "")
+        
+        submitted = st.form_submit_button("Save Current State as New Version")
+        
+        if submitted:
+            try:
+                # Save the current state as a new version
+                version_id = save_version(
+                    dataset_id=st.session_state.dataset_id,
+                    version_number=len(versions) + 1,
+                    name=version_name,
+                    description=version_description,
+                    df=st.session_state.dataset,
+                    transformations_applied=st.session_state.get('transformations', [])
+                )
+                
+                if version_id:
+                    st.success(f"Successfully saved new version: {version_name}")
+                    st.info("Refresh the page to see the new version in the list.")
+                else:
+                    st.error("Failed to save the version. Please try again.")
+            except Exception as e:
+                st.error(f"Error saving version: {str(e)}")
 else:
-    st.info("No versions found for this dataset. Create a version by saving your work in the Export Reports page.")
+    st.info("No versions found for this dataset. Create a new version to start tracking changes.")
     
-    # Create initial version
-    st.subheader("Create Initial Version")
-    
-    version_name = st.text_input("Version Name", value=f"Initial Version")
-    version_desc = st.text_area("Version Description", value=f"Initial version created on {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    
-    if st.button("Save Current State as Initial Version"):
-        try:
-            # Save as version 1
-            transformations = []
-            if 'transformations' in st.session_state:
-                transformations = json.dumps(st.session_state.transformations)
-            else:
-                transformations = json.dumps([])
-            
-            # Save the version
-            version_id = save_version(
-                st.session_state.dataset_id,
-                1,
-                version_name,
-                version_desc,
-                st.session_state.dataset,
-                transformations
-            )
-            
-            if version_id:
-                st.success(f"Initial version created with ID: {version_id}")
-                st.rerun()
-            else:
-                st.error("Failed to create initial version.")
-        except Exception as e:
-            st.error(f"Error creating initial version: {str(e)}")
-
-# Navigation buttons at the bottom
-st.markdown("---")
-col1, col2, col3 = st.columns(3)
-with col1:
-    if st.button("← Export Reports", use_container_width=True):
-        st.switch_page("pages/06_Export_Reports.py")
-with col2:
-    if st.button("Home", use_container_width=True):
-        st.switch_page("app.py")
-with col3:
-    if st.button("AI Learning →", use_container_width=True):
-        st.switch_page("pages/08_AI_Learning.py")
+    # Form to save the first version
+    with st.form("save_first_version"):
+        version_name = st.text_input("Version Name", "Initial Version")
+        version_description = st.text_area("Version Description", "Initial state of the dataset")
+        
+        submitted = st.form_submit_button("Save Current State as First Version")
+        
+        if submitted:
+            try:
+                # Save the current state as the first version
+                version_id = save_version(
+                    dataset_id=st.session_state.dataset_id,
+                    version_number=1,
+                    name=version_name,
+                    description=version_description,
+                    df=st.session_state.dataset,
+                    transformations_applied=st.session_state.get('transformations', [])
+                )
+                
+                if version_id:
+                    st.success(f"Successfully saved first version: {version_name}")
+                    st.info("Refresh the page to see the version in the list.")
+                else:
+                    st.error("Failed to save the version. Please try again.")
+            except Exception as e:
+                st.error(f"Error saving version: {str(e)}")

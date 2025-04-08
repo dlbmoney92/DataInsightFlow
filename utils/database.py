@@ -155,7 +155,11 @@ def serialize_dataframe(df):
 
 def deserialize_dataframe(data):
     """Deserialize bytes back to a pandas DataFrame."""
-    return pd.read_parquet(io.BytesIO(data))
+    try:
+        return pd.read_parquet(io.BytesIO(data))
+    except Exception as e:
+        st.error(f"Error deserializing DataFrame: {str(e)}")
+        return None
 
 # Dataset operations
 def save_dataset(name, description, file_name, file_type, df, column_types, user_id=None):
@@ -231,45 +235,59 @@ def get_dataset(dataset_id, user_id=None):
             else:
                 current_user_id = user_id
             
-            # Convert numpy.int64 to int if needed
-            if hasattr(dataset_id, 'item'):
-                dataset_id_int = dataset_id.item()
-            else:
-                dataset_id_int = int(dataset_id)
+            # Convert dataset_id to int, handling various types safely
+            try:
+                if hasattr(dataset_id, 'item'):
+                    dataset_id_int = dataset_id.item()
+                else:
+                    dataset_id_int = int(dataset_id)
+            except (ValueError, TypeError) as e:
+                st.error(f"Invalid dataset ID format: {str(e)}")
+                return None
                 
             # Build the query
             query = session.query(datasets).filter(datasets.c.id == dataset_id_int)
             
             # Apply user_id filter if provided
             if current_user_id:
-                # Convert user_id to int if needed
-                if hasattr(current_user_id, 'item'):
-                    current_user_id_int = current_user_id.item()
-                else:
-                    current_user_id_int = int(current_user_id)
-                query = query.filter(datasets.c.user_id == current_user_id_int)
+                try:
+                    # Convert user_id to int if needed
+                    if hasattr(current_user_id, 'item'):
+                        current_user_id_int = current_user_id.item()
+                    else:
+                        current_user_id_int = int(current_user_id)
+                    query = query.filter(datasets.c.user_id == current_user_id_int)
+                except (ValueError, TypeError) as e:
+                    st.error(f"Invalid user ID format: {str(e)}")
+                    return None
             
             result = query.first()
             
             if result:
-                df = deserialize_dataframe(result.data)
-                column_types = json.loads(result.column_types)
-                
-                return {
-                    'id': result.id,
-                    'name': result.name,
-                    'description': result.description,
-                    'file_name': result.file_name,
-                    'file_type': result.file_type,
-                    'created_at': result.created_at,
-                    'updated_at': result.updated_at,
-                    'dataset': df,
-                    'column_types': column_types,
-                    'row_count': result.row_count,
-                    'column_count': result.column_count,
-                    'user_id': result.user_id
-                }
-            return None
+                try:
+                    df = deserialize_dataframe(result.data)
+                    column_types = json.loads(result.column_types)
+                    
+                    return {
+                        'id': result.id,
+                        'name': result.name,
+                        'description': result.description,
+                        'file_name': result.file_name,
+                        'file_type': result.file_type,
+                        'created_at': result.created_at,
+                        'updated_at': result.updated_at,
+                        'dataset': df,
+                        'column_types': column_types,
+                        'row_count': result.row_count,
+                        'column_count': result.column_count,
+                        'user_id': result.user_id
+                    }
+                except Exception as e:
+                    st.error(f"Error deserializing dataset: {str(e)}")
+                    return None
+            else:
+                st.warning(f"Dataset with ID {dataset_id} not found in database.")
+                return None
         except Exception as e:
             if not isinstance(e, (OperationalError, SQLAlchemyError)):
                 st.error(f"Error retrieving dataset: {str(e)}")

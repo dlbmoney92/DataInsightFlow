@@ -454,9 +454,9 @@ if datasets_list:
                 # Get the dataset from the database
                 dataset_result = get_dataset(selected_dataset['id'])
                 
-                if dataset_result and 'df' in dataset_result:
+                if dataset_result and 'dataset' in dataset_result:
                     # Store in session state
-                    st.session_state.dataset = dataset_result['df']
+                    st.session_state.dataset = dataset_result['dataset']
                     st.session_state.file_name = selected_dataset['file_name']
                     st.session_state.column_types = dataset_result.get('column_types', {})
                     st.session_state.dataset_id = selected_dataset['id']
@@ -479,6 +479,10 @@ if datasets_list:
                     # Refresh to show the data
                     st.rerun()
                 else:
-                    st.error("Failed to load the dataset. Please try again.")
+                    # Provide more detailed error message
+                    if dataset_result is None:
+                        st.error("Failed to retrieve the dataset from the database. The dataset may no longer exist.")
+                    elif 'dataset' not in dataset_result:
+                        st.error(f"Dataset '{selected_dataset_name}' was found, but there was an error deserializing the data. Please try again or contact support if the issue persists.")
 else:
     st.info("You don't have any saved datasets yet. Upload a new file or use a sample dataset to get started.")
