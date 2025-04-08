@@ -2069,7 +2069,7 @@ else:
                 # Create a visual flow chart of transformations
                 st.markdown("### Transformation Flow")
                 flow_chart = generate_transformation_flow_chart(st.session_state.transformations)
-                st.graphviz_chart(flow_chart)
+                st.plotly_chart(flow_chart, use_container_width=True)
                 
                 # Before and after comparison for selected column
                 st.markdown("### Before and After Comparison")
@@ -2171,13 +2171,12 @@ else:
                 st.rerun()
             
             # Display transformation journey visualization
-            st.subheader("Transformation Journey")
             if len(st.session_state.transformations) > 0:
-                journey_viz = create_transformation_journey_visualization(
+                create_transformation_journey_visualization(
+                    st.session_state.transformations,
                     original_df, 
-                    st.session_state.transformations
+                    df
                 )
-                st.pyplot(journey_viz)
             
             # Display transformation history log
             st.subheader("Activity Log")
