@@ -58,41 +58,25 @@ def app():
                 # Show the same message regardless of whether the email exists
                 st.success(f"If an account exists with the email {email}, a password reset link has been sent. Please check your email.")
                 
-                # Since this is a demo, show a simulated email for convenience
+                # Store token in session state for after form completion
                 if token:  # Only if the email actually exists
-                    # Get base_url from query params or use default empty string
-                    base_url = ""
-                    if "base_url" in st.query_params:
-                        base_url = st.query_params["base_url"]
+                    # Store the token in session state to use later
+                    st.session_state["reset_token"] = token
                     
-                    reset_url = f"{base_url}/pages/reset_password_confirm.py?token={token}"
-                    if not reset_url.startswith("http"):
-                        reset_url = f"http://{reset_url}"
+                    # Add a note about checking email
+                    st.info("A reset link has been sent to your email. Please check your inbox and spam folder.")
                     
-                    st.info("### Simulated Email:")
-                    st.markdown(f"""
-                    **From:** Analytics Assist <noreply@analytics-assist.com>  
-                    **To:** {email}  
-                    **Subject:** Reset Your Password
-                    
-                    ---
-                    
-                    Dear User,
-                    
-                    You requested a password reset for your Analytics Assist account. Please click the link below to reset your password:
-                    
-                    [Reset Password]({reset_url})
-                    
-                    This link will expire in 24 hours. If you did not request a password reset, please ignore this email.
-                    
-                    ---
-                    
-                    For demo purposes, you can click the link below to reset your password:
-                    """)
-                    
-                    if st.button("Go to Password Reset Page"):
-                        st.query_params["token"] = token
-                        st.switch_page("pages/reset_password_confirm.py")
+                    # Display a direct reset button outside the form
+                    st.success("For this demo, click the button below to reset your password immediately:")
+        
+        # Add the reset button outside the form
+        if "reset_token" in st.session_state and st.session_state["reset_token"]:
+            if st.button("Reset My Password Now", type="primary"):
+                token = st.session_state["reset_token"]
+                # Clear the token from session state after use
+                del st.session_state["reset_token"]
+                st.query_params["token"] = token
+                st.switch_page("pages/reset_password_confirm.py")
     
     st.markdown("---")
     st.markdown(
