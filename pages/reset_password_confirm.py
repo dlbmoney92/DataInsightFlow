@@ -110,15 +110,27 @@ def app():
                     if update_user_password(user_id, password_hash) and mark_token_as_used(token):
                         st.success("Your password has been updated successfully!")
                         st.info("You can now login with your new password.")
-                        
-                        if st.button("Go to Login"):
-                            st.switch_page("pages/login.py")
+                        # Set a flag to indicate password was successfully updated
+                        st.session_state["password_updated"] = True
                     else:
                         st.error("There was an error updating your password. Please try again.")
     
-    st.markdown("---")
-    if st.button("Back to Login", use_container_width=True):
-        st.switch_page("pages/login.py")
+    # Show primary call-to-action if password was updated
+    if "password_updated" in st.session_state and st.session_state["password_updated"]:
+        st.markdown("---")
+        st.markdown(
+            "<div style='text-align: center;'><strong>Your password has been updated!</strong></div>", 
+            unsafe_allow_html=True
+        )
+        if st.button("Go to Login", type="primary", use_container_width=True):
+            # Clear the flag after use
+            del st.session_state["password_updated"]
+            st.switch_page("pages/login.py")
+    else:
+        # Regular back to login button
+        st.markdown("---")
+        if st.button("Back to Login", use_container_width=True):
+            st.switch_page("pages/login.py")
 
 if __name__ == "__main__":
     app()

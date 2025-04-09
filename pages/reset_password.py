@@ -62,21 +62,21 @@ def app():
                 if token:  # Only if the email actually exists
                     # Store the token in session state to use later
                     st.session_state["reset_token"] = token
-                    
-                    # Add a note about checking email
-                    st.info("A reset link has been sent to your email. Please check your inbox and spam folder.")
-                    
-                    # Display a direct reset button outside the form
-                    st.success("For this demo, click the button below to reset your password immediately:")
+    
+    # Only show these messages and buttons OUTSIDE the form
+    if "reset_token" in st.session_state and st.session_state["reset_token"]:
+        # Add a note about checking email
+        st.info("A reset link has been sent to your email. Please check your inbox and spam folder.")
         
-        # Add the reset button outside the form
-        if "reset_token" in st.session_state and st.session_state["reset_token"]:
-            if st.button("Reset My Password Now", type="primary"):
-                token = st.session_state["reset_token"]
-                # Clear the token from session state after use
-                del st.session_state["reset_token"]
-                st.query_params["token"] = token
-                st.switch_page("pages/reset_password_confirm.py")
+        # Display a direct reset button outside the form
+        st.success("For this demo, click the button below to reset your password immediately:")
+        
+        if st.button("Reset My Password Now", type="primary"):
+            token = st.session_state["reset_token"]
+            # Clear the token from session state after use
+            del st.session_state["reset_token"]
+            st.query_params["token"] = token
+            st.switch_page("pages/reset_password_confirm.py")
     
     st.markdown("---")
     st.markdown(
