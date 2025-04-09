@@ -12,6 +12,8 @@ import pandas as pd
 import numpy as np
 import os
 import json
+import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime
 from utils.file_processor import supported_file_types
 from utils.database import initialize_database
@@ -20,6 +22,133 @@ from utils.subscription import SUBSCRIPTION_PLANS, format_price, get_trial_days_
 from utils.global_config import apply_global_css, render_footer
 import uuid
 from utils.custom_navigation import render_navigation, initialize_navigation
+
+# Create demo data and visualizations for the landing page
+def create_sample_chart(chart_type='bar'):
+    """Create sample charts for landing page demonstration"""
+    if chart_type == 'bar':
+        # Sample sales data
+        categories = ['Electronics', 'Apparel', 'Home Goods', 'Sports', 'Beauty']
+        values = [42000, 28500, 19200, 15700, 23400]
+        
+        fig = px.bar(
+            x=categories,
+            y=values,
+            title="Sample Sales by Category",
+            labels={'x': 'Category', 'y': 'Sales ($)'},
+            color=values,
+            color_continuous_scale='Viridis',
+        )
+        fig.update_layout(
+            height=300,
+            margin=dict(l=10, r=10, t=50, b=40),
+            coloraxis_showscale=False,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            title_font=dict(size=16),
+            title_x=0.5
+        )
+        return fig
+    
+    elif chart_type == 'line':
+        # Sample time series data
+        dates = pd.date_range(start='2023-01-01', periods=12, freq='M')
+        values = [10, 13, 15, 22, 28, 32, 30, 28, 25, 30, 35, 42]
+        
+        fig = px.line(
+            x=dates,
+            y=values,
+            title="Sales Growth Over Time",
+            labels={'x': 'Month', 'y': 'Revenue ($K)'},
+            markers=True,
+        )
+        fig.update_layout(
+            height=300,
+            margin=dict(l=10, r=10, t=50, b=40),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            title_font=dict(size=16),
+            title_x=0.5
+        )
+        return fig
+    
+    elif chart_type == 'scatter':
+        # Sample correlation data
+        np.random.seed(42)
+        marketing = np.random.normal(50, 15, 30)
+        sales = marketing * 2.3 + np.random.normal(100, 25, 30)
+        
+        fig = px.scatter(
+            x=marketing,
+            y=sales,
+            title="Marketing Spend vs. Sales",
+            labels={'x': 'Marketing ($K)', 'y': 'Sales ($K)'},
+            color=marketing,
+            color_continuous_scale='Viridis',
+            trendline="ols"
+        )
+        fig.update_layout(
+            height=300,
+            margin=dict(l=10, r=10, t=50, b=40),
+            coloraxis_showscale=False,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            title_font=dict(size=16),
+            title_x=0.5
+        )
+        return fig
+    
+    elif chart_type == 'pie':
+        # Sample market share data
+        labels = ['Product A', 'Product B', 'Product C', 'Product D', 'Product E']
+        values = [38, 27, 18, 10, 7]
+        
+        fig = px.pie(
+            values=values,
+            names=labels,
+            title="Market Share Analysis",
+            color_discrete_sequence=px.colors.sequential.Viridis,
+        )
+        fig.update_layout(
+            height=300,
+            margin=dict(l=10, r=10, t=50, b=30),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            title_font=dict(size=16),
+            title_x=0.5,
+            legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
+        )
+        return fig
+    
+    elif chart_type == 'heatmap':
+        # Sample correlation matrix
+        corr_data = np.array([
+            [1.0, 0.8, 0.3, -0.2, 0.5],
+            [0.8, 1.0, 0.4, -0.1, 0.6],
+            [0.3, 0.4, 1.0, 0.7, 0.2],
+            [-0.2, -0.1, 0.7, 1.0, -0.3],
+            [0.5, 0.6, 0.2, -0.3, 1.0]
+        ])
+        
+        labels = ['Sales', 'Marketing', 'Customer Satisfaction', 'Returns', 'Social Media']
+        
+        fig = px.imshow(
+            corr_data,
+            x=labels,
+            y=labels,
+            title="Variable Correlation Analysis",
+            color_continuous_scale='Viridis',
+            text_auto=".2f"
+        )
+        
+        fig.update_layout(
+            height=300,
+            margin=dict(l=10, r=10, t=50, b=10),
+            title_font=dict(size=16),
+            title_x=0.5,
+            coloraxis_showscale=False
+        )
+        return fig
 
 # Apply global CSS to add styling to Streamlit's native navigation
 apply_global_css()
@@ -77,19 +206,63 @@ render_navigation()
 if not st.session_state.logged_in:
     # User is not logged in, show landing page
     
-    # Hero section
-    st.title("Analytics Assist")
-    st.subheader("Transform Data into Insights with AI")
-    
+    # Enhanced Hero section with gradient background
     st.markdown("""
-    Welcome to Analytics Assist, your intelligent data analysis companion. Upload your data, explore 
-    patterns, transform and visualize information, and leverage AI to uncover valuable insights.
-    """)
+    <div style="background: linear-gradient(to right, #1e3c72, #2a5298); padding: 40px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+        <h1 style="color: white; margin-bottom: 10px; font-size: 3.5em;">Analytics Assist</h1>
+        <h3 style="color: white; margin-bottom: 20px; font-weight: 300;">Transform Data into Insights with AI</h3>
+        <p style="color: white; font-size: 1.2em; margin-bottom: 30px; max-width: 800px; margin-left: auto; margin-right: auto;">
+            Your intelligent data analysis companion. Upload your data, explore patterns, 
+            transform and visualize information, and leverage AI to uncover valuable insights.
+        </p>
+        <div style="background: rgba(255,255,255,0.2); width: fit-content; margin: 0 auto; padding: 10px 20px; border-radius: 30px;">
+            <span style="color: white; font-weight: bold;">✨ AI-Powered Analytics Made Simple ✨</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Feature highlights
+    # Feature highlights with visual examples
     st.markdown("### Key Features")
     
-    # Create columns for feature highlights
+    # Showcase visual analytics examples
+    st.markdown("#### 📊 Powerful Visualizations & Analytics")
+    
+    # Create a showcase row with visualization examples
+    viz_col1, viz_col2, viz_col3 = st.columns(3)
+    
+    with viz_col1:
+        st.plotly_chart(create_sample_chart('bar'), use_container_width=True)
+    
+    with viz_col2:
+        st.plotly_chart(create_sample_chart('line'), use_container_width=True)
+    
+    with viz_col3:
+        st.plotly_chart(create_sample_chart('scatter'), use_container_width=True)
+    
+    # Add a second row of visualizations
+    viz_col4, viz_col5, viz_col6 = st.columns(3)
+    
+    with viz_col4:
+        st.plotly_chart(create_sample_chart('pie'), use_container_width=True)
+    
+    with viz_col5:
+        st.plotly_chart(create_sample_chart('heatmap'), use_container_width=True)
+    
+    with viz_col6:
+        # Sample AI insights presentation
+        st.markdown("#### AI Insights")
+        with st.container(border=True):
+            st.markdown("⭐⭐⭐⭐ **High Importance**")
+            st.markdown("**Seasonal Sales Pattern**")
+            st.markdown("*Sales consistently increase by 28% during Q4 each year, suggesting opportunity for increased inventory planning.*")
+        
+        with st.container(border=True):
+            st.markdown("⭐⭐⭐ **Medium Importance**")
+            st.markdown("**Customer Segment Analysis**")
+            st.markdown("*Premium segment customers have 3.2x higher lifetime value but are 24% more sensitive to delivery delays.*")
+    
+    # Create columns for feature highlights text
+    st.markdown("### Comprehensive Analytics Toolkit")
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -119,18 +292,29 @@ if not st.session_state.logged_in:
         * Generate comprehensive reports
         """)
     
-    # Add a CTA
-    st.markdown("### Get Started Today")
+    # Add an attractive CTA with visual elements
+    st.markdown("""
+    <div style="background: linear-gradient(to right, #4b6cb7, #182848); padding: 30px; border-radius: 10px; text-align: center; margin: 30px 0;">
+        <h2 style="color: white; margin-bottom: 15px;">Ready to Transform Your Data Analytics?</h2>
+        <p style="color: white; font-size: 1.1em; margin-bottom: 25px;">
+            Join thousands of analysts and data scientists who are already using Analytics Assist
+            to unlock the power of their data. Get started in less than 2 minutes.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Create columns for action buttons
     cta_col1, cta_col2 = st.columns(2)
     
+    # Use custom button styling
     with cta_col1:
-        if st.button("Sign Up", use_container_width=True):
+        # Custom styled button with container
+        if st.button("✨ Create Free Account", key="signup_main_cta", use_container_width=True):
             st.switch_page("pages/signup.py")
+        st.caption("No credit card required")
     
     with cta_col2:
-        if st.button("Log In", use_container_width=True):
+        if st.button("Already have an account? Log In", key="login_main_cta", use_container_width=True):
             st.switch_page("pages/login.py")
     
     # How it works section
@@ -142,77 +326,212 @@ if not st.session_state.logged_in:
     with how_col1:
         st.markdown("#### 1. Upload Data")
         st.markdown("Upload CSV, Excel, or other structured data files.")
+        
+        # Visual icon with container
+        with st.container(border=True, height=120):
+            st.markdown(
+                """
+                <div style="text-align: center; font-size: 40px; margin-bottom: 10px;">
+                    📤
+                </div>
+                <div style="text-align: center; font-style: italic;">
+                    Drag & drop or browse files
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
     
     with how_col2:
         st.markdown("#### 2. Explore & Transform")
         st.markdown("Clean, visualize, and transform your data with ease.")
+        
+        # Visual icon with container
+        with st.container(border=True, height=120):
+            st.markdown(
+                """
+                <div style="text-align: center; font-size: 40px; margin-bottom: 10px;">
+                    🔍
+                </div>
+                <div style="text-align: center; font-style: italic;">
+                    Interactive data exploration
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
     
     with how_col3:
         st.markdown("#### 3. Generate Insights")
         st.markdown("Get AI-powered insights and analysis automatically.")
+        
+        # Visual icon with container
+        with st.container(border=True, height=120):
+            st.markdown(
+                """
+                <div style="text-align: center; font-size: 40px; margin-bottom: 10px;">
+                    💡
+                </div>
+                <div style="text-align: center; font-style: italic;">
+                    AI insight generation
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
     
     with how_col4:
         st.markdown("#### 4. Export Results")
         st.markdown("Download reports, visualizations, and transformed data.")
+        
+        # Visual icon with container
+        with st.container(border=True, height=120):
+            st.markdown(
+                """
+                <div style="text-align: center; font-size: 40px; margin-bottom: 10px;">
+                    📊
+                </div>
+                <div style="text-align: center; font-style: italic;">
+                    Professional reports & exports
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
     
-    # Pricing section
+    # Enhanced Pricing section with visual elements
     st.markdown("---")
-    st.markdown("### Subscription Plans")
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h2>Choose the Right Plan for Your Needs</h2>
+        <p style="font-size: 1.1em; color: #666; margin-top: 5px;">
+            All plans include our core analytics features. Upgrade for advanced capabilities.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Create columns for pricing plans
     pricing_cols = st.columns(len(SUBSCRIPTION_PLANS))
     
+    # Color schemes for different tiers
+    color_schemes = {
+        "free": {"gradient": "linear-gradient(135deg, #f5f7fa, #c3cfe2)", "text": "#2c3e50", "highlight": "#3498db"},
+        "basic": {"gradient": "linear-gradient(135deg, #e0c3fc, #8ec5fc)", "text": "#2c3e50", "highlight": "#8e44ad"},
+        "pro": {"gradient": "linear-gradient(135deg, #a1c4fd, #c2e9fb)", "text": "#2c3e50", "highlight": "#2980b9"},
+        "enterprise": {"gradient": "linear-gradient(135deg, #5ee7df, #b490ca)", "text": "#2c3e50", "highlight": "#6c5ce7"}
+    }
+    
     for i, (tier, plan) in enumerate(SUBSCRIPTION_PLANS.items()):
         with pricing_cols[i]:
-            st.markdown(f"#### {plan['name']}")
+            colors = color_schemes.get(tier, color_schemes["free"])
             
-            # Price
-            if plan['monthly_price'] == 0:
-                st.markdown("**Free**")
-            else:
-                st.markdown(f"**{format_price(plan['monthly_price'])}** / month")
-                st.markdown(f"or {format_price(plan['annual_price'])} / year")
-            
-            # Features
-            for feature in plan['features']:
-                st.markdown(f"✓ {feature}")
-            
-            # Special callout for Pro trial
-            if tier == "pro":
-                st.markdown("**Includes 7-day free trial**")
-            
-            # CTA button
-            if st.button(f"Choose {plan['name']}", key=f"pricing_{tier}", use_container_width=True):
-                # Store the selected plan and redirect to signup
-                st.session_state.selected_plan = tier
-                st.switch_page("pages/subscription_selection.py")
+            # Pricing card with gradient background
+            with st.container(border=True):
+                st.markdown(f"""
+                <div style="text-align: center; background: {colors['gradient']}; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h3 style="color: {colors['text']}; margin-bottom: 5px;">{plan['name']}</h3>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Price display
+                if plan['monthly_price'] == 0:
+                    st.markdown("<div style='text-align: center; margin: 15px 0;'><span style='font-size: 28px; font-weight: bold;'>Free</span></div>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div style='text-align: center; margin: 15px 0;'>
+                        <span style='font-size: 28px; font-weight: bold;'>{format_price(plan['monthly_price'])}</span>
+                        <span style='font-size: 16px;'> / month</span><br>
+                        <span style='font-size: 14px; color: #666;'>or {format_price(plan['annual_price'])} / year</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # Feature list
+                st.markdown("<div style='margin: 20px 0;'>", unsafe_allow_html=True)
+                for feature in plan['features']:
+                    st.markdown(f"""
+                    <div style='display: flex; margin-bottom: 8px; align-items: center;'>
+                        <div style='color: {colors["highlight"]}; margin-right: 8px; font-size: 18px;'>✓</div>
+                        <div>{feature}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+                
+                # Special callout for Pro trial
+                if tier == "pro":
+                    st.markdown(f"""
+                    <div style='background-color: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; text-align: center; margin: 15px 0;'>
+                        <span style='font-weight: bold; color: {colors["highlight"]};'>Includes 7-day free trial</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # CTA button
+                if st.button(f"Choose {plan['name']}", key=f"pricing_{tier}", use_container_width=True):
+                    # Store the selected plan and redirect to signup
+                    st.session_state.selected_plan = tier
+                    st.switch_page("pages/subscription_selection.py")
     
     # Testimonials
     st.markdown("---")
     st.markdown("### What Our Users Say")
     
+    # Create testimonial cards with visual elements
     testimonial_cols = st.columns(3)
     
     with testimonial_cols[0]:
-        st.markdown("""
-        > "Analytics Assist has transformed how our marketing team analyzes campaign data. The AI insights save us hours every week."
-        
-        *Sarah J., Marketing Director*
-        """)
+        with st.container(border=True):
+            st.markdown("""
+            <div style="text-align: center; margin-bottom: 15px;">
+                <span style="font-size: 40px;">⭐⭐⭐⭐⭐</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("""
+            > "Analytics Assist has transformed how our marketing team analyzes campaign data. The AI insights save us hours every week."
+            """)
+            
+            st.markdown("""
+            <div style="text-align: right; margin-top: 15px;">
+                <img src="https://img.icons8.com/fluency/48/000000/user-female-circle.png" width="30" 
+                style="border-radius: 50%; vertical-align: middle; margin-right: 5px;">
+                <em>Sarah J., Marketing Director</em>
+            </div>
+            """, unsafe_allow_html=True)
     
     with testimonial_cols[1]:
-        st.markdown("""
-        > "As a data scientist, I appreciate how quickly I can clean and prepare data for analysis. The transformation tools are exceptional."
-        
-        *Michael T., Data Scientist*
-        """)
+        with st.container(border=True):
+            st.markdown("""
+            <div style="text-align: center; margin-bottom: 15px;">
+                <span style="font-size: 40px;">⭐⭐⭐⭐⭐</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("""
+            > "As a data scientist, I appreciate how quickly I can clean and prepare data for analysis. The transformation tools are exceptional."
+            """)
+            
+            st.markdown("""
+            <div style="text-align: right; margin-top: 15px;">
+                <img src="https://img.icons8.com/fluency/48/000000/user-male-circle.png" width="30" 
+                style="border-radius: 50%; vertical-align: middle; margin-right: 5px;">
+                <em>Michael T., Data Scientist</em>
+            </div>
+            """, unsafe_allow_html=True)
     
     with testimonial_cols[2]:
-        st.markdown("""
-        > "The visualization capabilities help me present complex findings to stakeholders in a clear, compelling way."
-        
-        *Elena K., Business Analyst*
-        """)
+        with st.container(border=True):
+            st.markdown("""
+            <div style="text-align: center; margin-bottom: 15px;">
+                <span style="font-size: 40px;">⭐⭐⭐⭐⭐</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("""
+            > "The visualization capabilities help me present complex findings to stakeholders in a clear, compelling way."
+            """)
+            
+            st.markdown("""
+            <div style="text-align: right; margin-top: 15px;">
+                <img src="https://img.icons8.com/fluency/48/000000/user-female-circle.png" width="30" 
+                style="border-radius: 50%; vertical-align: middle; margin-right: 5px;">
+                <em>Elena K., Business Analyst</em>
+            </div>
+            """, unsafe_allow_html=True)
 else:
     # User is logged in, show dashboard
     
