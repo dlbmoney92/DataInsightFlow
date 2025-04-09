@@ -8,6 +8,17 @@ st.set_page_config(
     layout="wide"
 )
 
+# Hide Streamlit's default menu and navigation
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+[data-testid="stSidebarNav"] {
+    display: none !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Initialize navigation
 initialize_navigation()
 

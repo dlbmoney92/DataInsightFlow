@@ -12,9 +12,11 @@ def app():
     # Initialize and render navigation
     initialize_navigation()
 
-    # Hide Streamlit’s default multipage navigation menu
+    # Hide Streamlit's default menu and navigation
     st.markdown("""
         <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
             [data-testid="stSidebarNav"] {
                 display: none !important;
             }

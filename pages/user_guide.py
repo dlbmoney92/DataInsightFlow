@@ -277,9 +277,7 @@ def app():
     If you need additional help:
     
     - Visit the **Contact Us** page in the sidebar
-    - Email support at support@analyticsassist.com
-    - Check our online documentation for detailed guides
-    """)
+        """)
     
     # Navigation buttons at the bottom
     st.markdown("---")

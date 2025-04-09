@@ -13,11 +13,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# Hide Streamlit's default menu
+# Hide Streamlit's default menu and navigation
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
+[data-testid="stSidebarNav"] {
+    display: none !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,8 +190,6 @@ def app():
             expires_in = get_subscription_expires_in_days(user['subscription_end_date'])
             if expires_in > 0:
                 st.write(f"Your subscription will renew in {expires_in} days.")
-            else:
-                st.warning("Your subscription has expired. Please renew to continue using premium features.")
         
         # Plan features
         st.subheader("Plan Features")
