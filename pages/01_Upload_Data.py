@@ -23,6 +23,7 @@ from utils.access_control import check_access
 from utils.custom_navigation import render_navigation, render_developer_login, logout_developer, initialize_navigation
 from utils.auth_redirect import require_auth
 from utils.global_config import apply_global_css
+from utils.loading_animation import show_loading_animation, hide_loading_animation
 
 # Apply global CSS
 apply_global_css()
@@ -165,6 +166,9 @@ if uploaded_file is not None:
 if uploaded_file is not None:
     # Check if file type is valid
     if is_valid_file_type(uploaded_file.name):
+        # Show loading animation
+        loading_placeholder = show_loading_animation()
+        
         with st.spinner("Processing your file..."):
             # Process the file
             df = process_uploaded_file(uploaded_file)
@@ -196,6 +200,9 @@ if uploaded_file is not None:
                     )
                     if dataset_id:
                         st.session_state.dataset_id = dataset_id
+                
+                # Hide loading animation
+                hide_loading_animation(loading_placeholder)
                 
                 # Create a new project
                 st.session_state.current_project = {
@@ -283,6 +290,9 @@ if uploaded_file is None:
     st.info(f"Description: {sample_datasets[selected_sample]}")
     
     if st.button("Use Sample Dataset"):
+        # Show loading animation
+        loading_placeholder = show_loading_animation()
+        
         # Load the selected sample dataset
         if selected_sample == "Sales Data":
             # Create a sample sales dataset
@@ -427,6 +437,9 @@ if uploaded_file is None:
             'dataset_id': st.session_state.dataset_id
         }
         
+        # Hide loading animation
+        hide_loading_animation(loading_placeholder)
+        
         # Success message and redirect
         st.success(f"Successfully loaded sample dataset with {df.shape[0]} rows and {df.shape[1]} columns.")
         
@@ -449,8 +462,14 @@ st.subheader("Load Existing Dataset")
 # Only fetch the list of datasets once and store in session state 
 # to avoid reloading the entire list on every interaction
 if 'datasets_list' not in st.session_state:
+    # Show loading animation
+    loading_placeholder = show_loading_animation()
+    
     with st.spinner("Loading datasets..."):
         st.session_state.datasets_list = list_datasets()
+    
+    # Hide loading animation
+    hide_loading_animation(loading_placeholder)
 
 datasets_list = st.session_state.datasets_list
 
@@ -503,6 +522,9 @@ if datasets_list:
         
         # Button to load the selected dataset - use a primary button for more visibility
         if st.button("Load Selected Dataset", type="primary"):
+            # Show loading animation
+            loading_placeholder = show_loading_animation()
+            
             with st.spinner(f"Loading {selected_dataset_name}..."):
                 # Get the dataset from the database
                 dataset_result = get_dataset(selected_dataset['id'])
@@ -526,12 +548,18 @@ if datasets_list:
                     st.session_state.transformations = []
                     st.session_state.transformation_history = []
                     
+                    # Hide loading animation
+                    hide_loading_animation(loading_placeholder)
+                    
                     # Success message
                     st.success(f"Successfully loaded {selected_dataset['name']}!")
                     
                     # Set a flag in session state instead of calling st.rerun() directly
                     st.session_state.reload_after_loading = True
                 else:
+                    # Hide loading animation
+                    hide_loading_animation(loading_placeholder)
+                    
                     # Provide more detailed error message
                     if dataset_result is None:
                         st.error("Failed to retrieve the dataset from the database. The dataset may no longer exist.")
