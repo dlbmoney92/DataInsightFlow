@@ -213,7 +213,17 @@ if uploaded_file is not None:
                 }
                 
                 # Success message
-                st.success(f"Successfully loaded {uploaded_file.name} with {df.shape[0]} rows and {df.shape[1]} columns.")
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.success(f"Successfully loaded {uploaded_file.name} with {df.shape[0]} rows and {df.shape[1]} columns.")
+                with col2:
+                    if st.button("Continue to Data Preview", use_container_width=True):
+                        st.switch_page("pages/02_Data_Preview.py")
+                
+                # Auto-redirect after 3 seconds
+                st.markdown("""
+                <meta http-equiv="refresh" content="3;url=pages/02_Data_Preview.py">
+                """, unsafe_allow_html=True)
                 
                 # Clear any datasets cache from session state 
                 # to ensure the list refreshes when we next view it
@@ -441,7 +451,17 @@ if uploaded_file is None:
         hide_loading_animation(loading_placeholder)
         
         # Success message and redirect
-        st.success(f"Successfully loaded sample dataset with {df.shape[0]} rows and {df.shape[1]} columns.")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.success(f"Successfully loaded sample dataset with {df.shape[0]} rows and {df.shape[1]} columns.")
+        with col2:
+            if st.button("Continue to Data Preview", key="sample_continue", use_container_width=True):
+                st.switch_page("pages/02_Data_Preview.py")
+        
+        # Auto-redirect after 3 seconds
+        st.markdown("""
+        <meta http-equiv="refresh" content="3;url=pages/02_Data_Preview.py">
+        """, unsafe_allow_html=True)
         
         # Clear any datasets cache from session state 
         # to ensure the list refreshes when we next view it
@@ -552,7 +572,17 @@ if datasets_list:
                     hide_loading_animation(loading_placeholder)
                     
                     # Success message
-                    st.success(f"Successfully loaded {selected_dataset['name']}!")
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.success(f"Successfully loaded {selected_dataset['name']}!")
+                    with col2:
+                        if st.button("Continue to Data Preview", key="existing_continue", use_container_width=True):
+                            st.switch_page("pages/02_Data_Preview.py")
+                    
+                    # Auto-redirect after 3 seconds
+                    st.markdown("""
+                    <meta http-equiv="refresh" content="3;url=pages/02_Data_Preview.py">
+                    """, unsafe_allow_html=True)
                     
                     # Set a flag in session state instead of calling st.rerun() directly
                     st.session_state.reload_after_loading = True

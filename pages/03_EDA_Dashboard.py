@@ -483,6 +483,9 @@ if tab_info["Outliers"]["available"]:
         
     if outlier_summary:
         outlier_df = pd.DataFrame(outlier_summary)
+        # Format the percentage for better display
+        if "% Outliers" in outlier_df.columns:
+            outlier_df["% Outliers"] = outlier_df["% Outliers"].apply(lambda x: f"{float(x.strip('%')):.2f}%" if isinstance(x, str) else f"{float(x):.2f}%")
         st.dataframe(outlier_df)
         
         # Visualize outliers for a selected column
@@ -552,10 +555,30 @@ if tab_info["Full Report"]["available"]:
             # Display the report
             st.components.v1.html(report_html, height=600, scrolling=True)
             
-            # Option to download the report
+            # Option to download the report as PDF
+            from utils.export import convert_html_to_pdf
+            
+            # First offer HTML download option
             b64_html = base64.b64encode(report_html.encode()).decode()
-            href = f'<a href="data:text/html;base64,{b64_html}" download="eda_report_{dataset_name}.html">Download EDA Report</a>'
-            st.markdown(href, unsafe_allow_html=True)
+            href_html = f'<a href="data:text/html;base64,{b64_html}" download="eda_report_{dataset_name}.html">Download as HTML</a>'
+            
+            # Create columns for download options
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(href_html, unsafe_allow_html=True)
+            
+            with col2:
+                if st.button("Download as PDF"):
+                    with st.spinner("Generating PDF..."):
+                        try:
+                            pdf_bytes = convert_html_to_pdf(report_html)
+                            b64_pdf = base64.b64encode(pdf_bytes).decode()
+                            href_pdf = f'<a href="data:application/pdf;base64,{b64_pdf}" download="eda_report_{dataset_name}.pdf">Click here to download PDF</a>'
+                            st.markdown(href_pdf, unsafe_allow_html=True)
+                            st.success("PDF generated successfully!")
+                        except Exception as e:
+                            st.error(f"Error generating PDF: {str(e)}")
+                            st.info("Please try the HTML download option instead.")
             
         except Exception as e:
             st.error(f"Error generating EDA report: {str(e)}")

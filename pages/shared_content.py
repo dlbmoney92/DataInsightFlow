@@ -130,6 +130,29 @@ def render_report(data):
     if html_content:
         encoded_html = base64.b64encode(html_content.encode()).decode()
         st.markdown(f'<iframe srcdoc="{encoded_html}" width="100%" height="600px"></iframe>', unsafe_allow_html=True)
+        
+        # Add download options
+        st.write("### Download Options")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # HTML download
+            html_href = f'<a href="data:text/html;base64,{encoded_html}" download="report.html">Download as HTML</a>'
+            st.markdown(html_href, unsafe_allow_html=True)
+            
+        with col2:
+            # PDF download
+            from utils.export import generate_pdf_download_link
+            
+            if st.button("Generate PDF"):
+                with st.spinner("Generating PDF..."):
+                    try:
+                        pdf_href = generate_pdf_download_link(html_content, "report.pdf")
+                        st.markdown(pdf_href, unsafe_allow_html=True)
+                        st.success("PDF generated successfully!")
+                    except Exception as e:
+                        st.error(f"Error generating PDF: {str(e)}")
+                        st.info("Please try the HTML download option instead.")
     
     # Display text content
     if text_content:

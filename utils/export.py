@@ -9,6 +9,9 @@ import json
 import os
 from datetime import datetime
 import csv
+import tempfile
+import subprocess
+from pathlib import Path
 
 def generate_excel_download_link(df, filename="data.xlsx", sheet_name="Data"):
     """Generate a download link for an Excel file."""
@@ -281,3 +284,47 @@ def load_project(name):
             return True
     
     return False
+
+def convert_html_to_pdf(html_content):
+    """
+    Convert HTML content to PDF using WeasyPrint.
+    
+    Args:
+        html_content (str): The HTML content to convert
+        
+    Returns:
+        bytes: The PDF file as bytes
+    """
+    try:
+        # Use WeasyPrint to convert HTML to PDF
+        from weasyprint import HTML
+        
+        # Create a BytesIO buffer to store the PDF
+        pdf_buffer = io.BytesIO()
+        
+        # Convert HTML to PDF
+        HTML(string=html_content).write_pdf(pdf_buffer)
+        
+        # Get the PDF content
+        pdf_buffer.seek(0)
+        pdf_bytes = pdf_buffer.getvalue()
+        
+        return pdf_bytes
+        
+    except Exception as e:
+        st.error(f"Error converting HTML to PDF: {str(e)}")
+        raise Exception(f"Failed to convert HTML to PDF: {str(e)}")
+
+def generate_pdf_download_link(html_content, filename="report.pdf"):
+    """Generate a download link for a PDF report."""
+    try:
+        pdf_bytes = convert_html_to_pdf(html_content)
+        b64 = base64.b64encode(pdf_bytes).decode()
+        
+        # Create download link
+        href = f'<a href="data:application/pdf;base64,{b64}" download="{filename}">Download PDF Report</a>'
+        
+        return href
+    except Exception as e:
+        st.error(f"Error generating PDF download link: {str(e)}")
+        return None
