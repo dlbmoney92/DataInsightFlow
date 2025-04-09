@@ -147,11 +147,17 @@ else:
             if general_insights:
                 st.subheader("General Observations")
                 for i, insight in enumerate(general_insights):
-                    with st.container():
-                        st.markdown(f"""
-                        #### {insight['title']}
-                        {insight['description']}
-                        """)
+                    # Use expanders for a cleaner collapsible interface
+                    with st.expander(f"💡 {insight['title']}", expanded=False):
+                        st.markdown(f"{insight['description']}")
+                        
+                        # Show importance and recommendation
+                        if 'importance' in insight:
+                            importance = insight.get('importance', 3)
+                            st.markdown(f"**Importance:** {'⭐' * int(importance)}")
+                        
+                        if 'recommended_action' in insight:
+                            st.markdown(f"**Recommendation:** {insight.get('recommended_action', '')}")
                         
                         # Add visualization if available
                         if "visualization" in insight and insight["visualization"]:
@@ -173,11 +179,17 @@ else:
             if statistical_insights:
                 st.subheader("Statistical Insights")
                 for i, insight in enumerate(statistical_insights):
-                    with st.container():
-                        st.markdown(f"""
-                        #### {insight['title']}
-                        {insight['description']}
-                        """)
+                    # Use expanders for a cleaner collapsible interface
+                    with st.expander(f"📊 {insight['title']}", expanded=False):
+                        st.markdown(f"{insight['description']}")
+                        
+                        # Show importance and recommendation
+                        if 'importance' in insight:
+                            importance = insight.get('importance', 3)
+                            st.markdown(f"**Importance:** {'⭐' * int(importance)}")
+                        
+                        if 'recommended_action' in insight:
+                            st.markdown(f"**Recommendation:** {insight.get('recommended_action', '')}")
                         
                         # Add visualization if available
                         if "visualization" in insight and insight["visualization"]:
@@ -199,11 +211,17 @@ else:
             if pattern_insights:
                 st.subheader("Patterns & Trends")
                 for i, insight in enumerate(pattern_insights):
-                    with st.container():
-                        st.markdown(f"""
-                        #### {insight['title']}
-                        {insight['description']}
-                        """)
+                    # Use expanders for a cleaner collapsible interface
+                    with st.expander(f"📈 {insight['title']}", expanded=False):
+                        st.markdown(f"{insight['description']}")
+                        
+                        # Show importance and recommendation
+                        if 'importance' in insight:
+                            importance = insight.get('importance', 3)
+                            st.markdown(f"**Importance:** {'⭐' * int(importance)}")
+                        
+                        if 'recommended_action' in insight:
+                            st.markdown(f"**Recommendation:** {insight.get('recommended_action', '')}")
                         
                         # Add visualization if available
                         if "visualization" in insight and insight["visualization"]:
@@ -225,11 +243,17 @@ else:
             if anomaly_insights:
                 st.subheader("Anomalies & Outliers")
                 for i, insight in enumerate(anomaly_insights):
-                    with st.container():
-                        st.markdown(f"""
-                        #### {insight['title']}
-                        {insight['description']}
-                        """)
+                    # Use expanders for a cleaner collapsible interface
+                    with st.expander(f"⚠️ {insight['title']}", expanded=False):
+                        st.markdown(f"{insight['description']}")
+                        
+                        # Show importance and recommendation
+                        if 'importance' in insight:
+                            importance = insight.get('importance', 3)
+                            st.markdown(f"**Importance:** {'⭐' * int(importance)}")
+                        
+                        if 'recommended_action' in insight:
+                            st.markdown(f"**Recommendation:** {insight.get('recommended_action', '')}")
                         
                         # Add visualization if available
                         if "visualization" in insight and insight["visualization"]:
@@ -414,15 +438,13 @@ else:
                 suggestions = [suggestions]
                 
             for i, suggestion in enumerate(suggestions):
-                with st.container():
-                    # Extract title and description, providing defaults if not found
-                    title = suggestion.get('title', f"Visualization {i+1}")
-                    description = suggestion.get('description', "No description available")
-                    
-                    st.markdown(f"""
-                    ### {title}
-                    {description}
-                    """)
+                # Extract title and description, providing defaults if not found
+                title = suggestion.get('title', f"Visualization {i+1}")
+                description = suggestion.get('description', "No description available")
+                
+                # Use expanders for collapsible content, default to collapsed
+                with st.expander(f"📊 {title}", expanded=False):
+                    st.markdown(f"**Description:** {description}")
                     
                     # Create visualization
                     try:

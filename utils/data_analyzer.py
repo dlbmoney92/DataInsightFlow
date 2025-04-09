@@ -310,11 +310,11 @@ def generate_quick_eda_report(df):
                 html += f"""
                         <tr>
                             <td>{col}</td>
-                            <td>{mean:.2f if isinstance(mean, (int, float)) else mean}</td>
-                            <td>{median:.2f if isinstance(median, (int, float)) else median}</td>
-                            <td>{std:.2f if isinstance(std, (int, float)) else std}</td>
-                            <td>{min_val:.2f if isinstance(min_val, (int, float)) else min_val}</td>
-                            <td>{max_val:.2f if isinstance(max_val, (int, float)) else max_val}</td>
+                            <td>{f"{mean:.2f}" if isinstance(mean, (int, float)) else mean}</td>
+                            <td>{f"{median:.2f}" if isinstance(median, (int, float)) else median}</td>
+                            <td>{f"{std:.2f}" if isinstance(std, (int, float)) else std}</td>
+                            <td>{f"{min_val:.2f}" if isinstance(min_val, (int, float)) else min_val}</td>
+                            <td>{f"{max_val:.2f}" if isinstance(max_val, (int, float)) else max_val}</td>
                         </tr>
                 """
             
