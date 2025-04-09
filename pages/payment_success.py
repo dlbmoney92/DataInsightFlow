@@ -82,7 +82,7 @@ def app():
         - 10 datasets
         - Advanced data transformations
         - Interactive visualizations
-        - CSV, Excel, and JSON support
+        - CSV, Excel, and PDF support
         - 30-day data history
         - Priority support
         - Data validation tools
@@ -109,6 +109,16 @@ def app():
         """)
     else:
         st.success("Thank you for your payment! Your account has been upgraded.")
+    
+    # Add automatic redirect to home page after 5 seconds
+    st.markdown("""
+    <p>Redirecting to dashboard in 5 seconds...</p>
+    <script>
+        setTimeout(function() {
+            window.location.href = "/";
+        }, 5000);
+    </script>
+    """, unsafe_allow_html=True)
     
     # Button to go to home
     if st.button("Go to Dashboard", use_container_width=True):

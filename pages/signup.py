@@ -4,6 +4,22 @@ import re
 import json
 from utils.database import create_user, start_user_trial
 
+# Set page configuration - must be the first Streamlit command
+st.set_page_config(
+    page_title="Sign Up | Analytics Assist",
+    page_icon="📝",
+    layout="wide"
+)
+
+# Hide Streamlit's default multipage navigation menu
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 def is_valid_email(email):
     """Check if email is valid using regex."""
     pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'

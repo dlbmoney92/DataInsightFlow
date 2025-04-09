@@ -51,19 +51,9 @@ def app():
         </script>
         """, unsafe_allow_html=True)
     
-    # Create a modal-like container
+    # Create a normal container without modal styling
     with st.container():
-        st.markdown('<div class="modal-container">', unsafe_allow_html=True)
-        
-        # Modal header
-        st.markdown('''
-        <div class="modal-header">
-            <h2 class="modal-title">Select Your Plan</h2>
-            <a href="/" class="modal-close">×</a>
-        </div>
-        ''', unsafe_allow_html=True)
-        
-        st.markdown('<div class="modal-body">', unsafe_allow_html=True)
+        st.title("Select Your Plan")
         st.subheader("Choose the Analytics Assist subscription that fits your needs")
     
     # Get access level from query parameters if available
@@ -206,17 +196,10 @@ def app():
         else:
             st.switch_page("app.py")
         
-    # Close the modal body and container divs
-    st.markdown('</div>', unsafe_allow_html=True)  # Close modal-body
-    
-    # Modal footer
-    st.markdown('''
-    <div class="modal-footer">
-        <a href="/" class="btn">Cancel</a>
-    </div>
-    ''', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)  # Close modal-container
+    # Simple footer
+    st.markdown("---")
+    if st.button("Return to Home", key="return_home"):
+        st.switch_page("app.py")
 
 def redirect_to_payment(tier, billing_cycle):
     """Redirect to Stripe payment for the selected plan."""
