@@ -91,8 +91,17 @@ def generate_insights_download_link(insights, filename="insights.json"):
     
     return href
 
-def export_summary_report(df, transformations, insights, visualizations=None):
-    """Generate a summary report in HTML format."""
+def export_summary_report(df, transformations, insights, visualizations=None, add_branding=False):
+    """
+    Generate a summary report in HTML format.
+    
+    Parameters:
+    - df: DataFrame to include in the report
+    - transformations: List of transformations applied to the data
+    - insights: List of insights generated from the data
+    - visualizations: Optional list of visualizations to include
+    - add_branding: Whether to add branding to the report (default: False)
+    """
     # Create HTML content
     html_content = f"""
     <!DOCTYPE html>
@@ -203,6 +212,21 @@ def export_summary_report(df, transformations, insights, visualizations=None):
         
         html_content += """
             </table>
+        </div>
+        """
+    
+    # Add branding footer if requested
+    if add_branding:
+        html_content += """
+        <div style="
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ccc;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        ">
+            <p>Generated with <a href="https://analytics-assist.replit.app" style="color: #4F8BF9; text-decoration: none;">Analytics Assist</a></p>
         </div>
         """
     

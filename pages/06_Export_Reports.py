@@ -82,7 +82,7 @@ st.sidebar.info(f"""
 """)
 
 # Main content
-tab1, tab2, tab3 = st.tabs(["Export Data", "Generate Reports", "Save & Load Work"])
+tab1, tab2, tab3, tab4 = st.tabs(["Export Data", "Generate Reports", "Save & Load Work", "Share Reports"])
 
 with tab1:
     st.header("Export Processed Data")
@@ -813,6 +813,225 @@ with tab3:
                 st.error(f"Error loading project: {str(e)}")
     else:
         st.info("No projects saved in session.")
+
+with tab4:
+    # Import sharing functionality
+    from utils.sharing import create_share_link, generate_share_card, export_visualization_with_branding, add_branding_to_figure, generate_qr_code, generate_report_summary
+    
+    st.header("Share Reports and Insights")
+    st.markdown("""
+    Create shareable links to your reports, visualizations, and insights. 
+    These links can be shared with colleagues or posted on social media.
+    """)
+    
+    # Check if user has access to sharing features (requires at least basic tier)
+    can_share = check_access("sharing", None) 
+    
+    if not can_share:
+        st.warning("Sharing reports requires a Basic subscription or higher. Please upgrade your subscription to access this feature.")
+        
+        # Show a button to upgrade
+        if st.button("View Subscription Options", key="upgrade_share"):
+            st.switch_page("pages/subscription.py")
+    else:
+        share_type = st.radio(
+            "What would you like to share?", 
+            ["Complete Report", "Specific Visualization", "Key Insight"]
+        )
+        
+        if share_type == "Complete Report":
+            st.subheader("Share Full Analysis Report")
+            
+            # Options for what to include in the shared report
+            include_transformations = st.checkbox("Include transformation history", value=True, key="share_include_trans")
+            include_insights = st.checkbox("Include insights", value=True, key="share_include_insights")
+            include_visualizations = st.checkbox("Include visualizations", value=True, key="share_include_viz")
+            
+            # Add a title for the shared report
+            report_title = st.text_input("Report Title", value=f"{st.session_state.current_project.get('name', 'Analysis')} Report")
+            
+            # Add a button to generate the shareable link
+            if st.button("Generate Shareable Report Link"):
+                with st.spinner("Generating shareable report..."):
+                    # Prepare the report data
+                    transformations = st.session_state.transformations if 'transformations' in st.session_state and include_transformations else []
+                    insights = st.session_state.generated_insights if 'generated_insights' in st.session_state and include_insights else []
+                    
+                    # Generate the HTML report
+                    report_html = export_summary_report(
+                        df, 
+                        transformations, 
+                        insights,
+                        add_branding=True
+                    )
+                    
+                    # Prepare the report data for sharing
+                    report_data = {
+                        "title": report_title,
+                        "html": report_html,
+                        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "summary": generate_report_summary(df, insights)
+                    }
+                    
+                    # Create a share link
+                    share_id = str(uuid.uuid4())
+                    share_link = create_share_link("report", share_id, report_data)
+                    
+                    # Display the sharing card
+                    generate_share_card(report_title, "report", share_link, include_social=True)
+                    
+                    # Option to add QR code
+                    if st.checkbox("Include QR code in downloaded reports", value=True):
+                        qr_data = generate_qr_code(share_link)
+                        st.image(f"data:image/png;base64,{qr_data}", caption="Scan to view report", width=150)
+        
+        elif share_type == "Specific Visualization":
+            st.subheader("Share a Visualization")
+            
+            # Check if we have visualizations to share
+            if 'generated_visualizations' not in st.session_state or not st.session_state.generated_visualizations:
+                st.warning("No visualizations available to share. Generate visualizations in the EDA Dashboard first.")
+            else:
+                viz_options = []
+                for i, viz in enumerate(st.session_state.generated_visualizations):
+                    if isinstance(viz, dict) and 'title' in viz:
+                        viz_options.append(f"{i+1}. {viz['title']}")
+                    else:
+                        viz_options.append(f"Visualization {i+1}")
+                
+                selected_viz = st.selectbox("Select visualization to share", viz_options)
+                viz_index = int(selected_viz.split('.')[0]) - 1
+                
+                # Get the selected visualization
+                viz = st.session_state.generated_visualizations[viz_index]
+                
+                # Display the visualization for preview
+                if isinstance(viz, dict) and 'figure' in viz:
+                    st.subheader("Preview")
+                    fig = go.Figure(viz['figure'])
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Add title for sharing
+                    viz_title = st.text_input("Visualization Title", value=viz.get('title', f"Visualization {viz_index+1}"))
+                    viz_description = st.text_area("Description (optional)", value=viz.get('description', ''))
+                    
+                    # Button to generate shareable link
+                    if st.button("Generate Shareable Visualization Link"):
+                        with st.spinner("Generating shareable visualization..."):
+                            # Prepare the visualization for sharing
+                            viz_data = {
+                                "title": viz_title,
+                                "description": viz_description,
+                                "figure": viz['figure'],
+                                "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+                            }
+                            
+                            # Create a share link
+                            share_id = str(uuid.uuid4())
+                            share_link = create_share_link("visualization", share_id, viz_data)
+                            
+                            # Display the sharing card
+                            generate_share_card(viz_title, "visualization", share_link, include_social=True)
+                            
+                            # Add export with branding option
+                            st.subheader("Export with Branding")
+                            
+                            export_cols = st.columns(3)
+                            with export_cols[0]:
+                                if st.button("Export as PNG", use_container_width=True):
+                                    # Add branding to the figure
+                                    branded_fig = add_branding_to_figure(fig, viz_title)
+                                    img_bytes = export_visualization_with_branding(branded_fig, viz_title, format='png')
+                                    
+                                    # Create download link
+                                    b64 = base64.b64encode(img_bytes).decode()
+                                    href = f'<a href="data:image/png;base64,{b64}" download="{viz_title.replace(" ", "_")}.png">Download PNG</a>'
+                                    st.markdown(href, unsafe_allow_html=True)
+                            
+                            with export_cols[1]:
+                                if st.button("Export as SVG", use_container_width=True):
+                                    # Add branding to the figure
+                                    branded_fig = add_branding_to_figure(fig, viz_title)
+                                    img_bytes = export_visualization_with_branding(branded_fig, viz_title, format='svg')
+                                    
+                                    # Create download link
+                                    b64 = base64.b64encode(img_bytes).decode()
+                                    href = f'<a href="data:image/svg+xml;base64,{b64}" download="{viz_title.replace(" ", "_")}.svg">Download SVG</a>'
+                                    st.markdown(href, unsafe_allow_html=True)
+                            
+                            with export_cols[2]:
+                                if st.button("Export as PDF", use_container_width=True):
+                                    # Add branding to the figure
+                                    branded_fig = add_branding_to_figure(fig, viz_title)
+                                    pdf_bytes = export_visualization_with_branding(branded_fig, viz_title, format='pdf')
+                                    
+                                    # Create download link
+                                    b64 = base64.b64encode(pdf_bytes).decode()
+                                    href = f'<a href="data:application/pdf;base64,{b64}" download="{viz_title.replace(" ", "_")}.pdf">Download PDF</a>'
+                                    st.markdown(href, unsafe_allow_html=True)
+        
+        elif share_type == "Key Insight":
+            st.subheader("Share a Key Insight")
+            
+            # Check if we have insights to share
+            if 'generated_insights' not in st.session_state or not st.session_state.generated_insights:
+                st.warning("No insights available to share. Generate insights in the Insights Dashboard first.")
+            else:
+                insight_options = []
+                for i, insight in enumerate(st.session_state.generated_insights):
+                    if isinstance(insight, dict) and 'title' in insight:
+                        insight_options.append(f"{i+1}. {insight['title']}")
+                    else:
+                        insight_options.append(f"Insight {i+1}")
+                
+                selected_insight = st.selectbox("Select insight to share", insight_options)
+                insight_index = int(selected_insight.split('.')[0]) - 1
+                
+                # Get the selected insight
+                insight = st.session_state.generated_insights[insight_index]
+                
+                if isinstance(insight, dict):
+                    # Display the insight for preview
+                    st.subheader("Preview")
+                    
+                    # Display the insight
+                    importance = insight.get('importance', 3)
+                    stars = "⭐" * importance
+                    st.markdown(f"{stars} **{insight.get('category', 'General')}**")
+                    st.markdown(f"### {insight.get('title', 'Insight')}")
+                    st.markdown(insight.get('text', ''))
+                    
+                    # Add title for sharing
+                    insight_title = st.text_input("Insight Title", value=insight.get('title', f"Insight {insight_index+1}"))
+                    
+                    # Button to generate shareable link
+                    if st.button("Generate Shareable Insight Link"):
+                        with st.spinner("Generating shareable insight..."):
+                            # Prepare the insight for sharing
+                            insight_data = {
+                                "title": insight_title,
+                                "text": insight.get('text', ''),
+                                "importance": importance,
+                                "category": insight.get('category', 'General'),
+                                "source": "Analytics Assist AI Analysis",
+                                "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+                            }
+                            
+                            # Create a share link
+                            share_id = str(uuid.uuid4())
+                            share_link = create_share_link("insight", share_id, insight_data)
+                            
+                            # Display the sharing card
+                            generate_share_card(insight_title, "insight", share_link, include_social=True)
+        
+        st.markdown("""
+        ---
+        ### Tips for Effective Sharing
+        - Use clear and descriptive titles for your shared content
+        - Include a brief explanation to provide context for your audience
+        - For professional settings, export reports with your organization's branding
+        - Share links directly to specific visualizations when discussing particular findings
+        """)
 
 # Navigation buttons at the bottom
 st.markdown("---")

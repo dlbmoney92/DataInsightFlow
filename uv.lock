@@ -1142,6 +1142,18 @@ wheels = [
 ]
 
 [[package]]
+name = "qrcode"
+version = "8.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/61/d4/d222d00f65c81945b55e8f64011c33cb11a2931957ba3e2845fb0874fffe/qrcode-8.1.tar.gz", hash = "sha256:e8df73caf72c3bace3e93d9fa0af5aa78267d4f3f5bc7ab1b208f271605a5e48", size = 41549 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/29/e6/273de1f5cda537b00bc2947082be747f1d76358db8b945f3a60837bcd0f6/qrcode-8.1-py3-none-any.whl", hash = "sha256:9beba317d793ab8b3838c52af72e603b8ad2599c4e9bbd5c3da37c7dcc13c5cf", size = 45711 },
+]
+
+[[package]]
 name = "referencing"
 version = "0.36.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1172,6 +1184,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pypdf2" },
     { name = "python-docx" },
+    { name = "qrcode" },
     { name = "scipy" },
     { name = "sqlalchemy" },
     { name = "statsmodels" },
@@ -1195,6 +1208,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=19.0.1" },
     { name = "pypdf2", specifier = ">=3.0.1" },
     { name = "python-docx", specifier = ">=1.1.2" },
+    { name = "qrcode", specifier = ">=8.1" },
     { name = "scipy", specifier = ">=1.15.2" },
     { name = "sqlalchemy", specifier = ">=2.0.40" },
     { name = "statsmodels", specifier = ">=0.14.4" },
