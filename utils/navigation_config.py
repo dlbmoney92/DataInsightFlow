@@ -107,6 +107,13 @@ def get_navigation_items():
             "icon": PAYMENT_ICON,
         })
         
+        # Add user guide page
+        nav_items.append({
+            "name": "User Guide",
+            "url": "/pages/user_guide.py",
+            "icon": '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M560-80v-80h120v-80H400v-80h280v-80H400v-80h280v-80H400v-80h280v-80H400v-80h280v-40q0-33 23.5-56.5T760-920h120v840H560Zm-240 0q-33 0-56.5-23.5T240-160v-640q0-33 23.5-56.5T320-880h120v120H320v600h120v120H320Zm0-760v600-600Zm360 680h40v-680h-40v680Z"/></svg>',
+        })
+        
         # Add contact us page
         nav_items.append({
             "name": "Contact Us",
