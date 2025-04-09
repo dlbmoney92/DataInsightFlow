@@ -59,10 +59,26 @@ FEATURE_ACCESS = {
     
     # Export
     "export_format": {
-        "free": ["csv"],  # CSV export only
+        "free": ["csv", "pdf"],  # CSV and PDF export for free tier
         "basic": ["csv", "excel", "pdf", "xlsx"],  # Excel, CSV, PDF, XLSX exports
         "pro": ["csv", "excel", "pdf", "xlsx", "json", "sql", "api"],  # All export formats
         "enterprise": "all"
+    },
+    
+    # Sharing
+    "sharing": {
+        "free": True,     # Basic sharing for free tier
+        "basic": True,    # Sharing enabled
+        "pro": True,      # Sharing enabled
+        "enterprise": True  # Sharing enabled
+    },
+    
+    # Sharing Formats
+    "sharing_format": {
+        "free": ["pdf"],  # PDF sharing only for free tier
+        "basic": ["pdf", "image"],  # PDF and image sharing for basic tier
+        "pro": ["pdf", "image", "interactive"],  # All sharing formats for pro tier
+        "enterprise": "all"  # All sharing formats
     },
     
     # Analysis

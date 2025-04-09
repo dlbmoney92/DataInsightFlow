@@ -38,6 +38,17 @@ if 'reload_after_loading' in st.session_state and st.session_state.reload_after_
     # Clear the flag and rerun
     st.session_state.reload_after_loading = False
     st.rerun()
+    
+# Handle the "Continue to Data Preview" button click
+if 'continue_to_preview' in st.session_state and st.session_state.continue_to_preview:
+    # Clear the flag
+    st.session_state.continue_to_preview = False
+    # Make sure dataset is in session state before redirecting
+    if 'dataset' in st.session_state and st.session_state.dataset is not None:
+        # Redirect to the Data Preview page
+        st.switch_page("pages/02_Data_Preview.py")
+    else:
+        st.error("No dataset is loaded. Please upload or select a dataset first.")
 
 # Initialize navigation
 initialize_navigation()
@@ -218,7 +229,9 @@ if uploaded_file is not None:
                     st.success(f"Successfully loaded {uploaded_file.name} with {df.shape[0]} rows and {df.shape[1]} columns.")
                 with col2:
                     if st.button("Continue to Data Preview", use_container_width=True):
-                        st.switch_page("pages/02_Data_Preview.py")
+                        # Ensure dataset is stored properly in session state before navigation
+                        st.session_state["continue_to_preview"] = True
+                        st.rerun()
                 
                 # Auto-redirect after 3 seconds
                 st.markdown("""
@@ -252,7 +265,9 @@ if uploaded_file is not None:
                 # Next step button
                 st.markdown("---")
                 if st.button("Continue to Data Preview", key="continue_to_preview"):
-                    st.switch_page("pages/02_Data_Preview.py")
+                    # Ensure dataset is stored properly in session state before navigation
+                    st.session_state["continue_to_preview"] = True
+                    st.rerun()
             else:
                 st.error("Could not process the uploaded file. Please make sure it contains valid data.")
     else:
@@ -456,7 +471,9 @@ if uploaded_file is None:
             st.success(f"Successfully loaded sample dataset with {df.shape[0]} rows and {df.shape[1]} columns.")
         with col2:
             if st.button("Continue to Data Preview", key="sample_continue", use_container_width=True):
-                st.switch_page("pages/02_Data_Preview.py")
+                # Ensure dataset is stored properly in session state before navigation
+                st.session_state["continue_to_preview"] = True
+                st.rerun()
         
         # Auto-redirect after 3 seconds
         st.markdown("""
@@ -577,7 +594,9 @@ if datasets_list:
                         st.success(f"Successfully loaded {selected_dataset['name']}!")
                     with col2:
                         if st.button("Continue to Data Preview", key="existing_continue", use_container_width=True):
-                            st.switch_page("pages/02_Data_Preview.py")
+                            # Ensure dataset is stored properly in session state before navigation
+                            st.session_state["continue_to_preview"] = True
+                            st.rerun()
                     
                     # Auto-redirect after 3 seconds
                     st.markdown("""

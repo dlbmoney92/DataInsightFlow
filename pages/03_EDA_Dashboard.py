@@ -472,13 +472,13 @@ if tab_info["Outliers"]["available"]:
         for col, stats in outliers.items():
             outlier_count = stats['count']
             pct_outliers = stats['percent']
-            values = stats['values']
+            values = stats.get('values', [])
             outlier_summary.append({
                 "Column": col,
                 "Outlier Count": outlier_count,
                 "% Outliers": f"{pct_outliers:.2f}%",
-                "Min Outlier": min(values) if values else None,
-                "Max Outlier": max(values) if values else None
+                "Min Outlier": f"{min(values):.4f}" if values and len(values) > 0 else "N/A", 
+                "Max Outlier": f"{max(values):.4f}" if values and len(values) > 0 else "N/A"
             })
         
     if outlier_summary:

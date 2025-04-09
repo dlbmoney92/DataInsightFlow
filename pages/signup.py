@@ -3,6 +3,8 @@ import hashlib
 import re
 import json
 from utils.database import create_user, start_user_trial
+from utils.global_config import apply_global_css, render_footer
+from utils.custom_navigation import initialize_navigation, render_navigation
 
 # Set page configuration - must be the first Streamlit command
 st.set_page_config(
@@ -10,6 +12,12 @@ st.set_page_config(
     page_icon="📝",
     layout="wide"
 )
+
+# Apply global CSS
+apply_global_css()
+
+# Initialize navigation
+initialize_navigation()
 
 # Hide Streamlit's default menu and navigation
 st.markdown("""
@@ -21,6 +29,9 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
+
+# Render custom navigation
+render_navigation()
 
 def is_valid_email(email):
     """Check if email is valid using regex."""

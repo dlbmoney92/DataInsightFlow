@@ -824,16 +824,40 @@ with tab4:
     These links can be shared with colleagues or posted on social media.
     """)
     
-    # Check if user has access to sharing features (requires at least basic tier)
+    # Check if user has access to sharing features
     can_share = check_access("sharing", None) 
     
     if not can_share:
-        st.warning("Sharing reports requires a Basic subscription or higher. Please upgrade your subscription to access this feature.")
+        st.warning("Sharing reports requires a subscription. Please upgrade your subscription to access this feature.")
         
         # Show a button to upgrade
         if st.button("View Subscription Options", key="upgrade_share"):
             st.switch_page("pages/subscription.py")
-    else:
+    
+    # Get the allowed sharing formats for the user's subscription tier
+    sharing_formats = []
+    if check_access("sharing_format", "pdf"):
+        sharing_formats.append("pdf")
+    if check_access("sharing_format", "image"):
+        sharing_formats.append("image")
+    if check_access("sharing_format", "interactive"):
+        sharing_formats.append("interactive")
+        
+    if can_share:
+        # Display available sharing formats
+        format_labels = {
+            "pdf": "PDF Document",
+            "image": "Image",
+            "interactive": "Interactive Web"
+        }
+        
+        available_formats = []
+        for fmt in sharing_formats:
+            available_formats.append(format_labels.get(fmt, fmt.capitalize()))
+        
+        if sharing_formats:
+            st.info(f"Your subscription allows sharing in these formats: {', '.join(available_formats)}")
+        
         share_type = st.radio(
             "What would you like to share?", 
             ["Complete Report", "Specific Visualization", "Key Insight"]
@@ -850,40 +874,49 @@ with tab4:
             # Add a title for the shared report
             report_title = st.text_input("Report Title", value=f"{st.session_state.current_project.get('name', 'Analysis')} Report")
             
-            # Add a button to generate the shareable link
-            if st.button("Generate Shareable Report Link"):
-                with st.spinner("Generating shareable report..."):
-                    # Prepare the report data
-                    transformations = st.session_state.transformations if 'transformations' in st.session_state and include_transformations else []
-                    insights = st.session_state.generated_insights if 'generated_insights' in st.session_state and include_insights else []
-                    
-                    # Generate the HTML report
-                    report_html = export_summary_report(
-                        df, 
-                        transformations, 
-                        insights,
-                        add_branding=True
-                    )
-                    
-                    # Prepare the report data for sharing
-                    report_data = {
-                        "title": report_title,
-                        "html": report_html,
-                        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                        "summary": generate_report_summary(df, insights)
-                    }
-                    
-                    # Create a share link
-                    share_id = str(uuid.uuid4())
-                    share_link = create_share_link("report", share_id, report_data)
-                    
-                    # Display the sharing card
-                    generate_share_card(report_title, "report", share_link, include_social=True)
-                    
-                    # Option to add QR code
-                    if st.checkbox("Include QR code in downloaded reports", value=True):
-                        qr_data = generate_qr_code(share_link)
-                        st.image(f"data:image/png;base64,{qr_data}", caption="Scan to view report", width=150)
+            # Check if user has access to PDF sharing format
+            can_share_pdf = check_access("sharing_format", "pdf")
+            
+            if not can_share_pdf:
+                st.warning("Sharing reports requires PDF sharing access. Please upgrade your subscription.")
+                # Show a button to upgrade
+                if st.button("View Subscription Options", key="upgrade_pdf_share"):
+                    st.switch_page("pages/subscription.py")
+            else:
+                # Add a button to generate the shareable link
+                if st.button("Generate Shareable Report Link"):
+                    with st.spinner("Generating shareable report..."):
+                        # Prepare the report data
+                        transformations = st.session_state.transformations if 'transformations' in st.session_state and include_transformations else []
+                        insights = st.session_state.generated_insights if 'generated_insights' in st.session_state and include_insights else []
+                        
+                        # Generate the HTML report
+                        report_html = export_summary_report(
+                            df, 
+                            transformations, 
+                            insights,
+                            add_branding=True
+                        )
+                        
+                        # Prepare the report data for sharing
+                        report_data = {
+                            "title": report_title,
+                            "html": report_html,
+                            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                            "summary": generate_report_summary(df, insights)
+                        }
+                        
+                        # Create a share link
+                        share_id = str(uuid.uuid4())
+                        share_link = create_share_link("report", share_id, report_data)
+                        
+                        # Display the sharing card
+                        generate_share_card(report_title, "report", share_link, include_social=True)
+                        
+                        # Option to add QR code
+                        if st.checkbox("Include QR code in downloaded reports", value=True):
+                            qr_data = generate_qr_code(share_link)
+                            st.image(f"data:image/png;base64,{qr_data}", caption="Scan to view report", width=150)
         
         elif share_type == "Specific Visualization":
             st.subheader("Share a Visualization")
@@ -915,60 +948,69 @@ with tab4:
                     viz_title = st.text_input("Visualization Title", value=viz.get('title', f"Visualization {viz_index+1}"))
                     viz_description = st.text_area("Description (optional)", value=viz.get('description', ''))
                     
-                    # Button to generate shareable link
-                    if st.button("Generate Shareable Visualization Link"):
-                        with st.spinner("Generating shareable visualization..."):
-                            # Prepare the visualization for sharing
-                            viz_data = {
-                                "title": viz_title,
-                                "description": viz_description,
-                                "figure": viz['figure'],
-                                "date": datetime.now().strftime("%Y-%m-%d %H:%M")
-                            }
-                            
-                            # Create a share link
-                            share_id = str(uuid.uuid4())
-                            share_link = create_share_link("visualization", share_id, viz_data)
-                            
-                            # Display the sharing card
-                            generate_share_card(viz_title, "visualization", share_link, include_social=True)
-                            
-                            # Add export with branding option
-                            st.subheader("Export with Branding")
-                            
-                            export_cols = st.columns(3)
-                            with export_cols[0]:
-                                if st.button("Export as PNG", use_container_width=True):
-                                    # Add branding to the figure
-                                    branded_fig = add_branding_to_figure(fig, viz_title)
-                                    img_bytes = export_visualization_with_branding(branded_fig, viz_title, format='png')
-                                    
-                                    # Create download link
-                                    b64 = base64.b64encode(img_bytes).decode()
-                                    href = f'<a href="data:image/png;base64,{b64}" download="{viz_title.replace(" ", "_")}.png">Download PNG</a>'
-                                    st.markdown(href, unsafe_allow_html=True)
-                            
-                            with export_cols[1]:
-                                if st.button("Export as SVG", use_container_width=True):
-                                    # Add branding to the figure
-                                    branded_fig = add_branding_to_figure(fig, viz_title)
-                                    img_bytes = export_visualization_with_branding(branded_fig, viz_title, format='svg')
-                                    
-                                    # Create download link
-                                    b64 = base64.b64encode(img_bytes).decode()
-                                    href = f'<a href="data:image/svg+xml;base64,{b64}" download="{viz_title.replace(" ", "_")}.svg">Download SVG</a>'
-                                    st.markdown(href, unsafe_allow_html=True)
-                            
-                            with export_cols[2]:
-                                if st.button("Export as PDF", use_container_width=True):
-                                    # Add branding to the figure
-                                    branded_fig = add_branding_to_figure(fig, viz_title)
-                                    pdf_bytes = export_visualization_with_branding(branded_fig, viz_title, format='pdf')
-                                    
-                                    # Create download link
-                                    b64 = base64.b64encode(pdf_bytes).decode()
-                                    href = f'<a href="data:application/pdf;base64,{b64}" download="{viz_title.replace(" ", "_")}.pdf">Download PDF</a>'
-                                    st.markdown(href, unsafe_allow_html=True)
+                    # Check if user has access to image sharing format
+                    can_share_image = check_access("sharing_format", "image")
+                    
+                    if not can_share_image and not check_access("sharing_format", "pdf") and not check_access("sharing_format", "interactive"):
+                        st.warning("Sharing visualizations requires appropriate sharing access. Please upgrade your subscription.")
+                        # Show a button to upgrade
+                        if st.button("View Subscription Options", key="upgrade_viz_share"):
+                            st.switch_page("pages/subscription.py")
+                    else:
+                        # Button to generate shareable link
+                        if st.button("Generate Shareable Visualization Link"):
+                            with st.spinner("Generating shareable visualization..."):
+                                # Prepare the visualization for sharing
+                                viz_data = {
+                                    "title": viz_title,
+                                    "description": viz_description,
+                                    "figure": viz['figure'],
+                                    "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+                                }
+                                
+                                # Create a share link
+                                share_id = str(uuid.uuid4())
+                                share_link = create_share_link("visualization", share_id, viz_data)
+                                
+                                # Display the sharing card
+                                generate_share_card(viz_title, "visualization", share_link, include_social=True)
+                                
+                                # Add export with branding option
+                                st.subheader("Export with Branding")
+                                
+                                export_cols = st.columns(3)
+                                with export_cols[0]:
+                                    if st.button("Export as PNG", use_container_width=True):
+                                        # Add branding to the figure
+                                        branded_fig = add_branding_to_figure(fig, viz_title)
+                                        img_bytes = export_visualization_with_branding(branded_fig, viz_title, format='png')
+                                        
+                                        # Create download link
+                                        b64 = base64.b64encode(img_bytes).decode()
+                                        href = f'<a href="data:image/png;base64,{b64}" download="{viz_title.replace(" ", "_")}.png">Download PNG</a>'
+                                        st.markdown(href, unsafe_allow_html=True)
+                                
+                                with export_cols[1]:
+                                    if st.button("Export as SVG", use_container_width=True):
+                                        # Add branding to the figure
+                                        branded_fig = add_branding_to_figure(fig, viz_title)
+                                        img_bytes = export_visualization_with_branding(branded_fig, viz_title, format='svg')
+                                        
+                                        # Create download link
+                                        b64 = base64.b64encode(img_bytes).decode()
+                                        href = f'<a href="data:image/svg+xml;base64,{b64}" download="{viz_title.replace(" ", "_")}.svg">Download SVG</a>'
+                                        st.markdown(href, unsafe_allow_html=True)
+                                
+                                with export_cols[2]:
+                                    if st.button("Export as PDF", use_container_width=True):
+                                        # Add branding to the figure
+                                        branded_fig = add_branding_to_figure(fig, viz_title)
+                                        pdf_bytes = export_visualization_with_branding(branded_fig, viz_title, format='pdf')
+                                        
+                                        # Create download link
+                                        b64 = base64.b64encode(pdf_bytes).decode()
+                                        href = f'<a href="data:application/pdf;base64,{b64}" download="{viz_title.replace(" ", "_")}.pdf">Download PDF</a>'
+                                        st.markdown(href, unsafe_allow_html=True)
         
         elif share_type == "Key Insight":
             st.subheader("Share a Key Insight")
@@ -1004,25 +1046,34 @@ with tab4:
                     # Add title for sharing
                     insight_title = st.text_input("Insight Title", value=insight.get('title', f"Insight {insight_index+1}"))
                     
-                    # Button to generate shareable link
-                    if st.button("Generate Shareable Insight Link"):
-                        with st.spinner("Generating shareable insight..."):
-                            # Prepare the insight for sharing
-                            insight_data = {
-                                "title": insight_title,
-                                "text": insight.get('text', ''),
-                                "importance": importance,
-                                "category": insight.get('category', 'General'),
-                                "source": "Analytics Assist AI Analysis",
-                                "date": datetime.now().strftime("%Y-%m-%d %H:%M")
-                            }
-                            
-                            # Create a share link
-                            share_id = str(uuid.uuid4())
-                            share_link = create_share_link("insight", share_id, insight_data)
-                            
-                            # Display the sharing card
-                            generate_share_card(insight_title, "insight", share_link, include_social=True)
+                    # Check if user has access to PDF sharing format
+                    can_share_pdf = check_access("sharing_format", "pdf")
+                    
+                    if not can_share_pdf:
+                        st.warning("Sharing insights requires PDF sharing access. Please upgrade your subscription.")
+                        # Show a button to upgrade
+                        if st.button("View Subscription Options", key="upgrade_insight_share"):
+                            st.switch_page("pages/subscription.py")
+                    else:
+                        # Button to generate shareable link
+                        if st.button("Generate Shareable Insight Link"):
+                            with st.spinner("Generating shareable insight..."):
+                                # Prepare the insight for sharing
+                                insight_data = {
+                                    "title": insight_title,
+                                    "text": insight.get('text', ''),
+                                    "importance": importance,
+                                    "category": insight.get('category', 'General'),
+                                    "source": "Analytics Assist AI Analysis",
+                                    "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+                                }
+                                
+                                # Create a share link
+                                share_id = str(uuid.uuid4())
+                                share_link = create_share_link("insight", share_id, insight_data)
+                                
+                                # Display the sharing card
+                                generate_share_card(insight_title, "insight", share_link, include_social=True)
         
         st.markdown("""
         ---
