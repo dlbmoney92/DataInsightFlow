@@ -265,7 +265,17 @@ if tab_info["Visualizations"]["available"]:
     # Create an AI suggestion section
     with st.expander("🤖 AI-Suggested Visualizations", expanded=True):
         visualizations = suggest_visualizations(df)
-        st.write(visualizations)
+        if visualizations:
+            # Display suggestions in a user-friendly format
+            for i, viz in enumerate(visualizations):
+                with st.container():
+                    st.markdown(f"### {i+1}. {viz.get('title', 'Visualization Suggestion')}")
+                    st.markdown(f"**Chart Type:** {viz.get('chart_type', 'Not specified')}")
+                    st.markdown(f"**Description:** {viz.get('description', 'No description available')}")
+                    st.markdown(f"**Columns:** {', '.join(viz.get('columns', []))}")
+                    st.markdown("---")
+        else:
+            st.info("No visualization suggestions available for this dataset.")
     
     # Choose a visualization type
     viz_type = st.selectbox(

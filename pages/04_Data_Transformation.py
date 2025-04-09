@@ -1865,7 +1865,10 @@ else:
                     elif execute_button and not expression:
                         st.warning("Please enter a Python expression.")
         
-        with col2:
+        # Define new columns for the AI section
+        ai_col1, ai_col2 = st.columns([1, 1])
+        
+        with ai_col2:
             # Create AI suggestion section based on column data types
             st.subheader("AI-Powered Suggestions")
             
