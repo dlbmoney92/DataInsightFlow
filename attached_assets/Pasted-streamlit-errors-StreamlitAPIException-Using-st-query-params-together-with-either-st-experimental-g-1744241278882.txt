@@ -1,0 +1,30 @@
+streamlit.errors.StreamlitAPIException: Using st.query_params together with either st.experimental_get_query_params or st.experimental_set_query_params is not supported. Please convert your app to only use st.query_params
+
+Traceback:
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 121, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 639, in code_to_exec
+    _mpa_v1(self._main_script_path)
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 159, in _mpa_v1
+    page.run()
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/navigation/page.py", line 297, in run
+    exec(code, module.__dict__)
+File "/home/runner/workspace/pages/01_Upload_Data.py", line 69, in <module>
+    if not require_auth():
+           ^^^^^^^^^^^^^^
+File "/home/runner/workspace/utils/auth_redirect.py", line 105, in require_auth
+    st.switch_page("pages/signup.py")
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/metrics_util.py", line 410, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/commands/execution_control.py", line 229, in switch_page
+    qp.clear()
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/state/query_params.py", line 159, in clear
+    self._ensure_single_query_api_used()
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/state/query_params.py", line 201, in _ensure_single_query_api_used
+    ctx.mark_production_query_params_used()
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/scriptrunner_utils/script_run_context.py", line 212, in mark_production_query_params_used
+    self.ensure_single_query_api_used()
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/scriptrunner_utils/script_run_context.py", line 200, in ensure_single_query_api_used
+    raise StreamlitAPIException(

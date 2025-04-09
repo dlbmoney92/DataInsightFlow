@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 def get_cookie_token():
     """Get auth token from cookies if available."""
     try:
-        if "analytics_assist_auth" in st.experimental_get_query_params():
+        if "analytics_assist_auth" in st.query_params:
             # Get token from URL if present
-            encoded_token = st.experimental_get_query_params()["analytics_assist_auth"][0]
+            encoded_token = st.query_params["analytics_assist_auth"]
             token_data = json.loads(base64.b64decode(encoded_token).decode())
             
             # Check token expiration
@@ -22,10 +22,8 @@ def get_cookie_token():
                 st.session_state.user_subscription = token_data["subscription"]
                 
                 # Clear the token from URL to avoid issues
-                params = st.experimental_get_query_params()
-                if "analytics_assist_auth" in params:
-                    del params["analytics_assist_auth"]
-                    st.experimental_set_query_params(**params)
+                # Create a copy of the current params without analytics_assist_auth
+                st.query_params.pop("analytics_assist_auth")
                 
                 return True
     except Exception as e:

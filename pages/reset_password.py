@@ -60,7 +60,12 @@ def app():
                 
                 # Since this is a demo, show a simulated email for convenience
                 if token:  # Only if the email actually exists
-                    reset_url = f"{st.experimental_get_query_params().get('base_url', [''])[0]}/pages/reset_password_confirm.py?token={token}"
+                    # Get base_url from query params or use default empty string
+                    base_url = ""
+                    if "base_url" in st.query_params:
+                        base_url = st.query_params["base_url"]
+                    
+                    reset_url = f"{base_url}/pages/reset_password_confirm.py?token={token}"
                     if not reset_url.startswith("http"):
                         reset_url = f"http://{reset_url}"
                     
@@ -86,7 +91,7 @@ def app():
                     """)
                     
                     if st.button("Go to Password Reset Page"):
-                        st.experimental_set_query_params(token=token)
+                        st.query_params["token"] = token
                         st.switch_page("pages/reset_password_confirm.py")
     
     st.markdown("---")

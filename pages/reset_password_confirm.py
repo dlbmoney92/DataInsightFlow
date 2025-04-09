@@ -55,8 +55,9 @@ def app():
     st.title("Set New Password")
     
     # Get token from URL parameters
-    query_params = st.experimental_get_query_params()
-    token = query_params.get("token", [""])[0]
+    token = ""
+    if "token" in st.query_params:
+        token = st.query_params["token"]
     
     if not token:
         st.error("Invalid or missing reset token. Please request a new password reset link.")

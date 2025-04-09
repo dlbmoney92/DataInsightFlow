@@ -51,8 +51,9 @@ st.markdown("""
 
 def app():
     # Extract the share ID from the URL query parameter
-    query_params = st.experimental_get_query_params()
-    share_id = query_params.get("id", [""])[0]
+    share_id = ""
+    if "id" in st.query_params:
+        share_id = st.query_params["id"]
     
     if not share_id:
         # No share ID provided
