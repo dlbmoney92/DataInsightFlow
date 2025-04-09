@@ -99,8 +99,13 @@ def app():
                     else:
                         st.error("Invalid email or password")
         
-        st.markdown("Don't have an account? [Sign up here](/pages/signup.py)")
-        st.markdown("Forgot your password? [Reset it here](/pages/reset_password.py)")
+        st.markdown("Don't have an account?")
+        if st.button("Sign up here", key="signup_button"):
+            st.switch_page("pages/signup.py")
+        
+        st.markdown("Forgot your password?")
+        if st.button("Reset it here", key="reset_password_button"):
+            st.switch_page("pages/reset_password.py")
     
     with col2:
         # Add info box
