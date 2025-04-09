@@ -38,6 +38,17 @@ if 'reload_after_loading' in st.session_state and st.session_state.reload_after_
     # Clear the flag and rerun
     st.session_state.reload_after_loading = False
     st.rerun()
+
+# Handle the delayed redirect to Data Preview page
+if 'redirect_to_data_preview' in st.session_state and st.session_state.redirect_to_data_preview:
+    # Clear the flag
+    st.session_state.redirect_to_data_preview = False
+    # Make sure dataset is in session state before redirecting
+    if 'dataset' in st.session_state and st.session_state.dataset is not None:
+        # Redirect to the Data Preview page
+        st.switch_page("pages/02_Data_Preview.py")
+    else:
+        st.error("No dataset is loaded. Please upload or select a dataset first.")
     
 # Handle the "Continue to Data Preview" button click
 if 'continue_to_preview' in st.session_state and st.session_state.continue_to_preview:
@@ -233,10 +244,8 @@ if uploaded_file is not None:
                         st.session_state["continue_to_preview"] = True
                         st.rerun()
                 
-                # Auto-redirect after 3 seconds
-                st.markdown("""
-                <meta http-equiv="refresh" content="3;url=pages/02_Data_Preview.py">
-                """, unsafe_allow_html=True)
+                # Use a delayed redirect through session state
+                st.session_state["redirect_to_data_preview"] = True
                 
                 # Clear any datasets cache from session state 
                 # to ensure the list refreshes when we next view it
@@ -475,10 +484,8 @@ if uploaded_file is None:
                 st.session_state["continue_to_preview"] = True
                 st.rerun()
         
-        # Auto-redirect after 3 seconds
-        st.markdown("""
-        <meta http-equiv="refresh" content="3;url=pages/02_Data_Preview.py">
-        """, unsafe_allow_html=True)
+        # Use a delayed redirect through session state
+        st.session_state["redirect_to_data_preview"] = True
         
         # Clear any datasets cache from session state 
         # to ensure the list refreshes when we next view it
@@ -598,10 +605,8 @@ if datasets_list:
                             st.session_state["continue_to_preview"] = True
                             st.rerun()
                     
-                    # Auto-redirect after 3 seconds
-                    st.markdown("""
-                    <meta http-equiv="refresh" content="3;url=pages/02_Data_Preview.py">
-                    """, unsafe_allow_html=True)
+                    # Use a delayed redirect through session state
+                    st.session_state["redirect_to_data_preview"] = True
                     
                     # Set a flag in session state instead of calling st.rerun() directly
                     st.session_state.reload_after_loading = True
