@@ -21,13 +21,35 @@ apply_global_css()
 # Initialize navigation
 initialize_navigation()
 
-# Hide Streamlit's default multipage navigation menu
+# Hide Streamlit's default menu and navigation
 st.markdown("""
     <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
         [data-testid="stSidebarNav"] {
             display: none !important;
         }
+        
+        /* Ensure page loads at the top */
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            scroll-behavior: auto;
+            overflow-y: auto;
+        }
+        section.main {
+            scroll-behavior: auto;
+            overflow-y: auto;
+        }
     </style>
+    
+    <script>
+        // Ensure page starts at top when loaded
+        window.onload = function() {
+            window.scrollTo(0, 0);
+        }
+    </script>
 """, unsafe_allow_html=True)
 
 # Render custom navigation bar
@@ -71,9 +93,31 @@ def app():
     # Create columns for the subscription tiers
     cols = st.columns(3)
     
+    # Add custom CSS to style the subscription containers
+    st.markdown("""
+    <style>
+        /* Plan container styling */
+        div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] div.element-container {
+            margin-bottom: 0.5rem;
+        }
+        
+        /* More compact feature spacing */
+        p {
+            margin-bottom: 0.3rem;
+            line-height: 1.3;
+        }
+        
+        /* Ensure content fits without scrolling */
+        div.stButton {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
     with cols[0]:
         free_selected = selected_tier == "free" or selected_tier is None
-        with st.container(border=True, height=600):
+        with st.container(border=True, height=660):
             st.markdown("### Free Plan")
             st.markdown(f"<h2 style='text-align: center;'>{format_price(0)}</h2>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center;'>Always free</p>", unsafe_allow_html=True)
@@ -102,7 +146,7 @@ def app():
         basic_selected = selected_tier == "basic"
         highlight = " highlight-plan" if basic_selected else ""
         
-        with st.container(border=True, height=600):
+        with st.container(border=True, height=660):
             st.markdown("### Basic Plan")
             st.markdown(f"<h2 style='text-align: center;'>{format_price(SUBSCRIPTION_PLANS['basic']['monthly_price'])}</h2>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center;'>per month</p>", unsafe_allow_html=True)
@@ -110,8 +154,13 @@ def app():
             
             # Features
             st.markdown("#### Features:")
+            feature_list = ""
             for feature in SUBSCRIPTION_PLANS["basic"]["features"]:
-                st.markdown(f"✓ {feature}")
+                feature_list += f"<p>✓ {feature}</p>"
+            st.markdown(feature_list, unsafe_allow_html=True)
+            
+            # Add spacer to ensure buttons are at the bottom
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             
             # Call to action
             col1, col2 = st.columns(2)
@@ -126,7 +175,7 @@ def app():
         pro_selected = selected_tier == "pro"
         highlight = " highlight-plan" if pro_selected else ""
         
-        with st.container(border=True, height=600):
+        with st.container(border=True, height=660):
             st.markdown("### Pro Plan")
             st.markdown(f"<h2 style='text-align: center;'>{format_price(SUBSCRIPTION_PLANS['pro']['monthly_price'])}</h2>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center;'>per month</p>", unsafe_allow_html=True)
@@ -134,8 +183,13 @@ def app():
             
             # Features
             st.markdown("#### Features:")
+            feature_list = ""
             for feature in SUBSCRIPTION_PLANS["pro"]["features"]:
-                st.markdown(f"✓ {feature}")
+                feature_list += f"<p>✓ {feature}</p>"
+            st.markdown(feature_list, unsafe_allow_html=True)
+            
+            # Add spacer to ensure buttons are at the bottom
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             
             # Trial option for logged-in users
             if st.session_state.get("logged_in", False) and st.session_state.get("subscription_tier", "") == "free" and not st.session_state.get("user", {}).get("is_trial", False):
