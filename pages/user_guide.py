@@ -101,7 +101,7 @@ def app():
     # Data Preview screenshot
     st.image("https://via.placeholder.com/800x400.png?text=Data+Preview+Screenshot", 
              caption="Data Preview interface showing tabular view and data statistics", 
-             use_column_width=True)
+             use_container_width=True)
     
     # EDA Dashboard
     st.header("Exploratory Data Analysis", anchor="exploratory-data-analysis")
@@ -129,7 +129,7 @@ def app():
     # EDA screenshot
     st.image("https://via.placeholder.com/800x400.png?text=EDA+Dashboard+Screenshot", 
              caption="EDA Dashboard showing correlation matrix and visualization options", 
-             use_column_width=True)
+             use_container_width=True)
     
     # Data Transformation
     st.header("Data Transformation", anchor="data-transformation")
@@ -159,7 +159,7 @@ def app():
     # Transformation screenshot
     st.image("https://via.placeholder.com/800x400.png?text=Data+Transformation+Screenshot", 
              caption="Data Transformation interface showing options for cleaning and transforming data", 
-             use_column_width=True)
+             use_container_width=True)
     
     # Insights Dashboard
     st.header("Insights Dashboard", anchor="insights-dashboard")
@@ -186,7 +186,7 @@ def app():
     # Insights screenshot
     st.image("https://via.placeholder.com/800x400.png?text=Insights+Dashboard+Screenshot", 
              caption="AI-powered Insights Dashboard showing automatically generated insights and visualizations", 
-             use_column_width=True)
+             use_container_width=True)
     
     # Export Reports
     st.header("Exporting Reports", anchor="exporting-reports")
@@ -213,7 +213,7 @@ def app():
     # Export screenshot
     st.image("https://via.placeholder.com/800x400.png?text=Export+Reports+Screenshot", 
              caption="Export Reports interface showing format options and report configuration", 
-             use_column_width=True)
+             use_container_width=True)
     
     # Account Management
     st.header("Account Management", anchor="account-management")
@@ -239,7 +239,7 @@ def app():
     # Account Management screenshot
     st.image("https://via.placeholder.com/800x400.png?text=Account+Management+Screenshot", 
              caption="Account Management interface showing profile settings and subscription management", 
-             use_column_width=True)
+             use_container_width=True)
     
     # Tips and Best Practices
     st.header("Tips and Best Practices")
