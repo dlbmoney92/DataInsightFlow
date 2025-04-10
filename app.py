@@ -52,7 +52,7 @@ def create_sample_chart(chart_type='bar'):
     
     elif chart_type == 'line':
         # Sample time series data
-        dates = pd.date_range(start='2023-01-01', periods=12, freq='M')
+        dates = pd.date_range(start='2023-01-01', periods=12, freq='ME')
         values = [10, 13, 15, 22, 28, 32, 30, 28, 25, 30, 35, 42]
         
         fig = px.line(
