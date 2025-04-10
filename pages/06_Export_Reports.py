@@ -15,6 +15,7 @@ from datetime import datetime
 import json
 import base64
 import io
+import uuid
 from utils.export import (
     generate_excel_download_link,
     generate_csv_download_link,
