@@ -97,29 +97,16 @@ def render_navigation():
                     font-size: 12px;
                     display: inline-block;
                 ">""" + tier_display + """</div>
-                <a href="javascript:void(0)" 
-                    id="manage-account-link"
-                    style="
-                        font-size: 12px;
-                        text-decoration: none;
-                        color: #3b82f6;
-                        background: none;
-                        border: none;
-                        cursor: pointer;
-                        padding: 0;
-                    ">Manage Account</a>
-                <script>
-                    document.getElementById('manage-account-link').addEventListener('click', function() {
-                        window.parent.location.href = '/pages/account.py';
-                    });
-                </script>
+                <div id="account-link-container"></div>
             </div>
         </div>
         """
         
         st.sidebar.markdown(profile_html, unsafe_allow_html=True)
-    
-    
+        
+        # Add a manage account button
+        if st.sidebar.button("Manage Account", key="manage_account_button"):
+            st.switch_page("pages/account.py")
     
     # Navigation Items
     st.sidebar.markdown("""
@@ -201,7 +188,7 @@ def render_navigation():
             # Redirect to home
             st.switch_page("app.py")
     
-    # Footer
+    # Footer with copyright
     st.sidebar.markdown("""
         <div style="
             margin-top: 40px;
@@ -212,20 +199,17 @@ def render_navigation():
             text-align: center;
         ">
             <p>© 2025 Analytics Assist</p>
-            <p id="footer-links">
-                <a href="javascript:void(0)" id="terms-link" style="text-decoration: none; color: inherit; padding: 0; cursor: pointer;">Terms</a> · 
-                <a href="javascript:void(0)" id="privacy-link" style="text-decoration: none; color: inherit; padding: 0; cursor: pointer;">Privacy</a>
-            </p>
-            <script>
-                document.getElementById('terms-link').addEventListener('click', function() {
-                    window.parent.location.href = '/pages/terms_of_service.py';
-                });
-                document.getElementById('privacy-link').addEventListener('click', function() {
-                    window.parent.location.href = '/pages/privacy_policy.py';
-                });
-            </script>
         </div>
     """, unsafe_allow_html=True)
+    
+    # Add footer links as actual Streamlit buttons
+    terms_col, privacy_col = st.sidebar.columns(2)
+    with terms_col:
+        if st.button("Terms", key="terms_link", type="secondary", use_container_width=True):
+            st.switch_page("pages/terms_of_service.py")
+    with privacy_col:
+        if st.button("Privacy", key="privacy_link", type="secondary", use_container_width=True):
+            st.switch_page("pages/privacy_policy.py")
     
     # Developer mode indicators have been removed
 
