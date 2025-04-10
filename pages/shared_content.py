@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import base64
+import os
 import plotly.graph_objects as go
 from urllib.parse import quote
 
@@ -113,10 +114,14 @@ def app():
         return
     
     # Retrieve the shared content
-    # In a real implementation, this would be fetched from a database
-    # For demo purposes, we use session state, but this won't work across sessions
+    # First, check if we have it in session state
     shared_content = st.session_state.get("shared_content", {}).get(share_id)
     
+    # If not in session state, try to load it from the database or file system
+    if not shared_content:
+        shared_content = load_shared_content_from_storage(share_id)
+    
+    # If still not found, display the "not found" message
     if not shared_content:
         # Share ID not found
         st.markdown('<div class="share-header"><h1>Shared Content</h1><p>This shared content has expired or does not exist.</p></div>', unsafe_allow_html=True)
@@ -279,6 +284,30 @@ def display_signup_cta():
         <a href="/" class="cta-button">Try Analytics Assist</a>
     </div>
     """, unsafe_allow_html=True)
+
+def load_shared_content_from_storage(share_id):
+    """Load shared content from persistent storage"""
+    try:
+        # First check for JSON storage in shared_content directory
+        shared_dir = "shared_content"
+        if not os.path.exists(shared_dir):
+            os.makedirs(shared_dir)
+            
+        # Look for the content file
+        content_file = os.path.join(shared_dir, f"{share_id}.json")
+        if os.path.exists(content_file):
+            import json
+            with open(content_file, "r") as f:
+                return json.load(f)
+                
+        # If file not found, try to get from database
+        # This would normally connect to your database
+        # For this demo, we'll return None if not found in files
+        return None
+        
+    except Exception as e:
+        print(f"Error loading shared content from storage: {e}")
+        return None
 
 # Run the app
 app()
