@@ -784,14 +784,14 @@ with tab2:
                 <head>
                     <title>{title}</title>
                     <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .section { margin-bottom: 30px; }
-                        .insight { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-                        table { border-collapse: collapse; width: 100%; }
-                        th, td { border: 1px solid #ddd; padding: 8px; }
-                        th { background-color: #f2f2f2; }
-                        tr:nth-child(even) { background-color: #f9f9f9; }
+                        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                        .header {{ text-align: center; margin-bottom: 30px; }}
+                        .section {{ margin-bottom: 30px; }}
+                        .insight {{ margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }}
+                        table {{ border-collapse: collapse; width: 100%; }}
+                        th, td {{ border: 1px solid #ddd; padding: 8px; }}
+                        th {{ background-color: #f2f2f2; }}
+                        tr:nth-child(even) {{ background-color: #f9f9f9; }}
                     </style>
                 </head>
                 <body>
