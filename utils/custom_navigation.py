@@ -95,11 +95,17 @@ def render_navigation():
                         font-size: 12px;
                         display: inline-block;
                     ">{tier_display}</div>
-                    <a href="/pages/account.py" style="
-                        font-size: 12px;
-                        text-decoration: none;
-                        color: #3b82f6;
-                    ">Manage Account</a>
+                    <button 
+                        onclick="window.parent.location.href='/pages/account.py'" 
+                        style="
+                            font-size: 12px;
+                            text-decoration: none;
+                            color: #3b82f6;
+                            background: none;
+                            border: none;
+                            cursor: pointer;
+                            padding: 0;
+                        ">Manage Account</button>
                 </div>
             </div>
             """,
@@ -200,8 +206,8 @@ def render_navigation():
         ">
             <p>© 2025 Analytics Assist</p>
             <p>
-                <a href="/pages/terms_of_service.py" style="text-decoration: none; color: inherit;">Terms</a> · 
-                <a href="/pages/privacy_policy.py" style="text-decoration: none; color: inherit;">Privacy</a>
+                <button onclick="window.parent.location.href='/pages/terms_of_service.py'" style="text-decoration: none; color: inherit; background: none; border: none; cursor: pointer; padding: 0;">Terms</button> · 
+                <button onclick="window.parent.location.href='/pages/privacy_policy.py'" style="text-decoration: none; color: inherit; background: none; border: none; cursor: pointer; padding: 0;">Privacy</button>
             </p>
         </div>
     """, unsafe_allow_html=True)

@@ -200,12 +200,13 @@ def get_dataset_count(user_id):
         else:
             user_id_int = user_id
             
-        # Build query - exclude datasets marked as samples (names starting with 'Sample:')
+        # Build query - exclude datasets marked as samples (names starting with 'Sample:' or 'Sample -')
         query = text("""
             SELECT COUNT(*) 
             FROM datasets 
             WHERE user_id = :user_id 
             AND name NOT LIKE 'Sample:%'
+            AND name NOT LIKE 'Sample - %'
         """)
         
         # Execute query using the DATABASE_URL environment variable
