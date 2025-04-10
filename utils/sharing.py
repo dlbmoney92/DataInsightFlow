@@ -152,58 +152,101 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
             copy_unique_key = f"copy_btn_{hash(share_link)}"
             if st.button("📋 Copy Link", key=copy_unique_key):
                 # Use the modern Clipboard API with proper error handling
-                # Create a more robust clipboard handling solution
+                # Enhanced clipboard functionality with multiple fallback methods
                 copy_js = f"""
                 <script>
                     (function() {{
-                        // Create a hidden input element for copy fallback
-                        let tempInput = document.createElement('input');
-                        tempInput.style.position = 'absolute';
-                        tempInput.style.left = '-1000px';
-                        tempInput.style.top = '-1000px';
-                        tempInput.value = '{absolute_share_link}';
-                        document.body.appendChild(tempInput);
+                        const shareUrl = '{absolute_share_link}';
+                        const copySuccessId = 'copy_success_{hash(share_link)}';
                         
-                        // Try to use the Clipboard API first (modern browsers)
-                        try {{
-                            navigator.clipboard.writeText('{absolute_share_link}')
-                            .then(copySuccess, copyError);
-                        }} catch (err) {{
-                            // Fall back to older methods if Clipboard API fails or isn't available
-                            try {{
-                                // Select the hidden input field
-                                tempInput.select();
-                                tempInput.setSelectionRange(0, 99999); // For mobile devices
-                                
-                                // Use the older document.execCommand('copy')
-                                let success = document.execCommand('copy');
-                                if (success) {{
-                                    copySuccess();
-                                }} else {{
-                                    copyError(new Error('execCommand copy failed'));
-                                }}
-                            }} catch (err2) {{
-                                copyError(err2);
+                        // Create a hidden textarea element for copy fallback
+                        // Using textarea instead of input for better compatibility with longer text
+                        let tempTextArea = document.createElement('textarea');
+                        tempTextArea.value = shareUrl;
+                        tempTextArea.setAttribute('readonly', ''); // Make it readonly to avoid keyboard opening on mobile
+                        tempTextArea.style.position = 'absolute';
+                        tempTextArea.style.left = '-9999px'; // Move outside the screen
+                        tempTextArea.style.top = '0';
+                        tempTextArea.style.opacity = '0';
+                        document.body.appendChild(tempTextArea);
+                        
+                        // Function to show success message
+                        function showSuccess() {{
+                            let successElement = document.getElementById(copySuccessId);
+                            if (successElement) {{
+                                successElement.style.display = 'block';
+                                setTimeout(function() {{
+                                    successElement.style.display = 'none';
+                                }}, 3000);
+                                console.log('Copy operation completed');
                             }}
                         }}
                         
-                        // Clean up the temporary input
-                        document.body.removeChild(tempInput);
-                        
-                        function copySuccess() {{
-                            let successElement = document.getElementById('copy_success_{hash(share_link)}');
-                            successElement.style.display = 'block';
-                            setTimeout(function() {{
-                                successElement.style.display = 'none';
-                            }}, 3000);
-                            console.log('Copying to clipboard was successful!');
+                        // Method 1: Use the modern Clipboard API (most modern browsers)
+                        if (navigator.clipboard && navigator.clipboard.writeText) {{
+                            navigator.clipboard.writeText(shareUrl)
+                                .then(() => {{
+                                    console.log('Clipboard API success');
+                                    showSuccess();
+                                }})
+                                .catch((err) => {{
+                                    console.warn('Clipboard API failed, trying fallback', err);
+                                    fallbackCopy();
+                                }});
+                        }} else {{
+                            console.log('Clipboard API not available, using fallback');
+                            fallbackCopy();
                         }}
                         
-                        function copyError(err) {{
-                            console.error('Could not copy text: ', err);
-                            // Still show the success message to avoid confusion,
-                            // but log the error for debugging
-                            copySuccess();
+                        // Fallback copy methods
+                        function fallbackCopy() {{
+                            try {{
+                                // Method 2: Use document.execCommand ('copy')
+                                tempTextArea.focus();
+                                tempTextArea.select();
+                                tempTextArea.setSelectionRange(0, 99999); // For mobile devices
+                                
+                                const successful = document.execCommand('copy');
+                                if (successful) {{
+                                    console.log('execCommand copy successful');
+                                    showSuccess();
+                                }} else {{
+                                    console.warn('execCommand copy failed, trying next fallback');
+                                    manualCopyPrompt();
+                                }}
+                            }} catch (err) {{
+                                console.error('Copy fallback failed:', err);
+                                manualCopyPrompt();
+                            }} finally {{
+                                // Clean up
+                                document.body.removeChild(tempTextArea);
+                            }}
+                        }}
+                        
+                        // Method 3: Last resort - prompt user to copy manually
+                        function manualCopyPrompt() {{
+                            // Still show success to avoid confusion
+                            showSuccess();
+                            
+                            // Create a modal or alert with instructions
+                            const copyModal = document.createElement('div');
+                            copyModal.innerHTML = `
+                                <div style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); 
+                                            background:white; padding:20px; z-index:1000; box-shadow:0 0 10px rgba(0,0,0,0.5);
+                                            border-radius:5px; max-width:90%; width:350px;">
+                                    <h3>Copy Link</h3>
+                                    <p>Please copy this link manually:</p>
+                                    <input type="text" value="${shareUrl}" 
+                                           style="width:100%; padding:5px; margin-bottom:10px;" 
+                                           onclick="this.select();" readonly>
+                                    <button onclick="this.parentNode.remove();" 
+                                            style="padding:5px 10px; background:#4F8BF9; color:white; border:none; 
+                                                   border-radius:3px; cursor:pointer;">
+                                        Close
+                                    </button>
+                                </div>
+                            `;
+                            document.body.appendChild(copyModal);
                         }}
                     }})();
                 </script>
