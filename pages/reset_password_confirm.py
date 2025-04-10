@@ -54,10 +54,19 @@ def is_strong_password(password):
 def app():
     st.title("Set New Password")
     
-    # Get token from URL parameters
+    # Get token from URL parameters or session state
     token = ""
-    if "token" in st.query_params:
-        token = st.query_params["token"]
+    # First try to get from session state (safer)
+    if "reset_token" in st.session_state:
+        token = st.session_state.reset_token
+        # Remove from session state after use
+        del st.session_state.reset_token
+    # Fallback to query params if available
+    elif hasattr(st, 'query_params') and "token" in st.query_params:
+        try:
+            token = st.query_params["token"]
+        except:
+            token = ""
     
     if not token:
         st.error("Invalid or missing reset token. Please request a new password reset link.")

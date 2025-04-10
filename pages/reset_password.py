@@ -62,11 +62,14 @@ def app():
                 
                 # Send email and store token only if the email exists and token was generated
                 if token:  # Only if the email actually exists
-                    # Get base_url from query params or use default
-                    base_url = st.query_params.get("base_url", "")
-                    if not base_url:
-                        # Try to get the base URL from the current request
+                    # Use a consistent base URL
+                    base_url = ""
+                    # Try to get the base URL from the current request if available
+                    try:
                         base_url = st.get_option("server.baseUrlPath") or ""
+                    except:
+                        # Default to empty string if not available
+                        base_url = ""
                     
                     # Build the reset URL
                     reset_url = f"{base_url}/pages/reset_password_confirm.py?token={token}"
@@ -123,12 +126,10 @@ def app():
         st.success("For this demo, click the button below to reset your password immediately:")
         
         if st.button("Reset My Password Now", type="primary"):
-            token = st.session_state["reset_token"]
-            # Clear the token and email from session state after use
-            del st.session_state["reset_token"]
-            if "reset_email" in st.session_state:
-                del st.session_state["reset_email"]
-            st.query_params["token"] = token
+            # Keep the token in session state for the confirmation page to use
+            # Do NOT remove it here as it will be used on the confirmation page
+            
+            # Redirect to the confirmation page
             st.switch_page("pages/reset_password_confirm.py")
     
     st.markdown("---")
