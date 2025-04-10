@@ -239,10 +239,15 @@ def create_subscription_management_link(user_id):
             metadata={"user_id": str(user_id)}
         )
         
+        # Get base URL from environment or use a default for development
+        base_url = os.environ.get("REPL_SLUG", "localhost:5000")
+        protocol = "https" if "replit" in base_url else "http"
+        return_url = f"{protocol}://{base_url}/pages/subscription.py"
+            
         # Create a customer portal session
         session = stripe.billing_portal.Session.create(
             customer=customer.id,
-            return_url=st.get_url()
+            return_url=return_url
         )
         
         return session.url
