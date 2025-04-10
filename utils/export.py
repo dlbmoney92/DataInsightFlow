@@ -94,7 +94,7 @@ def generate_insights_download_link(insights, filename="insights.json"):
     
     return href
 
-def export_summary_report(df, transformations, insights, visualizations=None, add_branding=False):
+def export_summary_report(df, transformations, insights, visualizations=None, add_branding=True):
     """
     Generate a summary report in HTML format.
     
@@ -103,7 +103,7 @@ def export_summary_report(df, transformations, insights, visualizations=None, ad
     - transformations: List of transformations applied to the data
     - insights: List of insights generated from the data
     - visualizations: Optional list of visualizations to include
-    - add_branding: Whether to add branding to the report (default: False)
+    - add_branding: Whether to add branding to the report (default: True)
     """
     # Create HTML content
     html_content = f"""
