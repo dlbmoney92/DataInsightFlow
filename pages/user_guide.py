@@ -237,7 +237,7 @@ def app():
     """)
     
     # Account Management screenshot
-    st.image("https://via.placeholder.com/800x400.png?text=Account+Management+Screenshot", 
+    st.image("assets/images/account_management_screenshot.png", 
              caption="Account Management interface showing profile settings and subscription management", 
              use_container_width=True)
     
