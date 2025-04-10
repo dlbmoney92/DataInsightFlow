@@ -38,22 +38,23 @@ with st.sidebar:
 def send_email(name, email, message):
     """Send email to admin"""
     try:
-        # Set up the email server
-        smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", 587))
+        # Set up the email server - these settings work for most SMTP providers
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
         
-        # Create sender email credentials (using environment variables in production)
-        sender_email = os.environ.get("SENDER_EMAIL", "noreply@analytics-assist.replit.app")
-        sender_password = os.environ.get("SENDER_PASSWORD", "")
+        # Create sender email credentials (using the form submitter's email as the reply-to)
+        sender_email = email  # Use the user's email as the sender
+        reply_to_email = email
         
-        # Set recipient email
+        # Set recipient email (the admin's email)
         recipient_email = "dariusbell@bellcontractingservices.com"
         
         # Create email message
         msg = MIMEMultipart()
-        msg['From'] = sender_email
+        msg['From'] = f"{name} <{sender_email}>"
         msg['To'] = recipient_email
         msg['Subject'] = f"Analytics Assist Contact Form: {name}"
+        msg['Reply-To'] = reply_to_email  # Ensure replies go back to the person who filled the form
         
         # Email body
         email_body = f"""
@@ -77,19 +78,27 @@ def send_email(name, email, message):
         st.session_state.contact_form_subject = f"Analytics Assist Contact Form: {name}"
         st.session_state.contact_form_body = email_body
         
-        # For now, we'll just log this information to the console
+        # Log the message details for debugging
         print(f"Contact form submission:")
         print(f"To: {recipient_email}")
         print(f"From: {email}")
         print(f"Name: {name}")
         print(f"Message: {message}")
         
-        # When SMTP credentials are configured, uncomment this to send the actual email
-        # with smtplib.SMTP(smtp_server, smtp_port) as server:
-        #     server.starttls()  # Enable secure connection
-        #     server.login(sender_email, sender_password)
-        #     text = msg.as_string()
-        #     server.sendmail(sender_email, recipient_email, text)
+        # Using the mail() command which works on most Unix systems including Replit
+        # This approach avoids needing SMTP credentials
+        
+        # Format headers
+        headers = f"From: {name} <{sender_email}>\n"
+        headers += f"To: {recipient_email}\n"
+        headers += f"Reply-To: {reply_to_email}\n"
+        headers += f"Subject: Analytics Assist Contact Form: {name}\n\n"
+        
+        # Combine headers and body
+        full_email = headers + email_body
+        
+        # Use the mail command directly
+        os.system(f'echo "{full_email}" | mail -s "Analytics Assist Contact Form: {name}" {recipient_email}')
         
         # Return success
         return True

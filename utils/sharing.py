@@ -52,9 +52,12 @@ def create_share_link(content_type, content_id, data):
     # In a real implementation, you'd want to store this in a database
     # and have a proper sharing mechanism, but for demo purposes this works
     
-    # For local development environment, use a relative URL
-    # This ensures the shared content is accessible locally
-    share_link = f"/pages/shared_content.py?id={share_id}"
+    # Create a shareable link that works on both development and production
+    # For Streamlit's routing to work correctly, we need to use a different format
+    # than a direct link to the Python file
+    
+    # The correct format is:
+    share_link = f"/shared_content?id={share_id}"
     
     return share_link
 
@@ -120,39 +123,41 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
         
         col1, col2 = st.columns(2)
         with col1:
-            # Create a unique ID for each copy button
-            copy_button_id = f"copy_button_{hash(share_link)}"
+            # Instead of using onClick directly which causes React error #231,
+            # we'll use a proper streamlit button and the modern Clipboard API
             
-            # Add JavaScript for copying to clipboard
-            copy_js = f"""
-            <script>
-            function copyToClipboard{hash(share_link)}() {{
-                const el = document.createElement('textarea');
-                el.value = "{absolute_share_link}";
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-                
-                // Show the success message
-                document.getElementById('copy_success_{hash(share_link)}').style.display = 'block';
-                setTimeout(function() {{
-                    document.getElementById('copy_success_{hash(share_link)}').style.display = 'none';
-                }}, 3000);
-            }}
-            </script>
-            <button id="{copy_button_id}" 
-                onclick="copyToClipboard{hash(share_link)}()" 
-                style="background-color: #1E88E5; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%;">
-                📋 Copy Link
-            </button>
-            <div id="copy_success_{hash(share_link)}" style="display: none; color: green; margin-top: 5px;">
-                ✅ Link copied to clipboard!
-            </div>
-            """
-            
-            # Render the button with JS
-            st.markdown(copy_js, unsafe_allow_html=True)
+            copy_unique_key = f"copy_btn_{hash(share_link)}"
+            if st.button("📋 Copy Link", key=copy_unique_key):
+                # Use the modern Clipboard API with proper error handling
+                copy_js = f"""
+                <script>
+                    (function() {{
+                        try {{
+                            // Use modern Clipboard API instead of execCommand
+                            navigator.clipboard.writeText('{absolute_share_link}').then(
+                                function() {{
+                                    // Success callback - show message
+                                    document.getElementById('copy_success_{hash(share_link)}').style.display = 'block';
+                                    setTimeout(function() {{
+                                        document.getElementById('copy_success_{hash(share_link)}').style.display = 'none';
+                                    }}, 3000);
+                                    console.log('Copying to clipboard was successful!');
+                                }}, 
+                                function(err) {{
+                                    // Error callback
+                                    console.error('Could not copy text: ', err);
+                                }}
+                            );
+                        }} catch (err) {{
+                            console.error('Error copying link: ', err);
+                        }}
+                    }})();
+                </script>
+                <div id="copy_success_{hash(share_link)}" style="display: block; color: green; margin-top: 5px;">
+                    ✅ Link copied to clipboard!
+                </div>
+                """
+                st.markdown(copy_js, unsafe_allow_html=True)
                 
         with col2:
             if st.button("✉️ Email Link", key=f"email_{content_type}_{hash(share_link)}"):
