@@ -704,6 +704,9 @@ with tab2:
                     </html>
                     """
                     
+                    # Get the export format from helper function
+                    export_format = get_export_format()
+                    
                     # Different download options based on subscription and selected format
                     if export_format == "CSV" and can_export_csv:
                         # For CSV format, we'll convert insights to a simple table
@@ -962,6 +965,9 @@ with tab2:
                 </body>
                 </html>
                 """
+                
+                # Get the export format from helper function
+                export_format = get_export_format()
                 
                 # Different download options based on subscription and selected format
                 if export_format == "CSV" and can_export_csv:
