@@ -220,7 +220,18 @@ def export_summary_report(df, transformations, insights, visualizations=None, ad
     
     # Add branding footer if requested
     if add_branding:
-        html_content += """
+        # Use embedded base64 logo
+        logo_path = "assets/logo.png"
+        try:
+            import base64
+            with open(logo_path, "rb") as img_file:
+                logo_base64 = base64.b64encode(img_file.read()).decode()
+                logo_html = f'<img src="data:image/png;base64,{logo_base64}" alt="Analytics Assist Logo" style="height: 60px; margin-bottom: 10px;">'
+        except:
+            # Fallback if logo can't be loaded
+            logo_html = '<div style="font-weight: bold; font-size: 1.2em; margin-bottom: 10px;">Analytics Assist</div>'
+        
+        html_content += f"""
         <div style="
             margin-top: 50px;
             padding-top: 20px;
@@ -229,7 +240,8 @@ def export_summary_report(df, transformations, insights, visualizations=None, ad
             font-size: 0.9em;
             color: #666;
         ">
-            <p>Generated with <a href="https://analytics-assist.replit.app" style="color: #4F8BF9; text-decoration: none;">Analytics Assist</a></p>
+            {logo_html}
+            <p>Made with <a href="https://analytics-assist.replit.app" style="color: #4F8BF9; text-decoration: none;">Analytics Assist</a></p>
         </div>
         """
     
