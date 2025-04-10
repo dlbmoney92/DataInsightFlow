@@ -8,6 +8,26 @@ def hide_default_navigation():
             section[data-testid="stSidebarNav"] {
                 display: none !important;
             }
+            
+            /* Hide all the stSidebarNav elements more aggressively */
+            div[data-testid="stSidebarNav"] {
+                display: none !important;
+            }
+            
+            /* Also hide specific sidebar nav items */
+            [data-testid="stSidebarNavItems"] {
+                display: none !important;
+            }
+            
+            /* Target multipage menu items */
+            .stApp [data-testid="stSidebarNav"] ul {
+                display: none !important;
+            }
+            
+            /* Hide hamburger dropdown menu items */
+            ul.streamlit-nav {
+                display: none !important;
+            }
         </style>
     """, unsafe_allow_html=True)
 
