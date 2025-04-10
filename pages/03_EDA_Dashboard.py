@@ -558,36 +558,45 @@ if tab_info["Full Report"]["available"]:
                 # Create a copy of the dataframe with fixed column names for the report
                 report_df = df.copy()
                 
-                # Generate HTML report
-                report_html = generate_quick_eda_report(report_df)
+                # Generate HTML report (returned as base64)
+                report_html_base64 = generate_quick_eda_report(report_df)
                 
-                # Display the report
-                st.components.v1.html(report_html, height=600, scrolling=True)
+                # Initialize report_html as None
+                report_html = None
                 
-                # Option to download the report as PDF
-                from utils.export import convert_html_to_pdf
-                
-                # First offer HTML download option
-                b64_html = base64.b64encode(report_html.encode()).decode()
-                href_html = f'<a href="data:text/html;base64,{b64_html}" download="eda_report_{dataset_name}.html">Download as HTML</a>'
-                
-                # Create columns for download options
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.markdown(href_html, unsafe_allow_html=True)
-                
-                with col2:
-                    if st.button("Download as PDF"):
-                        with st.spinner("Generating PDF..."):
-                            try:
-                                pdf_bytes = convert_html_to_pdf(report_html)
-                                b64_pdf = base64.b64encode(pdf_bytes).decode()
-                                href_pdf = f'<a href="data:application/pdf;base64,{b64_pdf}" download="eda_report_{dataset_name}.pdf">Click here to download PDF</a>'
-                                st.markdown(href_pdf, unsafe_allow_html=True)
-                                st.success("PDF generated successfully!")
-                            except Exception as e:
-                                st.error(f"Error generating PDF: {str(e)}")
-                                st.info("Please try the HTML download option instead.")
+                if report_html_base64:
+                    # Decode the base64 string to get the actual HTML
+                    report_html = base64.b64decode(report_html_base64).decode()
+                    
+                    # Display the report
+                    st.components.v1.html(report_html, height=600, scrolling=True)
+                    
+                    # Option to download the report as PDF
+                    from utils.export import convert_html_to_pdf
+                    
+                    # Use the decoded HTML for the download link
+                    b64_html = report_html_base64  # Already in base64 format
+                    href_html = f'<a href="data:text/html;base64,{b64_html}" download="eda_report_{dataset_name}.html">Download as HTML</a>'
+                    
+                    # Create columns for download options
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown(href_html, unsafe_allow_html=True)
+                    
+                    with col2:
+                        if st.button("Download as PDF"):
+                            with st.spinner("Generating PDF..."):
+                                try:
+                                    pdf_bytes = convert_html_to_pdf(report_html)
+                                    b64_pdf = base64.b64encode(pdf_bytes).decode()
+                                    href_pdf = f'<a href="data:application/pdf;base64,{b64_pdf}" download="eda_report_{dataset_name}.pdf">Click here to download PDF</a>'
+                                    st.markdown(href_pdf, unsafe_allow_html=True)
+                                    st.success("PDF generated successfully!")
+                                except Exception as e:
+                                    st.error(f"Error generating PDF: {str(e)}")
+                                    st.info("Please try the HTML download option instead.")
+                else:
+                    st.error("Could not generate EDA report. Please check your data.")
                 
             except Exception as e:
                 st.error(f"Error generating EDA report: {str(e)}")

@@ -228,20 +228,20 @@ def generate_quick_eda_report(df):
         <head>
             <title>Dataset Profile Report</title>
             <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                h1, h2, h3 {{ color: #2c3e50; }}
-                .section {{ margin-bottom: 30px; }}
-                table {{ border-collapse: collapse; width: 100%; }}
-                th, td {{ text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }}
-                th {{ background-color: #f2f2f2; }}
-                tr:hover {{ background-color: #f5f5f5; }}
-                .stat-card {{ 
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                h1, h2, h3 { color: #2c3e50; }
+                .section { margin-bottom: 30px; }
+                table { border-collapse: collapse; width: 100%; }
+                th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+                th { background-color: #f2f2f2; }
+                tr:hover { background-color: #f5f5f5; }
+                .stat-card { 
                     border: 1px solid #ddd;
                     border-radius: 5px;
                     padding: 15px;
                     margin-bottom: 15px;
                     background-color: #f9f9f9;
-                }}
+                }
             </style>
         </head>
         <body>
