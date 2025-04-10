@@ -41,12 +41,32 @@ def create_share_link(content_type, content_id, data):
     if 'shared_content' not in st.session_state:
         st.session_state.shared_content = {}
     
-    st.session_state.shared_content[share_id] = {
+    # Create the content object
+    shared_content_obj = {
         'content_type': content_type,
         'content_id': content_id,
         'data': data,
         'created_at': pd.Timestamp.now().isoformat()
     }
+    
+    st.session_state.shared_content[share_id] = shared_content_obj
+    
+    # Also save it to a file for persistence
+    try:
+        # Create shared_content directory if it doesn't exist
+        shared_dir = "shared_content"
+        if not os.path.exists(shared_dir):
+            os.makedirs(shared_dir)
+            
+        # Save the content to a JSON file named with the share ID
+        content_file = os.path.join(shared_dir, f"{share_id}.json")
+        with open(content_file, "w") as f:
+            json.dump(shared_content_obj, f)
+            
+        print(f"Saved shared content to {content_file} on creation")
+        
+    except Exception as e:
+        print(f"Error saving shared content to file on creation: {e}")
     
     # Create a shareable link
     # In a real implementation, you'd want to store this in a database
@@ -76,7 +96,7 @@ def get_social_share_links(title, share_url, summary=None):
     # Always create an absolute URL for sharing
     if share_url.startswith('/'):
         # For production environment, use the Replit domain
-        base_url = "https://analytics-assist.replit.app"
+        base_url = "https://analyticsassist.replit.app"
         full_url = f"{base_url}{share_url}"
     else:
         full_url = share_url
@@ -114,6 +134,9 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
         absolute_share_link = f"{base_url}{share_link}"
     else:
         absolute_share_link = share_link
+        
+    # Also save the shared content to file for persistent access
+    save_shared_content_to_file(share_link)
     
     with st.container(border=True):
         st.subheader(f"Share {content_type.title()}")
@@ -398,6 +421,40 @@ def generate_qr_code(url, size=5):
     qr_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
     
     return qr_data
+
+def save_shared_content_to_file(share_link):
+    """
+    Save shared content to a file for persistence across sessions
+    
+    Parameters:
+    - share_link: The share link path, which contains the share ID
+    """
+    try:
+        # Extract the share ID from the share link
+        if not share_link.startswith('/shared_content?id='):
+            return  # Not a valid share link format
+            
+        share_id = share_link.split('=')[1]
+        
+        # Get the content from session state
+        shared_content = st.session_state.get('shared_content', {}).get(share_id)
+        if not shared_content:
+            return  # Content not found in session state
+            
+        # Create shared_content directory if it doesn't exist
+        shared_dir = "shared_content"
+        if not os.path.exists(shared_dir):
+            os.makedirs(shared_dir)
+            
+        # Save the content to a JSON file named with the share ID
+        content_file = os.path.join(shared_dir, f"{share_id}.json")
+        with open(content_file, "w") as f:
+            json.dump(shared_content, f)
+            
+        print(f"Saved shared content to {content_file}")
+        
+    except Exception as e:
+        print(f"Error saving shared content to file: {e}")
 
 def generate_report_summary(df, insights=None, visualizations=None):
     """
