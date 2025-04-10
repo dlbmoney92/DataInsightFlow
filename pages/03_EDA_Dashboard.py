@@ -450,145 +450,145 @@ with tabs[tab_info["Correlations"]["index"]]:
 if tab_info["Outliers"]["available"]:
     with tabs[tab_info["Outliers"]["index"]]:
         st.header("Outlier Detection")
-    
-    # Choose outlier detection method
-    outlier_method = st.radio(
-        "Outlier detection method:",
-        ["Z-Score", "IQR (Interquartile Range)", "Modified Z-Score"],
-        horizontal=True
-    )
-    
-    # Set threshold based on method
-    if outlier_method == "Z-Score":
-        threshold = st.slider("Z-Score threshold", 1.0, 5.0, 3.0, 0.1)
-        method = "zscore"
-    elif outlier_method == "IQR (Interquartile Range)":
-        threshold = st.slider("IQR multiplier", 1.0, 3.0, 1.5, 0.1)
-        method = "iqr"
-    else:  # Modified Z-Score
-        threshold = st.slider("Modified Z-Score threshold", 1.0, 5.0, 3.5, 0.1)
-        method = "modified_zscore"
         
-    # Detect outliers
-    outliers = detect_outliers(df, method=method, threshold=threshold)
-    
-    # Display outlier summary
-    st.subheader("Outlier Summary")
-    
-    # Create a summary table of outliers by column
-    outlier_summary = []
-    if outliers:
-        for col, stats in outliers.items():
-            outlier_count = stats['count']
-            pct_outliers = stats['percent']
-            values = stats.get('values', [])
-            outlier_summary.append({
-                "Column": col,
-                "Outlier Count": outlier_count,
-                "% Outliers": f"{pct_outliers:.2f}%",
-                "Min Outlier": format_outlier_value(min(values)) if values and len(values) > 0 else "N/A", 
-                "Max Outlier": format_outlier_value(max(values)) if values and len(values) > 0 else "N/A"
-            })
+        # Choose outlier detection method
+        outlier_method = st.radio(
+            "Outlier detection method:",
+            ["Z-Score", "IQR (Interquartile Range)", "Modified Z-Score"],
+            horizontal=True
+        )
         
-    if outlier_summary:
-        outlier_df = pd.DataFrame(outlier_summary)
-        # Format the percentage for better display
-        if "% Outliers" in outlier_df.columns:
-            outlier_df["% Outliers"] = outlier_df["% Outliers"].apply(lambda x: f"{float(x.strip('%')):.2f}%" if isinstance(x, str) else f"{float(x):.2f}%")
-        st.dataframe(outlier_df)
-        
-        # Visualize outliers for a selected column
-        st.subheader("Visualize Outliers")
-        selected_col = st.selectbox("Select column to visualize outliers", list(outliers.keys()))
-        
-        if selected_col in outliers:
-            # Create a box plot to show outliers
-            # Create a simplified DataFrame with only the selected column to avoid duplicate column issues
-            import pandas as pd
-            box_data = pd.DataFrame()
-            box_data['value'] = df[selected_col].values
+        # Set threshold based on method
+        if outlier_method == "Z-Score":
+            threshold = st.slider("Z-Score threshold", 1.0, 5.0, 3.0, 0.1)
+            method = "zscore"
+        elif outlier_method == "IQR (Interquartile Range)":
+            threshold = st.slider("IQR multiplier", 1.0, 3.0, 1.5, 0.1)
+            method = "iqr"
+        else:  # Modified Z-Score
+            threshold = st.slider("Modified Z-Score threshold", 1.0, 5.0, 3.5, 0.1)
+            method = "modified_zscore"
             
-            fig = px.box(box_data, y='value', title=f"Box Plot with Outliers: {selected_col}")
+        # Detect outliers
+        outliers = detect_outliers(df, method=method, threshold=threshold)
+        
+        # Display outlier summary
+        st.subheader("Outlier Summary")
+        
+        # Create a summary table of outliers by column
+        outlier_summary = []
+        if outliers:
+            for col, stats in outliers.items():
+                outlier_count = stats['count']
+                pct_outliers = stats['percent']
+                values = stats.get('values', [])
+                outlier_summary.append({
+                    "Column": col,
+                    "Outlier Count": outlier_count,
+                    "% Outliers": f"{pct_outliers:.2f}%",
+                    "Min Outlier": format_outlier_value(min(values)) if values and len(values) > 0 else "N/A", 
+                    "Max Outlier": format_outlier_value(max(values)) if values and len(values) > 0 else "N/A"
+                })
             
-            # Update y-axis label to show the original column name
-            fig.update_layout(yaxis_title=selected_col)
+        if outlier_summary:
+            outlier_df = pd.DataFrame(outlier_summary)
+            # Format the percentage for better display
+            if "% Outliers" in outlier_df.columns:
+                outlier_df["% Outliers"] = outlier_df["% Outliers"].apply(lambda x: f"{float(x.strip('%')):.2f}%" if isinstance(x, str) else f"{float(x):.2f}%")
+            st.dataframe(outlier_df)
             
-            # Highlight the outliers
-            if outliers[selected_col] and outliers[selected_col]['count'] > 0:
-                outlier_indices = outliers[selected_col]['indices']
+            # Visualize outliers for a selected column
+            st.subheader("Visualize Outliers")
+            selected_col = st.selectbox("Select column to visualize outliers", list(outliers.keys()))
+            
+            if selected_col in outliers:
+                # Create a box plot to show outliers
+                # Create a simplified DataFrame with only the selected column to avoid duplicate column issues
+                import pandas as pd
+                box_data = pd.DataFrame()
+                box_data['value'] = df[selected_col].values
                 
-                # Get outlier values
-                if isinstance(outlier_indices, list) and outlier_indices:
-                    outlier_values = df.loc[outlier_indices, selected_col].values
-                    
-                    # Add scatter points for outliers
-                    fig.add_trace(
-                        go.Scatter(
-                            x=[0] * len(outlier_values),
-                            y=outlier_values,
-                            mode="markers",
-                            marker=dict(color="red", size=8, symbol="circle"),
-                            name="Outliers"
-                        )
-                    )
-            
-            st.plotly_chart(fig, use_container_width=True, key="outlier_box_plot")
-            
-            # Option to show the actual outlier values
-            with st.expander("Show outlier records"):
+                fig = px.box(box_data, y='value', title=f"Box Plot with Outliers: {selected_col}")
+                
+                # Update y-axis label to show the original column name
+                fig.update_layout(yaxis_title=selected_col)
+                
+                # Highlight the outliers
                 if outliers[selected_col] and outliers[selected_col]['count'] > 0:
                     outlier_indices = outliers[selected_col]['indices']
+                    
+                    # Get outlier values
                     if isinstance(outlier_indices, list) and outlier_indices:
-                        st.dataframe(df.loc[outlier_indices])
+                        outlier_values = df.loc[outlier_indices, selected_col].values
+                        
+                        # Add scatter points for outliers
+                        fig.add_trace(
+                            go.Scatter(
+                                x=[0] * len(outlier_values),
+                                y=outlier_values,
+                                mode="markers",
+                                marker=dict(color="red", size=8, symbol="circle"),
+                                name="Outliers"
+                            )
+                        )
+                
+                st.plotly_chart(fig, use_container_width=True, key="outlier_box_plot")
+                
+                # Option to show the actual outlier values
+                with st.expander("Show outlier records"):
+                    if outliers[selected_col] and outliers[selected_col]['count'] > 0:
+                        outlier_indices = outliers[selected_col]['indices']
+                        if isinstance(outlier_indices, list) and outlier_indices:
+                            st.dataframe(df.loc[outlier_indices])
+                        else:
+                            st.info(f"No outlier indices available for {selected_col}.")
                     else:
-                        st.info(f"No outlier indices available for {selected_col}.")
-                else:
-                    st.info(f"No outliers detected in {selected_col} with the current settings.")
-    else:
-        st.info("No outliers detected with the current settings.")
+                        st.info(f"No outliers detected in {selected_col} with the current settings.")
+        else:
+            st.info("No outliers detected with the current settings.")
 
 # Full Report tab (conditional based on subscription)
 if tab_info["Full Report"]["available"]:
     with tabs[tab_info["Full Report"]["index"]]:
         st.header("Complete EDA Report")
-    
-    # Generate a comprehensive EDA report
-    with st.spinner("Generating EDA report..."):
-        try:
-            # Create a copy of the dataframe with fixed column names for the report
-            report_df = df.copy()
-            
-            # Generate HTML report
-            report_html = generate_quick_eda_report(report_df)
-            
-            # Display the report
-            st.components.v1.html(report_html, height=600, scrolling=True)
-            
-            # Option to download the report as PDF
-            from utils.export import convert_html_to_pdf
-            
-            # First offer HTML download option
-            b64_html = base64.b64encode(report_html.encode()).decode()
-            href_html = f'<a href="data:text/html;base64,{b64_html}" download="eda_report_{dataset_name}.html">Download as HTML</a>'
-            
-            # Create columns for download options
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(href_html, unsafe_allow_html=True)
-            
-            with col2:
-                if st.button("Download as PDF"):
-                    with st.spinner("Generating PDF..."):
-                        try:
-                            pdf_bytes = convert_html_to_pdf(report_html)
-                            b64_pdf = base64.b64encode(pdf_bytes).decode()
-                            href_pdf = f'<a href="data:application/pdf;base64,{b64_pdf}" download="eda_report_{dataset_name}.pdf">Click here to download PDF</a>'
-                            st.markdown(href_pdf, unsafe_allow_html=True)
-                            st.success("PDF generated successfully!")
-                        except Exception as e:
-                            st.error(f"Error generating PDF: {str(e)}")
-                            st.info("Please try the HTML download option instead.")
-            
-        except Exception as e:
-            st.error(f"Error generating EDA report: {str(e)}")
-            st.info("Try with a smaller dataset or fewer columns for better performance.")
+        
+        # Generate a comprehensive EDA report
+        with st.spinner("Generating EDA report..."):
+            try:
+                # Create a copy of the dataframe with fixed column names for the report
+                report_df = df.copy()
+                
+                # Generate HTML report
+                report_html = generate_quick_eda_report(report_df)
+                
+                # Display the report
+                st.components.v1.html(report_html, height=600, scrolling=True)
+                
+                # Option to download the report as PDF
+                from utils.export import convert_html_to_pdf
+                
+                # First offer HTML download option
+                b64_html = base64.b64encode(report_html.encode()).decode()
+                href_html = f'<a href="data:text/html;base64,{b64_html}" download="eda_report_{dataset_name}.html">Download as HTML</a>'
+                
+                # Create columns for download options
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(href_html, unsafe_allow_html=True)
+                
+                with col2:
+                    if st.button("Download as PDF"):
+                        with st.spinner("Generating PDF..."):
+                            try:
+                                pdf_bytes = convert_html_to_pdf(report_html)
+                                b64_pdf = base64.b64encode(pdf_bytes).decode()
+                                href_pdf = f'<a href="data:application/pdf;base64,{b64_pdf}" download="eda_report_{dataset_name}.pdf">Click here to download PDF</a>'
+                                st.markdown(href_pdf, unsafe_allow_html=True)
+                                st.success("PDF generated successfully!")
+                            except Exception as e:
+                                st.error(f"Error generating PDF: {str(e)}")
+                                st.info("Please try the HTML download option instead.")
+                
+            except Exception as e:
+                st.error(f"Error generating EDA report: {str(e)}")
+                st.info("Try with a smaller dataset or fewer columns for better performance.")
