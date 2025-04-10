@@ -752,6 +752,47 @@ with tab2:
                         <h2>Conclusion</h2>
                         <p>{custom_conclusion}</p>
                     </div>
+                """
+                
+                # Add logo branding to custom report
+                try:
+                    with open("assets/logo.png", "rb") as img_file:
+                        logo_base64 = base64.b64encode(img_file.read()).decode()
+                except:
+                    logo_base64 = ""
+                
+                if logo_base64:
+                    report_html += f"""
+                    <!-- Branding Footer -->
+                    <div style="
+                        margin-top: 50px;
+                        padding-top: 20px;
+                        border-top: 1px solid #ccc;
+                        text-align: center;
+                        font-size: 0.9em;
+                        color: #666;
+                    ">
+                        <img src="data:image/png;base64,{logo_base64}" alt="Analytics Assist Logo" style="height: 60px; margin-bottom: 10px;">
+                        <p>Made with <a href="https://analytics-assist.replit.app" style="color: #4F8BF9; text-decoration: none;">Analytics Assist</a></p>
+                    </div>
+                    """
+                else:
+                    report_html += """
+                    <!-- Branding Footer -->
+                    <div style="
+                        margin-top: 50px;
+                        padding-top: 20px;
+                        border-top: 1px solid #ccc;
+                        text-align: center;
+                        font-size: 0.9em;
+                        color: #666;
+                    ">
+                        <div style="font-weight: bold; font-size: 1.2em; margin-bottom: 10px;">Analytics Assist</div>
+                        <p>Made with <a href="https://analytics-assist.replit.app" style="color: #4F8BF9; text-decoration: none;">Analytics Assist</a></p>
+                    </div>
+                    """
+                
+                report_html += """
                 </body>
                 </html>
                 """
