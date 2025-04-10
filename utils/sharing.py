@@ -51,8 +51,10 @@ def create_share_link(content_type, content_id, data):
     # Create a shareable link
     # In a real implementation, you'd want to store this in a database
     # and have a proper sharing mechanism, but for demo purposes this works
-    host = os.environ.get('REPLIT_DEPLOYMENT_URL', 'https://analytics-assist.replit.app')
-    share_link = f"{host}/pages/shared_content.py?id={share_id}"
+    
+    # For local development environment, use a relative URL
+    # This ensures the shared content is accessible locally
+    share_link = f"/pages/shared_content.py?id={share_id}"
     
     return share_link
 
@@ -68,7 +70,15 @@ def get_social_share_links(title, share_url, summary=None):
     Returns:
     - dict of platform -> share URL
     """
-    encoded_url = quote(share_url)
+    # Create the full URL by prepending the host if the share_url is a relative path
+    if share_url.startswith('/'):
+        # For development environment, use a local URL
+        host = "http://localhost:5000"
+        full_url = f"{host}{share_url}"
+    else:
+        full_url = share_url
+    
+    encoded_url = quote(full_url)
     encoded_title = quote(title)
     encoded_summary = quote(summary or f"Check out this data insight from Analytics Assist: {title}")
     
@@ -101,13 +111,9 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
         col1, col2 = st.columns(2)
         with col1:
             if st.button("📋 Copy Link", key=f"copy_{content_type}_{hash(share_link)}"):
-                # Use JavaScript to copy to clipboard
-                st.markdown(f"""
-                <script>
-                    navigator.clipboard.writeText("{share_link}");
-                </script>
-                """, unsafe_allow_html=True)
-                st.success("Link copied to clipboard!")
+                # Show the link in a text area for easy copying
+                st.code(share_link, language=None)
+                st.success("Copy the link above!")
                 
         with col2:
             if st.button("✉️ Email Link", key=f"email_{content_type}_{hash(share_link)}"):
@@ -117,18 +123,72 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
                 
         if include_social:
             st.markdown("### Share on Social Media")
+            st.write("Share this content with colleagues and friends on your favorite platforms.")
             
             social_links = get_social_share_links(title, share_link, summary)
-            social_cols = st.columns(4)
             
-            with social_cols[0]:
-                st.markdown(f'<a href="{social_links["linkedin"]}" target="_blank">LinkedIn</a>', unsafe_allow_html=True)
-            with social_cols[1]:
-                st.markdown(f'<a href="{social_links["twitter"]}" target="_blank">Twitter</a>', unsafe_allow_html=True)
-            with social_cols[2]:
-                st.markdown(f'<a href="{social_links["facebook"]}" target="_blank">Facebook</a>', unsafe_allow_html=True)
-            with social_cols[3]:
-                st.markdown(f'<a href="{social_links["email"]}" target="_blank">Email</a>', unsafe_allow_html=True)
+            # CSS for styled buttons
+            st.markdown("""
+            <style>
+            .social-buttons {
+                display: flex;
+                justify-content: center;
+                gap: 20px;
+                margin: 15px 0;
+            }
+            .social-button {
+                text-decoration: none;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 8px 12px;
+                border-radius: 8px;
+                transition: all 0.3s ease;
+                background: rgba(0, 0, 0, 0.03);
+            }
+            .social-button:hover {
+                background: rgba(0, 0, 0, 0.08);
+                transform: translateY(-2px);
+            }
+            .social-icon {
+                font-size: 28px;
+                margin-bottom: 5px;
+            }
+            .social-name {
+                font-size: 12px;
+                color: #555;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            # Generate HTML for social buttons
+            html = """
+            <div class="social-buttons">
+                <a href="{linkedin}" target="_blank" class="social-button" title="Share on LinkedIn">
+                    <div class="social-icon">🔗</div>
+                    <div class="social-name">LinkedIn</div>
+                </a>
+                <a href="{twitter}" target="_blank" class="social-button" title="Share on Twitter">
+                    <div class="social-icon">🐦</div>
+                    <div class="social-name">Twitter</div>
+                </a>
+                <a href="{facebook}" target="_blank" class="social-button" title="Share on Facebook">
+                    <div class="social-icon">📘</div>
+                    <div class="social-name">Facebook</div>
+                </a>
+                <a href="{email}" target="_blank" class="social-button" title="Share via Email">
+                    <div class="social-icon">✉️</div>
+                    <div class="social-name">Email</div>
+                </a>
+            </div>
+            """.format(
+                linkedin=social_links["linkedin"],
+                twitter=social_links["twitter"],
+                facebook=social_links["facebook"],
+                email=social_links["email"]
+            )
+            
+            st.markdown(html, unsafe_allow_html=True)
 
 def export_visualization_with_branding(fig, title=None, format='png'):
     """
