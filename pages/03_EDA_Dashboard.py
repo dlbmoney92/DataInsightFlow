@@ -270,111 +270,111 @@ with tabs[tab_info["Summary"]["index"]]:
 if tab_info["Visualizations"]["available"]:
     with tabs[tab_info["Visualizations"]["index"]]:
         st.header("Data Visualizations")
+        
+        # Create an AI suggestion section
+        with st.expander("🤖 AI-Suggested Visualizations", expanded=True):
+            visualizations = suggest_visualizations(df)
+            if visualizations:
+                # Display suggestions in a user-friendly format
+                for i, viz in enumerate(visualizations):
+                    with st.container():
+                        st.markdown(f"### {i+1}. {viz.get('title', 'Visualization Suggestion')}")
+                        st.markdown(f"**Chart Type:** {viz.get('chart_type', 'Not specified')}")
+                        st.markdown(f"**Description:** {viz.get('description', 'No description available')}")
+                        st.markdown(f"**Columns:** {', '.join(viz.get('columns', []))}")
+                        st.markdown("---")
+            else:
+                st.info("No visualization suggestions available for this dataset.")
+        
+        # Choose a visualization type
+        viz_type = st.selectbox(
+            "Select visualization type",
+            ["Distribution Plot", "Categorical Plot", "Scatter Plot", "Pair Plot", "Box Plot", "Time Series"]
+        )
     
-    # Create an AI suggestion section
-    with st.expander("🤖 AI-Suggested Visualizations", expanded=True):
-        visualizations = suggest_visualizations(df)
-        if visualizations:
-            # Display suggestions in a user-friendly format
-            for i, viz in enumerate(visualizations):
-                with st.container():
-                    st.markdown(f"### {i+1}. {viz.get('title', 'Visualization Suggestion')}")
-                    st.markdown(f"**Chart Type:** {viz.get('chart_type', 'Not specified')}")
-                    st.markdown(f"**Description:** {viz.get('description', 'No description available')}")
-                    st.markdown(f"**Columns:** {', '.join(viz.get('columns', []))}")
-                    st.markdown("---")
-        else:
-            st.info("No visualization suggestions available for this dataset.")
-    
-    # Choose a visualization type
-    viz_type = st.selectbox(
-        "Select visualization type",
-        ["Distribution Plot", "Categorical Plot", "Scatter Plot", "Pair Plot", "Box Plot", "Time Series"]
-    )
-    
-    if viz_type == "Distribution Plot":
-        # Column selection for distribution plot
-        col = st.selectbox("Select column for distribution plot", numeric_cols)
-        
-        # Create distribution plot
-        fig = create_distribution_plot(df, col)
-        st.plotly_chart(fig, use_container_width=True, key="viz_distribution_plot")
-        
-    elif viz_type == "Categorical Plot":
-        if categorical_cols:
-            # Column selection for categorical plot
-            col = st.selectbox("Select categorical column", categorical_cols)
+        if viz_type == "Distribution Plot":
+            # Column selection for distribution plot
+            col = st.selectbox("Select column for distribution plot", numeric_cols)
             
-            # Create categorical plot
-            fig = create_categorical_plot(df, col)
-            st.plotly_chart(fig, use_container_width=True, key="viz_categorical_plot")
-        else:
-            st.info("No categorical columns found in the dataset.")
+            # Create distribution plot
+            fig = create_distribution_plot(df, col)
+            st.plotly_chart(fig, use_container_width=True, key="viz_distribution_plot")
             
-    elif viz_type == "Scatter Plot":
-        # Column selection for scatter plot
-        col1 = st.selectbox("Select X-axis column", numeric_cols, key="scatter_x")
-        col2 = st.selectbox("Select Y-axis column", numeric_cols, key="scatter_y")
-        
-        # Optional color by column
-        color_col = st.selectbox("Color by (optional)", ["None"] + categorical_cols)
-        color_col = None if color_col == "None" else color_col
-        
-        # Create scatter plot
-        fig = create_scatter_plot(df, col1, col2, color_column=color_col)
-        st.plotly_chart(fig, use_container_width=True, key="viz_scatter_plot")
-        
-    elif viz_type == "Pair Plot":
-        # Column selection for pair plot (limit to 5 columns for performance)
-        if len(numeric_cols) > 5:
-            selected_cols = st.multiselect(
-                "Select columns for pair plot (max 5 recommended)", 
-                numeric_cols,
-                default=numeric_cols[:3]
-            )
+        elif viz_type == "Categorical Plot":
+            if categorical_cols:
+                # Column selection for categorical plot
+                col = st.selectbox("Select categorical column", categorical_cols)
+                
+                # Create categorical plot
+                fig = create_categorical_plot(df, col)
+                st.plotly_chart(fig, use_container_width=True, key="viz_categorical_plot")
+            else:
+                st.info("No categorical columns found in the dataset.")
+                
+        elif viz_type == "Scatter Plot":
+            # Column selection for scatter plot
+            col1 = st.selectbox("Select X-axis column", numeric_cols, key="scatter_x")
+            col2 = st.selectbox("Select Y-axis column", numeric_cols, key="scatter_y")
             
-            if len(selected_cols) > 5:
-                st.warning("Too many columns selected. This might make the visualization slow. Consider selecting fewer columns.")
-        else:
-            selected_cols = numeric_cols
+            # Optional color by column
+            color_col = st.selectbox("Color by (optional)", ["None"] + categorical_cols)
+            color_col = None if color_col == "None" else color_col
             
-        # Optional color by column
-        color_col = st.selectbox("Color by (optional)", ["None"] + categorical_cols)
-        color_col = None if color_col == "None" else color_col
-        
-        if selected_cols:
-            # Create pair plot
-            fig = create_pair_plot(df, selected_cols, color_column=color_col)
-            st.plotly_chart(fig, use_container_width=True, key="viz_pair_plot")
+            # Create scatter plot
+            fig = create_scatter_plot(df, col1, col2, color_column=color_col)
+            st.plotly_chart(fig, use_container_width=True, key="viz_scatter_plot")
             
-    elif viz_type == "Box Plot":
-        # Column selection for box plot
-        numeric_col = st.selectbox("Select numeric column", numeric_cols)
-        
-        # Optional grouping column
-        group_col = st.selectbox("Group by (optional)", ["None"] + categorical_cols)
-        group_col = None if group_col == "None" else group_col
-        
-        # Create box plot
-        if group_col:
-            fig = px.box(df, x=group_col, y=numeric_col, color=group_col,
-                       title=f"Box Plot of {numeric_col} by {group_col}")
-        else:
-            fig = px.box(df, y=numeric_col, title=f"Box Plot of {numeric_col}")
+        elif viz_type == "Pair Plot":
+            # Column selection for pair plot (limit to 5 columns for performance)
+            if len(numeric_cols) > 5:
+                selected_cols = st.multiselect(
+                    "Select columns for pair plot (max 5 recommended)", 
+                    numeric_cols,
+                    default=numeric_cols[:3]
+                )
+                
+                if len(selected_cols) > 5:
+                    st.warning("Too many columns selected. This might make the visualization slow. Consider selecting fewer columns.")
+            else:
+                selected_cols = numeric_cols
+                
+            # Optional color by column
+            color_col = st.selectbox("Color by (optional)", ["None"] + categorical_cols)
+            color_col = None if color_col == "None" else color_col
             
-        st.plotly_chart(fig, use_container_width=True, key="viz_box_plot")
-        
-    elif viz_type == "Time Series" and temporal_cols:
-        # Column selection for time series
-        time_col = st.selectbox("Select time column", temporal_cols)
-        value_col = st.selectbox("Select value column", numeric_cols)
-        
-        # Create time series plot
-        fig = create_time_series_plot(df, time_col, value_col)
-        st.plotly_chart(fig, use_container_width=True, key="viz_time_series")
-        
-    elif viz_type == "Time Series" and not temporal_cols:
-        st.info("No temporal columns found in the dataset for time series visualization.")
+            if selected_cols:
+                # Create pair plot
+                fig = create_pair_plot(df, selected_cols, color_column=color_col)
+                st.plotly_chart(fig, use_container_width=True, key="viz_pair_plot")
+                
+        elif viz_type == "Box Plot":
+            # Column selection for box plot
+            numeric_col = st.selectbox("Select numeric column", numeric_cols)
+            
+            # Optional grouping column
+            group_col = st.selectbox("Group by (optional)", ["None"] + categorical_cols)
+            group_col = None if group_col == "None" else group_col
+            
+            # Create box plot
+            if group_col:
+                fig = px.box(df, x=group_col, y=numeric_col, color=group_col,
+                           title=f"Box Plot of {numeric_col} by {group_col}")
+            else:
+                fig = px.box(df, y=numeric_col, title=f"Box Plot of {numeric_col}")
+                
+            st.plotly_chart(fig, use_container_width=True, key="viz_box_plot")
+            
+        elif viz_type == "Time Series" and temporal_cols:
+            # Column selection for time series
+            time_col = st.selectbox("Select time column", temporal_cols)
+            value_col = st.selectbox("Select value column", numeric_cols)
+            
+            # Create time series plot
+            fig = create_time_series_plot(df, time_col, value_col)
+            st.plotly_chart(fig, use_container_width=True, key="viz_time_series")
+            
+        elif viz_type == "Time Series" and not temporal_cols:
+            st.info("No temporal columns found in the dataset for time series visualization.")
         
 # Correlations tab (always available)
 with tabs[tab_info["Correlations"]["index"]]:

@@ -2,11 +2,24 @@ import streamlit as st
 import base64
 from utils.custom_navigation import render_navigation
 from utils.auth_redirect import require_auth
+from utils.global_config import apply_global_css
 
 def app():
     # Check authentication
     if not require_auth():
         return
+        
+    # Apply global CSS
+    apply_global_css()
+    
+    # Hide Streamlit's default multipage navigation menu
+    st.markdown("""
+        <style>
+            [data-testid="stSidebarNav"] {
+                display: none !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
     # Page title and navigation
     st.title("Analytics Assist - User Guide")
