@@ -295,18 +295,28 @@ with tab2:
         # Store in session state to avoid "possibly unbound" errors
         st.session_state.export_format = export_format
         
-        # Add export format selection for tiers that have HTML or PDF
-        if can_export_advanced:
-            export_format = st.radio(
-                "Export Format",
-                ["HTML", "PDF"] if (can_export_html and can_export_pdf) else 
-                ["HTML"] if can_export_html else 
-                ["PDF"] if can_export_pdf else 
-                ["CSV"],
-                horizontal=True
-            )
-            # Update session state
-            st.session_state.export_format = export_format
+        # Add export format selection with formats available for user's tier
+        # Create a list of available formats based on subscription tier
+        available_formats = []
+        if can_export_csv:
+            available_formats.append("CSV")
+        if can_export_html:
+            available_formats.append("HTML")
+        if can_export_pdf:
+            available_formats.append("PDF")
+            
+        # If no formats are available (shouldn't happen), default to CSV
+        if not available_formats:
+            available_formats = ["CSV"]
+            
+        # Select export format based on subscription
+        export_format = st.radio(
+            "Export Format",
+            available_formats,
+            horizontal=True
+        )
+        # Update session state
+        st.session_state.export_format = export_format
     
     if report_type == "Summary Report" and can_export_reports:
         include_transformations = st.checkbox("Include transformation history", value=True)
