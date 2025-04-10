@@ -75,7 +75,7 @@ def app():
     # Upload Data screenshot
     st.image("https://via.placeholder.com/800x400.png?text=Upload+Data+Screenshot", 
              caption="Upload Data interface showing file upload options and sample datasets", 
-             use_column_width=True)
+             use_container_width=True)
     
     # Data Preview
     st.header("Data Preview", anchor="data-preview")

@@ -6,13 +6,14 @@ import json
 
 from utils.auth_redirect import require_auth
 from utils.custom_navigation import render_navigation
-from utils.global_config import apply_global_css
+from utils.global_config import apply_global_css, hide_default_navigation
 from utils.database import list_datasets, delete_dataset
 from utils.access_control import check_access, get_dataset_count
 
 def app():
-    # Apply global CSS
+    # Apply global CSS and hide default navigation
     apply_global_css()
+    hide_default_navigation()
     
     # Render navigation
     render_navigation()

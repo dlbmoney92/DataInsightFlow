@@ -1,5 +1,16 @@
 import streamlit as st
 
+def hide_default_navigation():
+    """Hide default Streamlit navigation elements."""
+    st.markdown("""
+        <style>
+            /* Hide sidebar navigation elements */
+            section[data-testid="stSidebarNav"] {
+                display: none !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
 def apply_global_css():
     """Apply global CSS styles to all pages."""
     # Apply custom styling without hiding Streamlit's navigation elements
