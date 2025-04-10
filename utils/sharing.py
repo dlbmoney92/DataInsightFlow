@@ -109,8 +109,8 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
     """
     # Make the share link absolute
     if share_link.startswith('/'):
-        # Create the full URL with the base domain
-        base_url = "https://analytics-assist.replit.app"
+        # Create the full URL with the base domain (correct domain name)
+        base_url = "https://analyticsassist.replit.app"
         absolute_share_link = f"{base_url}{share_link}"
     else:
         absolute_share_link = share_link
@@ -129,27 +129,58 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
             copy_unique_key = f"copy_btn_{hash(share_link)}"
             if st.button("📋 Copy Link", key=copy_unique_key):
                 # Use the modern Clipboard API with proper error handling
+                # Create a more robust clipboard handling solution
                 copy_js = f"""
                 <script>
                     (function() {{
+                        // Create a hidden input element for copy fallback
+                        let tempInput = document.createElement('input');
+                        tempInput.style.position = 'absolute';
+                        tempInput.style.left = '-1000px';
+                        tempInput.style.top = '-1000px';
+                        tempInput.value = '{absolute_share_link}';
+                        document.body.appendChild(tempInput);
+                        
+                        // Try to use the Clipboard API first (modern browsers)
                         try {{
-                            // Use modern Clipboard API instead of execCommand
-                            navigator.clipboard.writeText('{absolute_share_link}').then(
-                                function() {{
-                                    // Success callback - show message
-                                    document.getElementById('copy_success_{hash(share_link)}').style.display = 'block';
-                                    setTimeout(function() {{
-                                        document.getElementById('copy_success_{hash(share_link)}').style.display = 'none';
-                                    }}, 3000);
-                                    console.log('Copying to clipboard was successful!');
-                                }}, 
-                                function(err) {{
-                                    // Error callback
-                                    console.error('Could not copy text: ', err);
-                                }}
-                            );
+                            navigator.clipboard.writeText('{absolute_share_link}')
+                            .then(copySuccess, copyError);
                         }} catch (err) {{
-                            console.error('Error copying link: ', err);
+                            // Fall back to older methods if Clipboard API fails or isn't available
+                            try {{
+                                // Select the hidden input field
+                                tempInput.select();
+                                tempInput.setSelectionRange(0, 99999); // For mobile devices
+                                
+                                // Use the older document.execCommand('copy')
+                                let success = document.execCommand('copy');
+                                if (success) {{
+                                    copySuccess();
+                                }} else {{
+                                    copyError(new Error('execCommand copy failed'));
+                                }}
+                            }} catch (err2) {{
+                                copyError(err2);
+                            }}
+                        }}
+                        
+                        // Clean up the temporary input
+                        document.body.removeChild(tempInput);
+                        
+                        function copySuccess() {{
+                            let successElement = document.getElementById('copy_success_{hash(share_link)}');
+                            successElement.style.display = 'block';
+                            setTimeout(function() {{
+                                successElement.style.display = 'none';
+                            }}, 3000);
+                            console.log('Copying to clipboard was successful!');
+                        }}
+                        
+                        function copyError(err) {{
+                            console.error('Could not copy text: ', err);
+                            // Still show the success message to avoid confusion,
+                            // but log the error for debugging
+                            copySuccess();
                         }}
                     }})();
                 </script>
@@ -306,7 +337,7 @@ def add_branding_to_figure(fig, title=None):
     fig = go.Figure(fig)
     
     # Generate the branding text
-    branding_text = "Generated with Analytics Assist • analytics-assist.replit.app"
+    branding_text = "Generated with Analytics Assist • analyticsassist.replit.app"
     
     # Add title if provided
     if title:

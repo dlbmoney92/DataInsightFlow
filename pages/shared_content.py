@@ -15,7 +15,7 @@ st.set_page_config(
 # Add Open Graph and social media metadata to improve sharing previews
 def get_social_metadata(title, description, image_url=None):
     """Generate HTML meta tags for social media platforms"""
-    default_image = "https://analytics-assist.replit.app/assets/logo.png"
+    default_image = "https://analyticsassist.replit.app/assets/logo.png"
     image = image_url or default_image
     
     return f"""
@@ -26,14 +26,14 @@ def get_social_metadata(title, description, image_url=None):
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://analytics-assist.replit.app/">
+    <meta property="og:url" content="https://analyticsassist.replit.app/">
     <meta property="og:title" content="{title}">
     <meta property="og:description" content="{description}">
     <meta property="og:image" content="{image}">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://analytics-assist.replit.app/">
+    <meta property="twitter:url" content="https://analyticsassist.replit.app/">
     <meta property="twitter:title" content="{title}">
     <meta property="twitter:description" content="{description}">
     <meta property="twitter:image" content="{image}">
@@ -42,6 +42,18 @@ def get_social_metadata(title, description, image_url=None):
     <meta property="og:site_name" content="Analytics Assist">
     <meta property="og:type" content="article">
     """
+
+# Hide Streamlit's default navigation and menu
+st.markdown("""
+<style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
+    header {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
 
 # Custom CSS
 st.markdown("""

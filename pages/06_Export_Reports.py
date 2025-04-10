@@ -296,14 +296,20 @@ with tab2:
         st.session_state.export_format = export_format
         
         # Add export format selection with formats available for user's tier
-        # Create a list of available formats based on subscription tier
-        available_formats = []
-        if can_export_csv:
-            available_formats.append("CSV")
-        if can_export_html:
-            available_formats.append("HTML")
-        if can_export_pdf:
-            available_formats.append("PDF")
+        # For Pro tier and Enterprise tier, always show all available formats
+        if st.session_state.subscription_tier in ["pro", "enterprise"]:
+            available_formats = ["CSV", "Excel", "HTML", "PDF", "JSON"]
+        else:
+            # For other tiers, show only the formats they have access to
+            available_formats = []
+            if can_export_csv:
+                available_formats.append("CSV")
+            if can_export_excel:
+                available_formats.append("Excel") 
+            if can_export_html:
+                available_formats.append("HTML")
+            if can_export_pdf:
+                available_formats.append("PDF")
             
         # If no formats are available (shouldn't happen), default to CSV
         if not available_formats:
