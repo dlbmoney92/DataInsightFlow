@@ -95,8 +95,8 @@ def render_navigation():
                         font-size: 12px;
                         display: inline-block;
                     ">{tier_display}</div>
-                    <button 
-                        onclick="window.parent.location.href='/pages/account.py'" 
+                    <a href="javascript:void(0)" 
+                        onclick="parent.location.href='/pages/account.py'"
                         style="
                             font-size: 12px;
                             text-decoration: none;
@@ -105,7 +105,7 @@ def render_navigation():
                             border: none;
                             cursor: pointer;
                             padding: 0;
-                        ">Manage Account</button>
+                        ">Manage Account</a>
                 </div>
             </div>
             """,
@@ -206,8 +206,8 @@ def render_navigation():
         ">
             <p>© 2025 Analytics Assist</p>
             <p>
-                <button onclick="window.parent.location.href='/pages/terms_of_service.py'" style="text-decoration: none; color: inherit; background: none; border: none; cursor: pointer; padding: 0;">Terms</button> · 
-                <button onclick="window.parent.location.href='/pages/privacy_policy.py'" style="text-decoration: none; color: inherit; background: none; border: none; cursor: pointer; padding: 0;">Privacy</button>
+                <a href="javascript:void(0)" onclick="parent.location.href='/pages/terms_of_service.py'" style="text-decoration: none; color: inherit; padding: 0;">Terms</a> · 
+                <a href="javascript:void(0)" onclick="parent.location.href='/pages/privacy_policy.py'" style="text-decoration: none; color: inherit; padding: 0;">Privacy</a>
             </p>
         </div>
     """, unsafe_allow_html=True)
