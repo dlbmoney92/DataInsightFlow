@@ -12,6 +12,37 @@ st.set_page_config(
     layout="wide"
 )
 
+# Add Open Graph and social media metadata to improve sharing previews
+def get_social_metadata(title, description, image_url=None):
+    """Generate HTML meta tags for social media platforms"""
+    default_image = "https://analytics-assist.replit.app/assets/logo.png"
+    image = image_url or default_image
+    
+    return f"""
+    <!-- Primary Meta Tags -->
+    <title>{title}</title>
+    <meta name="title" content="{title}">
+    <meta name="description" content="{description}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://analytics-assist.replit.app/">
+    <meta property="og:title" content="{title}">
+    <meta property="og:description" content="{description}">
+    <meta property="og:image" content="{image}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://analytics-assist.replit.app/">
+    <meta property="twitter:title" content="{title}">
+    <meta property="twitter:description" content="{description}">
+    <meta property="twitter:image" content="{image}">
+    
+    <!-- LinkedIn -->
+    <meta property="og:site_name" content="Analytics Assist">
+    <meta property="og:type" content="article">
+    """
+
 # Custom CSS
 st.markdown("""
 <style>
@@ -58,6 +89,14 @@ def app():
     if not share_id:
         # No share ID provided
         st.markdown('<div class="share-header"><h1>Shared Content</h1><p>No content ID provided. This link may be invalid or expired.</p></div>', unsafe_allow_html=True)
+        
+        # Add generic social media tags for the main page
+        generic_metadata = get_social_metadata(
+            title="Analytics Assist - Data Analytics Platform",
+            description="An AI-powered data analysis platform that transforms complex datasets into meaningful insights."
+        )
+        st.markdown(generic_metadata, unsafe_allow_html=True)
+        
         display_signup_cta()
         return
     
@@ -69,6 +108,14 @@ def app():
     if not shared_content:
         # Share ID not found
         st.markdown('<div class="share-header"><h1>Shared Content</h1><p>This shared content has expired or does not exist.</p></div>', unsafe_allow_html=True)
+        
+        # Add generic social media tags for the main page
+        generic_metadata = get_social_metadata(
+            title="Analytics Assist - Data Analytics Platform",
+            description="An AI-powered data analysis platform that transforms complex datasets into meaningful insights."
+        )
+        st.markdown(generic_metadata, unsafe_allow_html=True)
+        
         display_signup_cta()
         return
     
@@ -77,8 +124,24 @@ def app():
     data = shared_content.get("data")
     created_at = pd.to_datetime(shared_content.get("created_at"))
     
-    # Header with title
+    # Get content title and description for metadata
     title = data.get("title", f"Shared {content_type.title()}")
+    
+    # Create description based on content type
+    if content_type == "report":
+        description = data.get("summary", f"A data analysis report created with Analytics Assist on {created_at.strftime('%B %d, %Y')}")
+    elif content_type == "visualization":
+        description = data.get("description", f"A data visualization created with Analytics Assist on {created_at.strftime('%B %d, %Y')}")
+    elif content_type == "insight":
+        description = data.get("text", "")[:150] + "..." if len(data.get("text", "")) > 150 else data.get("text", "")
+    else:
+        description = f"Shared content from Analytics Assist - {created_at.strftime('%B %d, %Y')}"
+    
+    # Add social media metadata tags to the page
+    social_metadata = get_social_metadata(title, description)
+    st.markdown(social_metadata, unsafe_allow_html=True)
+    
+    # Header with title
     st.markdown(f'<div class="share-header"><h1>{title}</h1><p class="metadata">Shared on {created_at.strftime("%B %d, %Y at %I:%M %p")}</p></div>', unsafe_allow_html=True)
     
     # Render based on content type
