@@ -342,8 +342,8 @@ with tab2:
                 )
                 
                 # Different download options based on subscription and selected format
-                # Get the export format from session state to avoid "possibly unbound" errors
-                export_format = st.session_state.get("export_format", "CSV")
+                # Use the helper function to get export format consistently
+                export_format = get_export_format()
                 
                 if export_format == "CSV" and can_export_csv:
                     # For CSV format, we'll create a simple table from the dataframe
@@ -369,9 +369,28 @@ with tab2:
                     st.markdown(pdf_link, unsafe_allow_html=True)
                     
                 else:
-                    # Default to HTML if format selection doesn't match available formats
-                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.html">Download Report</a>'
-                    st.markdown(download_link, unsafe_allow_html=True)
+                    # If format doesn't match available formats, check export permissions and use the best available format
+                    if can_export_csv:
+                        # Fallback to CSV for free tier
+                        csv_buffer = io.StringIO()
+                        df.to_csv(csv_buffer, index=False)
+                        csv_data = csv_buffer.getvalue()
+                        download_link = f'<a href="data:text/csv;base64,{base64.b64encode(csv_data.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.csv">Download CSV Report</a>'
+                        st.markdown(download_link, unsafe_allow_html=True)
+                    elif can_export_html:
+                        # Fallback to HTML as second choice
+                        download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.html">Download HTML Report</a>'
+                        st.markdown(download_link, unsafe_allow_html=True)
+                    elif can_export_pdf:
+                        # Fallback to PDF as third choice
+                        from utils.export import convert_html_to_pdf, generate_pdf_download_link
+                        pdf_link = generate_pdf_download_link(
+                            report_html, 
+                            filename=f"{st.session_state.current_project.get('name', 'report')}_summary.pdf"
+                        )
+                        st.markdown(pdf_link, unsafe_allow_html=True)
+                    else:
+                        st.error("No export formats are available for your subscription tier. Please upgrade to enable exports.")
     
     elif report_type == "Data Quality Report" and can_export_reports:
         # Options for data quality report
@@ -612,9 +631,42 @@ with tab2:
                     st.markdown(pdf_link, unsafe_allow_html=True)
                     
                 else:
-                    # Default to HTML if format selection doesn't match available formats
-                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_data_quality.html">Download Report</a>'
-                    st.markdown(download_link, unsafe_allow_html=True)
+                    # If format doesn't match available formats, check export permissions and use the best available format
+                    if can_export_csv:
+                        # Fallback to CSV for free tier
+                        csv_buffer = io.StringIO()
+                        # Include missing data analysis if available
+                        if include_missing_values and 'missing_analysis' in locals():
+                            missing_analysis.to_csv(csv_buffer, index=True)
+                        else:
+                            # Just export the data summary
+                            summary_df = pd.DataFrame({
+                                'Column': df.columns,
+                                'Data Type': df.dtypes,
+                                'Count': df.count(),
+                                'Missing': df.isna().sum(),
+                                'Missing %': 100 * df.isna().sum() / len(df),
+                                'Unique Values': [df[col].nunique() for col in df.columns]
+                            })
+                            summary_df.to_csv(csv_buffer, index=False)
+                        
+                        csv_data = csv_buffer.getvalue()
+                        download_link = f'<a href="data:text/csv;base64,{base64.b64encode(csv_data.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_data_quality.csv">Download CSV Report</a>'
+                        st.markdown(download_link, unsafe_allow_html=True)
+                    elif can_export_html:
+                        # Fallback to HTML as second choice
+                        download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_data_quality.html">Download HTML Report</a>'
+                        st.markdown(download_link, unsafe_allow_html=True)
+                    elif can_export_pdf:
+                        # Fallback to PDF as third choice
+                        from utils.export import convert_html_to_pdf, generate_pdf_download_link
+                        pdf_link = generate_pdf_download_link(
+                            report_html, 
+                            filename=f"{st.session_state.current_project.get('name', 'report')}_data_quality.pdf"
+                        )
+                        st.markdown(pdf_link, unsafe_allow_html=True)
+                    else:
+                        st.error("No export formats are available for your subscription tier. Please upgrade to enable exports.")
     
     elif report_type == "Insight Report" and can_export_reports:
         if 'generated_insights' not in st.session_state or not st.session_state.generated_insights:
@@ -761,9 +813,42 @@ with tab2:
                         st.markdown(pdf_link, unsafe_allow_html=True)
                         
                     else:
-                        # Default to HTML if format selection doesn't match available formats
-                        download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_insights.html">Download Report</a>'
-                        st.markdown(download_link, unsafe_allow_html=True)
+                        # If format doesn't match available formats, check export permissions and use the best available format
+                        if can_export_csv:
+                            # Fallback to CSV for free tier
+                            csv_buffer = io.StringIO()
+                            
+                            # Create a DataFrame from insights
+                            insights_data = []
+                            for insight in insights:
+                                insights_data.append({
+                                    'Title': insight.get('title', ''),
+                                    'Category': insight.get('category', 'general'),
+                                    'Description': insight.get('description', '')
+                                })
+                                
+                            if insights_data:
+                                pd.DataFrame(insights_data).to_csv(csv_buffer, index=False)
+                            else:
+                                pd.DataFrame(columns=['Title', 'Category', 'Description']).to_csv(csv_buffer, index=False)
+                            
+                            csv_data = csv_buffer.getvalue()
+                            download_link = f'<a href="data:text/csv;base64,{base64.b64encode(csv_data.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_insights.csv">Download CSV Report</a>'
+                            st.markdown(download_link, unsafe_allow_html=True)
+                        elif can_export_html:
+                            # Fallback to HTML as second choice
+                            download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_insights.html">Download HTML Report</a>'
+                            st.markdown(download_link, unsafe_allow_html=True)
+                        elif can_export_pdf:
+                            # Fallback to PDF as third choice
+                            from utils.export import convert_html_to_pdf, generate_pdf_download_link
+                            pdf_link = generate_pdf_download_link(
+                                report_html, 
+                                filename=f"{st.session_state.current_project.get('name', 'report')}_insights.pdf"
+                            )
+                            st.markdown(pdf_link, unsafe_allow_html=True)
+                        else:
+                            st.error("No export formats are available for your subscription tier. Please upgrade to enable exports.")
     
     elif report_type == "Custom Report" and can_export_reports:
         st.subheader("Custom Report Options")
