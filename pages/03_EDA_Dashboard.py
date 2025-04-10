@@ -477,8 +477,8 @@ if tab_info["Outliers"]["available"]:
                 "Column": col,
                 "Outlier Count": outlier_count,
                 "% Outliers": f"{pct_outliers:.2f}%",
-                "Min Outlier": f"{min(values):.4f}" if values and len(values) > 0 else "N/A", 
-                "Max Outlier": f"{max(values):.4f}" if values and len(values) > 0 else "N/A"
+                "Min Outlier": format_outlier_value(min(values)) if values and len(values) > 0 else "N/A", 
+                "Max Outlier": format_outlier_value(max(values)) if values and len(values) > 0 else "N/A"
             })
         
     if outlier_summary:
