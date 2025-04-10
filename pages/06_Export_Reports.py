@@ -386,13 +386,13 @@ with tab2:
                 <head>
                     <title>Data Quality Report</title>
                     <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .section { margin-bottom: 20px; }
-                        table { border-collapse: collapse; width: 100%; }
-                        th, td { border: 1px solid #ddd; padding: 8px; }
-                        th { background-color: #f2f2f2; }
-                        tr:nth-child(even) { background-color: #f9f9f9; }
+                        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                        .header {{ text-align: center; margin-bottom: 30px; }}
+                        .section {{ margin-bottom: 20px; }}
+                        table {{ border-collapse: collapse; width: 100%; }}
+                        th, td {{ border: 1px solid #ddd; padding: 8px; }}
+                        th {{ background-color: #f2f2f2; }}
+                        tr:nth-child(even) {{ background-color: #f9f9f9; }}
                     </style>
                 </head>
                 <body>
@@ -625,12 +625,12 @@ with tab2:
                     <head>
                         <title>Insight Report</title>
                         <style>
-                            body { font-family: Arial, sans-serif; margin: 20px; }
-                            .header { text-align: center; margin-bottom: 30px; }
-                            .section { margin-bottom: 30px; }
-                            .insight { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-                            .insight-title { font-weight: bold; margin-bottom: 10px; font-size: 18px; }
-                            .insight-category { color: #666; font-style: italic; }
+                            body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                            .header {{ text-align: center; margin-bottom: 30px; }}
+                            .section {{ margin-bottom: 30px; }}
+                            .insight {{ margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }}
+                            .insight-title {{ font-weight: bold; margin-bottom: 10px; font-size: 18px; }}
+                            .insight-category {{ color: #666; font-style: italic; }}
                         </style>
                     </head>
                     <body>
