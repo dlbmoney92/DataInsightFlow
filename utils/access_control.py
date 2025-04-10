@@ -59,9 +59,9 @@ FEATURE_ACCESS = {
     
     # Export
     "export_format": {
-        "free": ["csv", "pdf"],  # CSV and PDF export for free tier
-        "basic": ["csv", "excel", "pdf", "xlsx"],  # Excel, CSV, PDF, XLSX exports
-        "pro": ["csv", "excel", "pdf", "xlsx", "json", "sql", "api"],  # All export formats
+        "free": ["csv"],  # CSV export only for free tier
+        "basic": ["csv", "excel", "pdf"],  # Excel, CSV, PDF exports
+        "pro": ["csv", "excel", "pdf", "json", "html"],  # All export formats
         "enterprise": "all"
     },
     

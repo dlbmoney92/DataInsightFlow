@@ -231,14 +231,28 @@ with tab1:
 with tab2:
     st.header("Generate Analysis Reports")
     
-    # Check if user has access to report exports (requires at least the basic tier)
-    can_export_reports = check_access("export_format", "pdf")
+    # Get available export formats for the current subscription tier
+    available_formats = check_access("export_format", None)
+    if isinstance(available_formats, list):
+        allowed_formats = available_formats
+    else:
+        allowed_formats = ["csv"]  # Default to CSV only if check_access fails
+    
+    # Determine if user can export reports in different formats
+    can_export_csv = "csv" in allowed_formats
+    can_export_pdf = "pdf" in allowed_formats
+    can_export_html = "html" in allowed_formats
+    can_export_excel = "excel" in allowed_formats
+    
+    # Define the minimum access requirement
+    can_export_reports = can_export_csv  # Everyone can at least export CSV
+    can_export_advanced = can_export_pdf or can_export_html  # More advanced formats
     
     # Initialize report_type with a default value
     report_type = None
     
     if not can_export_reports:
-        st.warning("Report generation requires a Basic subscription or higher. Please upgrade your subscription to access this feature.")
+        st.warning("Report generation requires at least a Free subscription.")
         
         # Show a button to upgrade
         if st.button("View Subscription Options"):
@@ -251,6 +265,32 @@ with tab2:
             "Select report type",
             ["Summary Report", "Data Quality Report", "Insight Report", "Custom Report"]
         )
+        
+        # Show available formats based on subscription
+        format_labels = []
+        if can_export_csv:
+            format_labels.append("CSV")
+        if can_export_excel:
+            format_labels.append("Excel")
+        if can_export_html:
+            format_labels.append("HTML")
+        if can_export_pdf:
+            format_labels.append("PDF")
+            
+        st.info(f"Your subscription ({st.session_state.subscription_tier.capitalize()}) allows export in the following formats: {', '.join(format_labels)}")
+        
+        # Add export format selection for tiers that have HTML or PDF
+        export_format = "CSV"  # Default format for free tier
+        
+        if can_export_advanced:
+            export_format = st.radio(
+                "Export Format",
+                ["HTML", "PDF"] if (can_export_html and can_export_pdf) else 
+                ["HTML"] if can_export_html else 
+                ["PDF"] if can_export_pdf else 
+                ["CSV"],
+                horizontal=True
+            )
     
     if report_type == "Summary Report" and can_export_reports:
         include_transformations = st.checkbox("Include transformation history", value=True)
@@ -265,11 +305,38 @@ with tab2:
                 report_html = export_summary_report(
                     df, 
                     transformations, 
-                    insights
+                    insights,
+                    add_branding=True
                 )
                 
-                download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.html">Download Summary Report</a>'
-                st.markdown(download_link, unsafe_allow_html=True)
+                # Different download options based on subscription and selected format
+                if export_format == "CSV" and can_export_csv:
+                    # For CSV format, we'll create a simple table from the dataframe
+                    csv_buffer = io.StringIO()
+                    df.to_csv(csv_buffer, index=False)
+                    csv_data = csv_buffer.getvalue()
+                    
+                    download_link = f'<a href="data:text/csv;base64,{base64.b64encode(csv_data.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.csv">Download CSV Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
+                    
+                elif export_format == "HTML" and can_export_html:
+                    # For HTML format, provide the HTML report for download
+                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.html">Download HTML Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
+                    
+                elif export_format == "PDF" and can_export_pdf:
+                    # For PDF format, convert the HTML to PDF
+                    from utils.export import convert_html_to_pdf, generate_pdf_download_link
+                    pdf_link = generate_pdf_download_link(
+                        report_html, 
+                        filename=f"{st.session_state.current_project.get('name', 'report')}_summary.pdf"
+                    )
+                    st.markdown(pdf_link, unsafe_allow_html=True)
+                    
+                else:
+                    # Default to HTML if format selection doesn't match available formats
+                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.html">Download Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
     
     elif report_type == "Data Quality Report" and can_export_reports:
         # Options for data quality report
