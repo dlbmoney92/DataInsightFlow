@@ -71,53 +71,51 @@ def render_navigation():
         if is_trial:
             tier_display = f"Pro (Trial: {trial_days} days left)"
         
-        # Determine the background color based on trial status
-        bg_color = "#4CAF50" if is_trial else "#3b82f6"
-        
-        # Use string concatenation instead of f-strings for the HTML to avoid syntax errors
-        profile_html = """
-        <div style="
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        ">
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                <div style="font-weight: 600; font-size: 16px;">
-                    Welcome, """ + user.get('full_name', 'User') + """
+        # User profile card - simplified
+        st.sidebar.markdown(
+            f"""
+            <div style="
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 20px;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            ">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="font-weight: 600; font-size: 16px;">
+                        Welcome, {user.get('full_name', 'User')}
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="
+                        background: {("#4CAF50" if is_trial else "#3b82f6")};
+                        color: white;
+                        border-radius: 4px;
+                        padding: 4px 8px;
+                        font-size: 12px;
+                        display: inline-block;
+                    ">{tier_display}</div>
+                    <a href="javascript:void(0)" 
+                        id="manage-account-link"
+                        style="
+                            font-size: 12px;
+                            text-decoration: none;
+                            color: #3b82f6;
+                            background: none;
+                            border: none;
+                            cursor: pointer;
+                            padding: 0;
+                        ">Manage Account</a>
+                    <script>
+                        document.getElementById('manage-account-link').addEventListener('click', function() {
+                            window.parent.location.href = '/pages/account.py';
+                        });
+                    </script>
                 </div>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="
-                    background: """ + bg_color + """;
-                    color: white;
-                    border-radius: 4px;
-                    padding: 4px 8px;
-                    font-size: 12px;
-                    display: inline-block;
-                ">""" + tier_display + """</div>
-                <a href="javascript:void(0)" 
-                    id="manage-account-link"
-                    style="
-                        font-size: 12px;
-                        text-decoration: none;
-                        color: #3b82f6;
-                        background: none;
-                        border: none;
-                        cursor: pointer;
-                        padding: 0;
-                    ">Manage Account</a>
-                <script>
-                    document.getElementById('manage-account-link').addEventListener('click', function() {
-                        window.parent.location.href = '/pages/account.py';
-                    });
-                </script>
-            </div>
-        </div>
-        """
-        
-        st.sidebar.markdown(profile_html, unsafe_allow_html=True)
+            """,
+            unsafe_allow_html=True
+        )
     
     
     

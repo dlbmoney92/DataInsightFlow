@@ -6,7 +6,7 @@ from datetime import datetime
 from utils.navigation_config import get_navigation_items, authenticate_developer, is_developer_mode, set_developer_mode
 from utils.subscription import get_trial_days_remaining
 
-# Hide Streamlit’s default multipage navigation menu
+# Hide Streamlit's default multipage navigation menu
 st.markdown("""
     <style>
         [data-testid="stSidebarNav"] {
@@ -118,7 +118,6 @@ def render_navigation():
         """
         
         st.sidebar.markdown(profile_html, unsafe_allow_html=True)
-    
     
     
     # Navigation Items
