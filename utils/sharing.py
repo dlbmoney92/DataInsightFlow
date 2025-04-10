@@ -70,11 +70,11 @@ def get_social_share_links(title, share_url, summary=None):
     Returns:
     - dict of platform -> share URL
     """
-    # Create the full URL by prepending the host if the share_url is a relative path
+    # Always create an absolute URL for sharing
     if share_url.startswith('/'):
-        # For development environment, use a local URL
-        host = "http://localhost:5000"
-        full_url = f"{host}{share_url}"
+        # For production environment, use the Replit domain
+        base_url = "https://analytics-assist.replit.app"
+        full_url = f"{base_url}{share_url}"
     else:
         full_url = share_url
     
@@ -82,8 +82,9 @@ def get_social_share_links(title, share_url, summary=None):
     encoded_title = quote(title)
     encoded_summary = quote(summary or f"Check out this data insight from Analytics Assist: {title}")
     
+    # Create properly formatted social media sharing links
     return {
-        'linkedin': f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_url}&title={encoded_title}&summary={encoded_summary}",
+        'linkedin': f"https://www.linkedin.com/shareArticle?mini=true&url={encoded_url}&title={encoded_title}&summary={encoded_summary}&source=AnalyticsAssist",
         'twitter': f"https://twitter.com/intent/tweet?url={encoded_url}&text={encoded_summary}",
         'facebook': f"https://www.facebook.com/sharer/sharer.php?u={encoded_url}&quote={encoded_summary}",
         'email': f"mailto:?subject={encoded_title}&body={encoded_summary}%0A%0A{encoded_url}"
@@ -103,29 +104,67 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
     Returns:
     - None (directly renders the card)
     """
+    # Make the share link absolute
+    if share_link.startswith('/'):
+        # Create the full URL with the base domain
+        base_url = "https://analytics-assist.replit.app"
+        absolute_share_link = f"{base_url}{share_link}"
+    else:
+        absolute_share_link = share_link
+    
     with st.container(border=True):
         st.subheader(f"Share {content_type.title()}")
         
-        st.text_input("Shareable Link", share_link, disabled=True)
+        # Show the shareable link in a text input
+        st.text_input("Shareable Link", absolute_share_link, disabled=True, key=f"share_input_{hash(share_link)}")
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("📋 Copy Link", key=f"copy_{content_type}_{hash(share_link)}"):
-                # Show the link in a text area for easy copying
-                st.code(share_link, language=None)
-                st.success("Copy the link above!")
+            # Create a unique ID for each copy button
+            copy_button_id = f"copy_button_{hash(share_link)}"
+            
+            # Add JavaScript for copying to clipboard
+            copy_js = f"""
+            <script>
+            function copyToClipboard{hash(share_link)}() {{
+                const el = document.createElement('textarea');
+                el.value = "{absolute_share_link}";
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                
+                // Show the success message
+                document.getElementById('copy_success_{hash(share_link)}').style.display = 'block';
+                setTimeout(function() {{
+                    document.getElementById('copy_success_{hash(share_link)}').style.display = 'none';
+                }}, 3000);
+            }}
+            </script>
+            <button id="{copy_button_id}" 
+                onclick="copyToClipboard{hash(share_link)}()" 
+                style="background-color: #1E88E5; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%;">
+                📋 Copy Link
+            </button>
+            <div id="copy_success_{hash(share_link)}" style="display: none; color: green; margin-top: 5px;">
+                ✅ Link copied to clipboard!
+            </div>
+            """
+            
+            # Render the button with JS
+            st.markdown(copy_js, unsafe_allow_html=True)
                 
         with col2:
             if st.button("✉️ Email Link", key=f"email_{content_type}_{hash(share_link)}"):
                 subject = f"Analytics Assist: {title}"
-                body = f"Check out this {content_type} from Analytics Assist: {share_link}"
+                body = f"Check out this {content_type} from Analytics Assist: {absolute_share_link}"
                 st.markdown(f'<a href="mailto:?subject={quote(subject)}&body={quote(body)}" target="_blank">Send Email</a>', unsafe_allow_html=True)
                 
         if include_social:
             st.markdown("### Share on Social Media")
             st.write("Share this content with colleagues and friends on your favorite platforms.")
             
-            social_links = get_social_share_links(title, share_link, summary)
+            social_links = get_social_share_links(title, absolute_share_link, summary)
             
             # CSS for styled buttons
             st.markdown("""
