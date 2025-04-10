@@ -35,6 +35,15 @@ from utils.global_config import apply_global_css
 from utils.access_control import check_access
 import base64
 
+def format_outlier_value(value):
+    """Format outlier values depending on their type."""
+    if isinstance(value, (int, np.integer)):
+        return str(value)
+    elif isinstance(value, (float, np.floating)):
+        return f"{value:.4f}"
+    else:
+        return str(value)
+
 # Apply global CSS
 apply_global_css()
 
