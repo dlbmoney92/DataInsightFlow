@@ -875,19 +875,13 @@ with tab4:
             # Add a title for the shared report
             report_title = st.text_input("Report Title", value=f"{st.session_state.current_project.get('name', 'Analysis')} Report")
             
-            # Check if user has access to PDF sharing format
-            can_share_pdf = check_access("sharing_format", "pdf")
+            # PDF sharing is now allowed for all account types
+            can_share_pdf = True  # Overriding access check to allow PDF sharing for all account types
             
-            if not can_share_pdf:
-                st.warning("Sharing reports requires PDF sharing access. Please upgrade your subscription.")
-                # Show a button to upgrade
-                if st.button("View Subscription Options", key="upgrade_pdf_share"):
-                    st.switch_page("pages/subscription.py")
-            else:
-                # Add a button to generate the shareable link
-                if st.button("Generate Shareable Report Link"):
-                    with st.spinner("Generating shareable report..."):
-                        # Prepare the report data
+            # Add a button to generate the shareable link
+            if st.button("Generate Shareable Report Link"):
+                with st.spinner("Generating shareable report..."):
+                    # Prepare the report data
                         transformations = st.session_state.transformations if 'transformations' in st.session_state and include_transformations else []
                         insights = st.session_state.generated_insights if 'generated_insights' in st.session_state and include_insights else []
                         
