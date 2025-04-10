@@ -302,6 +302,27 @@ def convert_html_to_pdf(html_content):
         # Create a BytesIO buffer to store the PDF
         pdf_buffer = io.BytesIO()
         
+        # Make sure HTML content is properly formatted with DOCTYPE and HTML structure
+        # This ensures the content is properly rendered in the PDF
+        if not html_content.strip().startswith('<!DOCTYPE html>') and not html_content.strip().startswith('<html'):
+            html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Analytics Assist Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        h1, h2, h3 {{ color: #2c3e50; }}
+        table {{ border-collapse: collapse; width: 100%; margin-bottom: 20px; }}
+        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        th {{ background-color: #f2f2f2; }}
+    </style>
+</head>
+<body>
+{html_content}
+</body>
+</html>"""
+        
         # Convert HTML to PDF
         HTML(string=html_content).write_pdf(pdf_buffer)
         
