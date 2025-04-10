@@ -363,7 +363,7 @@ ax2.set_title("Subscription Management", fontsize=10)
 
 plt.suptitle("Account Management", fontsize=14, fontweight='bold', color='#2c3e50', y=0.98)
 plt.tight_layout(rect=[0, 0, 1, 0.95])
-plt.savefig("assets/images/account_management_screenshot.png", dpi=100, bbox_inches='tight')
+plt.savefig("account_management_screenshot.png", dpi=100, bbox_inches='tight')
 plt.close()
 
 print("All screenshots created successfully")

@@ -73,7 +73,7 @@ def app():
     """)
     
     # Upload Data screenshot
-    st.image("https://via.placeholder.com/800x400.png?text=Upload+Data+Screenshot", 
+    st.image("assets/images/upload_data_screenshot.png", 
              caption="Upload Data interface showing file upload options and sample datasets", 
              use_container_width=True)
     
@@ -99,7 +99,7 @@ def app():
     """)
     
     # Data Preview screenshot
-    st.image("https://via.placeholder.com/800x400.png?text=Data+Preview+Screenshot", 
+    st.image("assets/images/data_preview_screenshot.png", 
              caption="Data Preview interface showing tabular view and data statistics", 
              use_container_width=True)
     
@@ -127,7 +127,7 @@ def app():
     """)
     
     # EDA screenshot
-    st.image("https://via.placeholder.com/800x400.png?text=EDA+Dashboard+Screenshot", 
+    st.image("assets/images/eda_dashboard_screenshot.png", 
              caption="EDA Dashboard showing correlation matrix and visualization options", 
              use_container_width=True)
     
@@ -157,7 +157,7 @@ def app():
     """)
     
     # Transformation screenshot
-    st.image("https://via.placeholder.com/800x400.png?text=Data+Transformation+Screenshot", 
+    st.image("assets/images/data_transformation_screenshot.png", 
              caption="Data Transformation interface showing options for cleaning and transforming data", 
              use_container_width=True)
     
@@ -184,7 +184,7 @@ def app():
     """)
     
     # Insights screenshot
-    st.image("https://via.placeholder.com/800x400.png?text=Insights+Dashboard+Screenshot", 
+    st.image("assets/images/insights_dashboard_screenshot.png", 
              caption="AI-powered Insights Dashboard showing automatically generated insights and visualizations", 
              use_container_width=True)
     
@@ -211,7 +211,7 @@ def app():
     """)
     
     # Export screenshot
-    st.image("https://via.placeholder.com/800x400.png?text=Export+Reports+Screenshot", 
+    st.image("assets/images/export_reports_screenshot.png", 
              caption="Export Reports interface showing format options and report configuration", 
              use_container_width=True)
     
