@@ -16,6 +16,11 @@ import json
 import base64
 import io
 import uuid
+
+# Helper function to get the current export format safely
+def get_export_format():
+    """Get the current export format from session state, defaulting to CSV if not set."""
+    return st.session_state.get("export_format", "CSV")
 from utils.export import (
     generate_excel_download_link,
     generate_csv_download_link,
@@ -279,9 +284,18 @@ with tab2:
             
         st.info(f"Your subscription ({st.session_state.subscription_tier.capitalize()}) allows export in the following formats: {', '.join(format_labels)}")
         
-        # Add export format selection for tiers that have HTML or PDF
-        export_format = "CSV"  # Default format for free tier
+        # Set default export format based on available formats
+        if can_export_html:
+            export_format = "HTML"
+        elif can_export_pdf:
+            export_format = "PDF"
+        else:
+            export_format = "CSV"  # Default format for free tier
         
+        # Store in session state to avoid "possibly unbound" errors
+        st.session_state.export_format = export_format
+        
+        # Add export format selection for tiers that have HTML or PDF
         if can_export_advanced:
             export_format = st.radio(
                 "Export Format",
@@ -291,6 +305,8 @@ with tab2:
                 ["CSV"],
                 horizontal=True
             )
+            # Update session state
+            st.session_state.export_format = export_format
     
     if report_type == "Summary Report" and can_export_reports:
         include_transformations = st.checkbox("Include transformation history", value=True)
@@ -310,6 +326,9 @@ with tab2:
                 )
                 
                 # Different download options based on subscription and selected format
+                # Get the export format from session state to avoid "possibly unbound" errors
+                export_format = st.session_state.get("export_format", "CSV")
+                
                 if export_format == "CSV" and can_export_csv:
                     # For CSV format, we'll create a simple table from the dataframe
                     csv_buffer = io.StringIO()
@@ -537,8 +556,47 @@ with tab2:
                 </html>
                 """
                 
-                download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_data_quality.html">Download Data Quality Report</a>'
-                st.markdown(download_link, unsafe_allow_html=True)
+                # Different download options based on subscription and selected format
+                if export_format == "CSV" and can_export_csv:
+                    # For CSV format, we'll create a simple table from the dataframe
+                    csv_buffer = io.StringIO()
+                    # Include missing data analysis if available
+                    if include_missing_values and 'missing_analysis' in locals():
+                        missing_analysis.to_csv(csv_buffer, index=True)
+                    else:
+                        # Just export the data summary
+                        summary_df = pd.DataFrame({
+                            'Column': df.columns,
+                            'Data Type': df.dtypes,
+                            'Count': df.count(),
+                            'Missing': df.isna().sum(),
+                            'Missing %': 100 * df.isna().sum() / len(df),
+                            'Unique Values': [df[col].nunique() for col in df.columns]
+                        })
+                        summary_df.to_csv(csv_buffer, index=False)
+                    
+                    csv_data = csv_buffer.getvalue()
+                    download_link = f'<a href="data:text/csv;base64,{base64.b64encode(csv_data.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_data_quality.csv">Download CSV Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
+                    
+                elif export_format == "HTML" and can_export_html:
+                    # For HTML format, provide the HTML report for download
+                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_data_quality.html">Download HTML Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
+                    
+                elif export_format == "PDF" and can_export_pdf:
+                    # For PDF format, convert the HTML to PDF
+                    from utils.export import convert_html_to_pdf, generate_pdf_download_link
+                    pdf_link = generate_pdf_download_link(
+                        report_html, 
+                        filename=f"{st.session_state.current_project.get('name', 'report')}_data_quality.pdf"
+                    )
+                    st.markdown(pdf_link, unsafe_allow_html=True)
+                    
+                else:
+                    # Default to HTML if format selection doesn't match available formats
+                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_data_quality.html">Download Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
     
     elif report_type == "Insight Report" and can_export_reports:
         if 'generated_insights' not in st.session_state or not st.session_state.generated_insights:
@@ -644,8 +702,47 @@ with tab2:
                     </html>
                     """
                     
-                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_insights.html">Download Insight Report</a>'
-                    st.markdown(download_link, unsafe_allow_html=True)
+                    # Different download options based on subscription and selected format
+                    if export_format == "CSV" and can_export_csv:
+                        # For CSV format, we'll convert insights to a simple table
+                        csv_buffer = io.StringIO()
+                        
+                        # Create a DataFrame from insights
+                        insights_data = []
+                        for insight in insights:
+                            insights_data.append({
+                                'Title': insight.get('title', ''),
+                                'Category': insight.get('category', 'general'),
+                                'Description': insight.get('description', '')
+                            })
+                            
+                        if insights_data:
+                            pd.DataFrame(insights_data).to_csv(csv_buffer, index=False)
+                        else:
+                            pd.DataFrame(columns=['Title', 'Category', 'Description']).to_csv(csv_buffer, index=False)
+                        
+                        csv_data = csv_buffer.getvalue()
+                        download_link = f'<a href="data:text/csv;base64,{base64.b64encode(csv_data.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_insights.csv">Download CSV Report</a>'
+                        st.markdown(download_link, unsafe_allow_html=True)
+                        
+                    elif export_format == "HTML" and can_export_html:
+                        # For HTML format, provide the HTML report for download
+                        download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_insights.html">Download HTML Report</a>'
+                        st.markdown(download_link, unsafe_allow_html=True)
+                        
+                    elif export_format == "PDF" and can_export_pdf:
+                        # For PDF format, convert the HTML to PDF
+                        from utils.export import convert_html_to_pdf, generate_pdf_download_link
+                        pdf_link = generate_pdf_download_link(
+                            report_html, 
+                            filename=f"{st.session_state.current_project.get('name', 'report')}_insights.pdf"
+                        )
+                        st.markdown(pdf_link, unsafe_allow_html=True)
+                        
+                    else:
+                        # Default to HTML if format selection doesn't match available formats
+                        download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_insights.html">Download Report</a>'
+                        st.markdown(download_link, unsafe_allow_html=True)
     
     elif report_type == "Custom Report" and can_export_reports:
         st.subheader("Custom Report Options")
@@ -864,8 +961,71 @@ with tab2:
                 </html>
                 """
                 
-                download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{title.replace(" ", "_")}.html">Download Custom Report</a>'
-                st.markdown(download_link, unsafe_allow_html=True)
+                # Different download options based on subscription and selected format
+                if export_format == "CSV" and can_export_csv:
+                    # For CSV format, we'll convert report content to a simple table
+                    csv_buffer = io.StringIO()
+                    
+                    # Create a summary of the report data
+                    report_data = {
+                        'Report Name': [title],
+                        'Generated Date': [datetime.now().strftime("%Y-%m-%d %H:%M")],
+                        'Dataset Rows': [df.shape[0]],
+                        'Dataset Columns': [df.shape[1]],
+                        'Introduction': [custom_intro],
+                        'Conclusion': [custom_conclusion]
+                    }
+                    
+                    pd.DataFrame(report_data).to_csv(csv_buffer, index=False)
+                    
+                    # Add transformations data if included
+                    if include_transformations and 'transformations' in st.session_state and st.session_state.transformations:
+                        csv_buffer.write("\n\nTransformations:\n")
+                        transformations_data = []
+                        for i, t in enumerate(st.session_state.transformations):
+                            transformations_data.append({
+                                'Number': i+1,
+                                'Transformation': t['name'],
+                                'Applied At': t['timestamp']
+                            })
+                        if transformations_data:
+                            pd.DataFrame(transformations_data).to_csv(csv_buffer, index=False)
+                    
+                    # Add insights data if included
+                    if include_insights and 'generated_insights' in st.session_state and st.session_state.generated_insights:
+                        csv_buffer.write("\n\nInsights:\n")
+                        insights_data = []
+                        for insight in st.session_state.generated_insights:
+                            insights_data.append({
+                                'Title': insight.get('title', ''),
+                                'Category': insight.get('category', 'general'),
+                                'Description': insight.get('description', '')
+                            })
+                        if insights_data:
+                            pd.DataFrame(insights_data).to_csv(csv_buffer, index=False)
+                    
+                    csv_data = csv_buffer.getvalue()
+                    download_link = f'<a href="data:text/csv;base64,{base64.b64encode(csv_data.encode()).decode()}" download="{title.replace(" ", "_")}.csv">Download CSV Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
+                    
+                elif export_format == "HTML" and can_export_html:
+                    # For HTML format, provide the HTML report for download
+                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{title.replace(" ", "_")}.html">Download HTML Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
+                    
+                elif export_format == "PDF" and can_export_pdf:
+                    # For PDF format, convert the HTML to PDF
+                    from utils.export import convert_html_to_pdf, generate_pdf_download_link
+                    pdf_link = generate_pdf_download_link(
+                        report_html, 
+                        filename=f"{title.replace(' ', '_')}.pdf"
+                    )
+                    st.markdown(pdf_link, unsafe_allow_html=True)
+                    
+                else:
+                    # Default to HTML if format selection doesn't match available formats
+                    download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{title.replace(" ", "_")}.html">Download Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
 
 with tab3:
     st.header("Save & Load Work")
