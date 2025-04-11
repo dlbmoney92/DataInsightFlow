@@ -156,8 +156,8 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
                 copy_js = f"""
                 <script>
                     (function() {{
-                        const shareUrl = '{absolute_share_link}';
-                        const copySuccessId = 'copy_success_{hash(share_link)}';
+                        const shareUrl = "{absolute_share_link}";
+                        const copySuccessId = "copy_success_{hash(share_link)}";
                         
                         // Create a hidden textarea element for copy fallback
                         // Using textarea instead of input for better compatibility with longer text
@@ -230,22 +230,52 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
                             
                             // Create a modal or alert with instructions
                             const copyModal = document.createElement('div');
-                            copyModal.innerHTML = `
-                                <div style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); 
-                                            background:white; padding:20px; z-index:1000; box-shadow:0 0 10px rgba(0,0,0,0.5);
-                                            border-radius:5px; max-width:90%; width:350px;">
-                                    <h3>Copy Link</h3>
-                                    <p>Please copy this link manually:</p>
-                                    <input type="text" value="${shareUrl}" 
-                                           style="width:100%; padding:5px; margin-bottom:10px;" 
-                                           onclick="this.select();" readonly>
-                                    <button onclick="this.parentNode.parentNode.remove();" 
-                                            style="padding:5px 10px; background:#4F8BF9; color:white; border:none; 
-                                                   border-radius:3px; cursor:pointer;">
-                                        Close
-                                    </button>
-                                </div>
-                            `;
+                            const modalContent = document.createElement('div');
+                            modalContent.style.position = 'fixed';
+                            modalContent.style.top = '50%';
+                            modalContent.style.left = '50%';
+                            modalContent.style.transform = 'translate(-50%, -50%)';
+                            modalContent.style.background = 'white';
+                            modalContent.style.padding = '20px';
+                            modalContent.style.zIndex = '1000';
+                            modalContent.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+                            modalContent.style.borderRadius = '5px';
+                            modalContent.style.maxWidth = '90%';
+                            modalContent.style.width = '350px';
+                            
+                            const modalHeader = document.createElement('h3');
+                            modalHeader.textContent = 'Copy Link';
+                            
+                            const modalDesc = document.createElement('p');
+                            modalDesc.textContent = 'Please copy this link manually:';
+                            
+                            const inputField = document.createElement('input');
+                            inputField.type = 'text';
+                            inputField.value = shareUrl;
+                            inputField.style.width = '100%';
+                            inputField.style.padding = '5px';
+                            inputField.style.marginBottom = '10px';
+                            inputField.setAttribute('readonly', '');
+                            inputField.onclick = function() { 
+                                this.select(); 
+                            };
+                            
+                            const closeButton = document.createElement('button');
+                            closeButton.textContent = 'Close';
+                            closeButton.style.padding = '5px 10px';
+                            closeButton.style.background = '#4F8BF9';
+                            closeButton.style.color = 'white';
+                            closeButton.style.border = 'none';
+                            closeButton.style.borderRadius = '3px';
+                            closeButton.style.cursor = 'pointer';
+                            closeButton.onclick = function() { copyModal.remove(); };
+                            
+                            modalContent.appendChild(modalHeader);
+                            modalContent.appendChild(modalDesc);
+                            modalContent.appendChild(inputField);
+                            modalContent.appendChild(closeButton);
+                            
+                            copyModal.appendChild(modalContent);
                             document.body.appendChild(copyModal);
                         }}
                     }})();
