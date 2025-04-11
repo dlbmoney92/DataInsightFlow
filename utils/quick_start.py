@@ -354,27 +354,19 @@ def show_tour_bubble(
             next_tour_step()
             return
     
-    # Use custom CSS and JavaScript to create and position the tour bubble
-    bubble_html = f"""
-    <div id="tour-bubble-{step}" class="tour-bubble tour-bubble-{position}">
-        <div class="tour-bubble-title">{title}</div>
-        <div class="tour-bubble-content">{content}</div>
-        <div class="tour-bubble-buttons">
-            <button id="skip-tour-btn">Skip Tour</button>
-            <button id="next-tour-btn">Next</button>
-        </div>
-    </div>
-    
+    # Create bubble with direct navigation buttons
+    bubble_style = f"""
     <style>
     .tour-bubble {{
-        position: absolute;
-        width: 300px;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 15px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
+        position: fixed !important;
+        width: 350px !important;
+        background: white !important;
+        border: 1px solid #ddd !important;
+        border-radius: 8px !important;
+        padding: 0 !important; /* Remove padding as we're styling the content internally */
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        z-index: 1000 !important;
+        overflow: visible !important;
     }}
     
     .tour-bubble-title {{
@@ -392,23 +384,6 @@ def show_tour_bubble(
     .tour-bubble-buttons {{
         display: flex;
         justify-content: space-between;
-    }}
-    
-    .tour-bubble-buttons button {{
-        padding: 5px 10px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }}
-    
-    .tour-bubble-buttons button:first-child {{
-        background: #f2f2f2;
-        color: #333;
-    }}
-    
-    .tour-bubble-buttons button:last-child {{
-        background: #1E3C72;
-        color: white;
     }}
     
     /* Bubble positions with arrows */
@@ -454,15 +429,59 @@ def show_tour_bubble(
         border-bottom: 10px solid white;
     }}
     </style>
+    """
     
+    st.markdown(bubble_style, unsafe_allow_html=True)
+    
+    # Now using Streamlit native components for the bubble
+    with st.container():
+        bubble_container = st.container()
+        
+        with bubble_container:
+            # Add custom styling for this container to make it look like a bubble
+            st.markdown(f"""
+                <div class="tour-bubble-header" style="background: linear-gradient(135deg, #1E3C72, #2A5298); color: white; padding: 10px; border-radius: 8px 8px 0 0;">
+                    <h3 style="margin: 0; font-size: 16px;">{title}</h3>
+                </div>
+                <div class="tour-bubble-content" style="padding: 10px; font-size: 14px;">
+                    {content}
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Navigation buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Skip Tour", key=f"skip_tour_{step}", help="Skip the tour"):
+                    disable_tour_mode()
+                    st.rerun()
+            
+            with col2:
+                if st.button("Next Step", key=f"next_step_{step}", use_container_width=True, type="primary", help="Continue to the next step"):
+                    next_tour_step()
+                    if on_complete:
+                        on_complete()
+                    st.rerun()
+    
+    # Use JavaScript to position the bubble
+    position_script = f"""
     <script>
-    // Position the bubble relative to the target element
+    // Function to position the bubble
     function positionBubble() {{
         const targetElement = document.querySelector('{element_id}');
-        const bubble = document.getElementById('tour-bubble-{step}');
+        if (!targetElement) return;
         
-        if (!targetElement || !bubble) return;
+        // Find the bubble container (it's the closest container to our buttons)
+        const nextButton = document.querySelector('button[data-testid="baseButton-secondary"]');
+        if (!nextButton) return;
         
+        const bubbleContainer = nextButton.closest('.stContainer');
+        if (!bubbleContainer) return;
+        
+        // Style the container as a floating bubble
+        bubbleContainer.classList.add('tour-bubble');
+        bubbleContainer.classList.add('tour-bubble-{position}');
+        
+        // Position based on the target element
         const targetRect = targetElement.getBoundingClientRect();
         
         // Highlight the target element
@@ -470,103 +489,38 @@ def show_tour_bubble(
         targetElement.style.zIndex = '999';
         targetElement.style.boxShadow = '0 0 0 4px rgba(30, 60, 114, 0.4)';
         
-        // Position based on specified position
+        // Position the bubble - using fixed positioning for better visibility
+        bubbleContainer.style.position = 'fixed';
+        bubbleContainer.style.zIndex = '9999';
+        bubbleContainer.style.maxWidth = '350px';
+        
         switch('{position}') {{
             case 'right':
-                bubble.style.left = (targetRect.right + 20) + 'px';
-                bubble.style.top = (targetRect.top + window.scrollY) + 'px';
+                bubbleContainer.style.left = (targetRect.right + 20) + 'px';
+                bubbleContainer.style.top = (targetRect.top) + 'px';
                 break;
             case 'left':
-                bubble.style.left = (targetRect.left - bubble.offsetWidth - 20) + 'px';
-                bubble.style.top = (targetRect.top + window.scrollY) + 'px';
+                bubbleContainer.style.right = (window.innerWidth - targetRect.left + 20) + 'px';
+                bubbleContainer.style.top = (targetRect.top) + 'px';
                 break;
             case 'top':
-                bubble.style.left = (targetRect.left + (targetRect.width / 2) - (bubble.offsetWidth / 2)) + 'px';
-                bubble.style.top = (targetRect.top + window.scrollY - bubble.offsetHeight - 20) + 'px';
+                bubbleContainer.style.left = (targetRect.left + (targetRect.width / 2) - 175) + 'px'; // Half of maxWidth
+                bubbleContainer.style.bottom = (window.innerHeight - targetRect.top + 20) + 'px';
                 break;
             case 'bottom':
-                bubble.style.left = (targetRect.left + (targetRect.width / 2) - (bubble.offsetWidth / 2)) + 'px';
-                bubble.style.top = (targetRect.bottom + window.scrollY + 20) + 'px';
+                bubbleContainer.style.left = (targetRect.left + (targetRect.width / 2) - 175) + 'px'; // Half of maxWidth
+                bubbleContainer.style.top = (targetRect.bottom + 20) + 'px';
                 break;
         }}
     }}
     
-    // Event listeners for tour bubble buttons
-    document.addEventListener('DOMContentLoaded', function() {{
-        const nextBtn = document.getElementById('next-tour-btn');
-        const skipBtn = document.getElementById('skip-tour-btn');
-        
-        if (nextBtn) {{
-            nextBtn.addEventListener('click', function() {{
-                const inputElement = document.querySelector('input[key="tour_action_input"]');
-                if (inputElement) {{
-                    inputElement.value = 'next';
-                    const formElement = document.querySelector('form[data-testid="stForm"]');
-                    if (formElement) {{
-                        formElement.requestSubmit();
-                    }}
-                }}
-            }});
-        }}
-        
-        if (skipBtn) {{
-            skipBtn.addEventListener('click', function() {{
-                const inputElement = document.querySelector('input[key="tour_action_input"]');
-                if (inputElement) {{
-                    inputElement.value = 'skip';
-                    const formElement = document.querySelector('form[data-testid="stForm"]');
-                    if (formElement) {{
-                        formElement.requestSubmit();
-                    }}
-                }}
-            }});
-        }}
-    }});
-    
-    // Position when loaded and on resize
-    document.addEventListener('DOMContentLoaded', positionBubble);
+    // Run positioning after a short delay to ensure DOM is ready
+    setTimeout(positionBubble, 500);
     window.addEventListener('resize', positionBubble);
-    positionBubble(); // Call immediately as well
     </script>
     """
     
-    st.markdown(bubble_html, unsafe_allow_html=True)
-    
-    # Create a hidden form to handle the AJAX requests
-    with st.form("tour_navigation", clear_on_submit=True):
-        # This is a hidden field that will be populated by JavaScript
-        tour_action = st.text_input("Action", value="", key="tour_action_input", label_visibility="collapsed")
-        submitted = st.form_submit_button("Submit", type="primary", label_visibility="collapsed")
-        
-        if submitted:
-            if tour_action == "next":
-                next_tour_step()
-                if on_complete:
-                    on_complete()
-            elif tour_action == "skip":
-                disable_tour_mode()
-            
-            st.rerun()
-    
-    # Add JavaScript to directly handle button clicks without AJAX
-    st.markdown(
-        """
-        <script>
-        // Direct click handlers for the tour buttons
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('button') && e.target.innerText === 'Next') {
-                document.querySelector('input[key="tour_action_input"]').value = 'next';
-                document.querySelector('form[data-testid="stForm"]').requestSubmit();
-            }
-            if (e.target.closest('button') && e.target.innerText === 'Skip Tour') {
-                document.querySelector('input[key="tour_action_input"]').value = 'skip';
-                document.querySelector('form[data-testid="stForm"]').requestSubmit();
-            }
-        });
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown(position_script, unsafe_allow_html=True)
 
 def add_quick_start_button():
     """Add a button to restart the quick start wizard."""
