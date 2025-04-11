@@ -15,11 +15,12 @@ def initialize_quick_start():
     if 'quick_start_completed' not in st.session_state:
         st.session_state.quick_start_completed = False
     
+    # Set tour to enabled for testing
     if 'tour_enabled' not in st.session_state:
-        st.session_state.tour_enabled = False
+        st.session_state.tour_enabled = True
     
     if 'tour_current_step' not in st.session_state:
-        st.session_state.tour_current_step = 0
+        st.session_state.tour_current_step = 1
     
     if 'tour_steps_completed' not in st.session_state:
         st.session_state.tour_steps_completed = set()
@@ -303,12 +304,16 @@ def disable_tour_mode():
 
 def next_tour_step():
     """Advance to the next step in the interactive tour."""
+    # Mark current step as completed first
+    if "tour_page_key" in st.session_state and "tour_step_key" in st.session_state:
+        completed_step = f"{st.session_state.tour_page_key}_{st.session_state.tour_current_step}"
+        st.session_state.tour_steps_completed.add(completed_step)
+        
+    # Then advance to next step
     st.session_state.tour_current_step += 1
     
-    # Mark current step as completed
-    if "tour_page_key" in st.session_state and "tour_step_key" in st.session_state:
-        completed_step = f"{st.session_state.tour_page_key}_{st.session_state.tour_current_step-1}"
-        st.session_state.tour_steps_completed.add(completed_step)
+    # Print for debugging
+    print(f"Advanced to tour step {st.session_state.tour_current_step}")
 
 def show_tour_bubble(
     element_id: str,
@@ -448,7 +453,12 @@ def show_tour_bubble(
                 </div>
             """, unsafe_allow_html=True)
             
-            # Navigation buttons
+            # Navigation buttons with a more distinct UI
+            st.markdown("""
+                <div style="padding: 10px; border-top: 1px solid #eee;">
+                </div>
+            """, unsafe_allow_html=True)
+            
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("Skip Tour", key=f"skip_tour_{step}", help="Skip the tour"):
@@ -456,71 +466,36 @@ def show_tour_bubble(
                     st.rerun()
             
             with col2:
-                if st.button("Next Step", key=f"next_step_{step}", use_container_width=True, type="primary", help="Continue to the next step"):
+                # Make the Next button more prominent
+                if st.button("▶ Next Step", key=f"next_step_{step}", use_container_width=True, type="primary", help="Continue to the next step"):
+                    # Add print for debugging
+                    print(f"Next button clicked on step {step}")
                     next_tour_step()
                     if on_complete:
                         on_complete()
+                    # Print after next_tour_step
+                    print(f"After next_tour_step(), current step is now {st.session_state.tour_current_step}")
                     st.rerun()
     
-    # Use JavaScript to position the bubble
-    position_script = f"""
-    <script>
-    // Function to position the bubble
-    function positionBubble() {{
-        const targetElement = document.querySelector('{element_id}');
-        if (!targetElement) return;
-        
-        // Find the bubble container (it's the closest container to our buttons)
-        const nextButton = document.querySelector('button[data-testid="baseButton-secondary"]');
-        if (!nextButton) return;
-        
-        const bubbleContainer = nextButton.closest('.stContainer');
-        if (!bubbleContainer) return;
-        
-        // Style the container as a floating bubble
-        bubbleContainer.classList.add('tour-bubble');
-        bubbleContainer.classList.add('tour-bubble-{position}');
-        
-        // Position based on the target element
-        const targetRect = targetElement.getBoundingClientRect();
-        
-        // Highlight the target element
-        targetElement.style.position = 'relative';
-        targetElement.style.zIndex = '999';
-        targetElement.style.boxShadow = '0 0 0 4px rgba(30, 60, 114, 0.4)';
-        
-        // Position the bubble - using fixed positioning for better visibility
-        bubbleContainer.style.position = 'fixed';
-        bubbleContainer.style.zIndex = '9999';
-        bubbleContainer.style.maxWidth = '350px';
-        
-        switch('{position}') {{
-            case 'right':
-                bubbleContainer.style.left = (targetRect.right + 20) + 'px';
-                bubbleContainer.style.top = (targetRect.top) + 'px';
-                break;
-            case 'left':
-                bubbleContainer.style.right = (window.innerWidth - targetRect.left + 20) + 'px';
-                bubbleContainer.style.top = (targetRect.top) + 'px';
-                break;
-            case 'top':
-                bubbleContainer.style.left = (targetRect.left + (targetRect.width / 2) - 175) + 'px'; // Half of maxWidth
-                bubbleContainer.style.bottom = (window.innerHeight - targetRect.top + 20) + 'px';
-                break;
-            case 'bottom':
-                bubbleContainer.style.left = (targetRect.left + (targetRect.width / 2) - 175) + 'px'; // Half of maxWidth
-                bubbleContainer.style.top = (targetRect.bottom + 20) + 'px';
-                break;
-        }}
-    }}
+    # Use a simple CSS class approach instead of complex JavaScript
+    position_class = "tour-bubble-" + position
     
-    // Run positioning after a short delay to ensure DOM is ready
-    setTimeout(positionBubble, 500);
-    window.addEventListener('resize', positionBubble);
+    # Create a highlight script for the target element
+    highlight_script = f"""
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {{
+            const targetElement = document.querySelector('{element_id}');
+            if (targetElement) {{
+                targetElement.style.position = 'relative';
+                targetElement.style.zIndex = '999';
+                targetElement.style.boxShadow = '0 0 0 4px rgba(30, 60, 114, 0.4)';
+            }}
+        }});
     </script>
     """
     
-    st.markdown(position_script, unsafe_allow_html=True)
+    # Add the highlight script
+    st.markdown(highlight_script, unsafe_allow_html=True)
 
 def add_quick_start_button():
     """Add a button to restart the quick start wizard."""
