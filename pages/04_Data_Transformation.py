@@ -154,11 +154,23 @@ if "user" in st.session_state:
     st.sidebar.success(f"Logged in as: {st.session_state.user.get('email', 'User')}")
     st.sidebar.info(f"Subscription: {st.session_state.subscription_tier.capitalize()}")
 
-st.title("Data Transformation")
-st.markdown("""
-This page allows you to clean, transform, and prepare your data for analysis. 
-Apply various transformations to handle missing values, outliers, and other data quality issues.
-""")
+title_container = st.container()
+with title_container:
+    st.title("Data Transformation")
+    st.markdown("""
+    This page allows you to clean, transform, and prepare your data for analysis. 
+    Apply various transformations to handle missing values, outliers, and other data quality issues.
+    """)
+
+# Add tour bubble for the page title
+show_tour_bubble(
+    element_id="h1:contains('Data Transformation')", 
+    title="Data Transformation", 
+    content="Welcome to the Data Transformation page! Here you can clean and prepare your data by handling missing values, outliers, and other data quality issues.",
+    step=14,
+    position="bottom",
+    page_key="data_transformation_page"
+)
 
 # Check if dataset is loaded
 if "dataset" not in st.session_state or st.session_state.dataset is None:
@@ -192,18 +204,42 @@ else:
     """)
     
     # Main section - Transformation Operations
-    transformation_tab, history_tab, code_tab = st.tabs([
-        "🧹 Apply Transformations", 
-        "📜 Transformation History", 
-        "💻 Generated Code"
-    ])
+    tabs_container = st.container()
+    with tabs_container:
+        transformation_tab, history_tab, code_tab = st.tabs([
+            "🧹 Apply Transformations", 
+            "📜 Transformation History", 
+            "💻 Generated Code"
+        ])
+    
+    # Add tour bubble for the tabs
+    show_tour_bubble(
+        element_id="div[data-testid='stTabs'] button:contains('Apply Transformations')",
+        title="Transformation Workflow",
+        content="Analytics Assist provides three tabs to help you transform your data: Apply Transformations (where you can clean and modify your data), Transformation History (to review your changes), and Generated Code (to see the Python code for your transformations).",
+        step=15,
+        position="bottom",
+        page_key="data_transformation_page"
+    )
     
     with transformation_tab:
         # Split into two columns
         col1, col2 = st.columns([1, 2])
         
         with col1:
-            st.subheader("Transformation Operations")
+            transf_ops_container = st.container()
+            with transf_ops_container:
+                st.subheader("Transformation Operations")
+            
+            # Add tour bubble for transformation operations
+            show_tour_bubble(
+                element_id="div:contains('Transformation Operations') h3",
+                title="Transformation Types",
+                content="Choose from various transformation types to clean and prepare your data. Select operations like imputing missing values, handling outliers, normalizing data, and more.",
+                step=16,
+                position="bottom",
+                page_key="data_transformation_page"
+            )
             
             # Create a form for transformation selection
             transformation_type = st.selectbox(
@@ -1872,7 +1908,19 @@ else:
         
         with ai_col2:
             # Create AI suggestion section based on column data types
-            st.subheader("AI-Powered Suggestions")
+            ai_suggestions_container = st.container()
+            with ai_suggestions_container:
+                st.subheader("AI-Powered Suggestions")
+            
+            # Add tour bubble for AI-powered suggestions
+            show_tour_bubble(
+                element_id="div:contains('AI-Powered Suggestions') h3",
+                title="AI-Powered Data Cleaning",
+                content="Analytics Assist uses AI to analyze your data and suggest specific transformations to improve data quality. These intelligent recommendations help you clean your data faster and more effectively.",
+                step=17,
+                position="bottom",
+                page_key="data_transformation_page"
+            )
             
             # Check if user has access to AI suggestions
             if not check_access("ai_suggestions"):
@@ -1917,7 +1965,19 @@ else:
                             st.info("No suggestions available for this column.")
             
             # Data preview section
-            st.subheader("Data Preview")
+            data_preview_container = st.container()
+            with data_preview_container:
+                st.subheader("Data Preview")
+            
+            # Add tour bubble for data preview
+            show_tour_bubble(
+                element_id="div:contains('Data Preview') h3",
+                title="Data Preview & Comparison",
+                content="Compare your original data with the transformed data to see the impact of your transformations. View statistics and visualizations to better understand how your data has changed.",
+                step=18,
+                position="bottom",
+                page_key="data_transformation_page"
+            )
             
             # Show original and transformed data
             before_after_tabs = st.tabs(["Current Data", "Original Data", "Column Statistics"])
@@ -2081,7 +2141,19 @@ else:
                     st.info("Apply a transformation to see column statistics.")
                     
             # Visualization of transformations
-            st.subheader("Transformation Visualization")
+            viz_container = st.container()
+            with viz_container:
+                st.subheader("Transformation Visualization")
+            
+            # Add tour bubble for visualizations
+            show_tour_bubble(
+                element_id="div:contains('Transformation Visualization') h3",
+                title="Transformation Flow & Visuals",
+                content="Visualize the impact of your transformations with interactive charts that show before and after comparisons. See how data distributions change and track your transformation journey with a visual flow chart.",
+                step=19,
+                position="bottom",
+                page_key="data_transformation_page"
+            )
             
             if st.session_state.transformations:
                 # Create a visual flow chart of transformations
@@ -2129,7 +2201,19 @@ else:
                 st.info("Apply transformations to see visualizations.")
     
     with history_tab:
-        st.header("Transformation History")
+        history_container = st.container()
+        with history_container:
+            st.header("Transformation History")
+        
+        # Add tour bubble for history tab
+        show_tour_bubble(
+            element_id="div:contains('Transformation History') h1",
+            title="Track Your Changes",
+            content="The Transformation History tab displays all the changes you've made to your dataset. You can review, revert specific transformations, or even reset the entire dataset to its original state.",
+            step=20,
+            position="bottom",
+            page_key="data_transformation_page"
+        )
         
         if not st.session_state.transformations:
             st.info("No transformations have been applied yet.")
@@ -2232,7 +2316,19 @@ else:
                 st.dataframe(history_df, use_container_width=True)
     
     with code_tab:
-        st.header("Generated Python Code")
+        code_container = st.container()
+        with code_container:
+            st.header("Generated Python Code")
+        
+        # Add tour bubble for code tab
+        show_tour_bubble(
+            element_id="div:contains('Generated Python Code') h1",
+            title="Export Your Transformations as Code",
+            content="Analytics Assist automatically generates Python code for every transformation you apply. You can copy this code to use in your own Python scripts or notebooks, making it easy to reproduce your data cleaning steps.",
+            step=21,
+            position="bottom",
+            page_key="data_transformation_page"
+        )
         
         if not st.session_state.transformations:
             st.info("No transformations have been applied yet.")
