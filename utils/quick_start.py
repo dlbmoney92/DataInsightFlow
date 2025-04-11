@@ -105,7 +105,7 @@ def show_quick_start_wizard():
             - Generate powerful visualizations and insights
             - Export and share your findings
             """,
-            "image": "assets/quick_start/welcome.png"  # You'll need to create these images
+            "image": "assets/quick_start_fixed/welcome.svg"
         },
         {
             "title": "Upload Your Data",
@@ -119,7 +119,7 @@ def show_quick_start_wizard():
             
             You can also try our sample datasets to explore the platform.
             """,
-            "image": "assets/quick_start/upload.png",
+            "image": "assets/quick_start_fixed/upload.svg",
             "action": "Go to Upload Data",
             "action_target": "pages/01_Upload_Data.py"
         },
@@ -133,7 +133,7 @@ def show_quick_start_wizard():
             - Basic statistics
             - Data quality issues
             """,
-            "image": "assets/quick_start/preview.png",
+            "image": "assets/quick_start_fixed/preview.svg",
             "action": "Explore Data Preview",
             "action_target": "pages/02_Data_Preview.py"
         },
@@ -147,7 +147,7 @@ def show_quick_start_wizard():
             - Create calculated columns
             - Apply AI-suggested transformations
             """,
-            "image": "assets/quick_start/transform.png",
+            "image": "assets/quick_start_fixed/transform.svg",
             "action": "Try Data Transformation",
             "action_target": "pages/04_Data_Transformation.py"
         },
@@ -162,7 +162,7 @@ def show_quick_start_wizard():
             
             Pro Tip: The more context you provide about your data, the better insights you'll receive!
             """,
-            "image": "assets/quick_start/insights.png",
+            "image": "assets/quick_start_fixed/insights.svg",
             "action": "Generate Insights",
             "action_target": "pages/05_Insights_Dashboard.py"
         },
@@ -177,7 +177,7 @@ def show_quick_start_wizard():
             
             Share links with colleagues to collaborate on your findings.
             """,
-            "image": "assets/quick_start/export.png",
+            "image": "assets/quick_start_fixed/export.svg",
             "action": "Export Reports",
             "action_target": "pages/06_Export_Reports.py"
         },
