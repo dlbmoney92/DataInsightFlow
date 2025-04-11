@@ -235,8 +235,11 @@ def show_quick_start_wizard():
             st.markdown(f"## {step['title']}")
             
             # If there's an image, display it
-            if "image" in step and os.path.exists(step["image"]):
-                st.image(step["image"], use_column_width=True)
+            if "image" in step and step["image"] and isinstance(step["image"], str) and os.path.exists(step["image"]):
+                try:
+                    st.image(step["image"], use_container_width=True)
+                except Exception as e:
+                    st.warning(f"Could not load image: {step['image']}")
             
             st.markdown(step["description"])
             
