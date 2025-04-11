@@ -24,6 +24,7 @@ from utils.custom_navigation import render_navigation, render_developer_login, l
 from utils.auth_redirect import require_auth
 from utils.global_config import apply_global_css
 from utils.loading_animation import show_loading_animation, hide_loading_animation
+from utils.quick_start import show_tour_bubble
 
 # Apply global CSS
 apply_global_css()
@@ -135,8 +136,30 @@ Use this page to upload your dataset. Analytics Assist supports various file for
 and will automatically detect the structure of your data.
 """)
 
+# Show tour bubble for upload section if tour is enabled
+if 'tour_enabled' in st.session_state and st.session_state.tour_enabled:
+    show_tour_bubble(
+        element_id="h1:contains('Upload Your Data')",
+        title="Upload Your Data",
+        content="This is where you'll start your data analysis journey. Upload your CSV, Excel, or other data files to begin exploring and transforming your data.",
+        step=0,
+        position="bottom",
+        page_key="upload_data"
+    )
+
 # Uploader section
 st.subheader("Choose a file to upload")
+
+# Show tour bubble for file uploader if tour is enabled
+if 'tour_enabled' in st.session_state and st.session_state.tour_enabled:
+    show_tour_bubble(
+        element_id="h3:contains('Choose a file to upload')",
+        title="Upload Your Files",
+        content="Drag and drop your data files here or click to browse. We support CSV, Excel, JSON, and other formats for your convenience.",
+        step=1,
+        position="bottom",
+        page_key="upload_data"
+    )
 
 # Use full width for the file uploader
 col1, col2 = st.columns(2)
