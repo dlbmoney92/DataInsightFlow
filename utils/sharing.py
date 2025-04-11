@@ -239,7 +239,7 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
                                     <input type="text" value="${shareUrl}" 
                                            style="width:100%; padding:5px; margin-bottom:10px;" 
                                            onclick="this.select();" readonly>
-                                    <button onclick="this.parentNode.remove();" 
+                                    <button onclick="this.parentNode.parentNode.remove();" 
                                             style="padding:5px 10px; background:#4F8BF9; color:white; border:none; 
                                                    border-radius:3px; cursor:pointer;">
                                         Close
