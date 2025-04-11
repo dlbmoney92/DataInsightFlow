@@ -375,10 +375,7 @@ def show_tour_bubble(
     
     # Only show the bubble if we're on the right step
     if st.session_state.tour_current_step != step:
-        print(f"Not showing bubble - current step is {st.session_state.tour_current_step}, this is step {step}")
         return
-    
-    print(f"Showing bubble for step {step} on page {page_key}")
     
     # Create a visually appealing bubble
     with st.container():
@@ -442,7 +439,6 @@ def show_tour_bubble(
                 
                 # Advance to the next step
                 st.session_state.tour_current_step += 1
-                print(f"Advanced to step {st.session_state.tour_current_step}")
                 
                 # Execute any completion callback
                 if on_complete:
