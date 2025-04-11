@@ -361,7 +361,13 @@ with tab2:
                 # Debug the export format
                 st.write(f"Exporting in format: {export_format}")
                 
-                if export_format == "CSV" and can_export_csv:
+                # Convert export_format to uppercase for case-insensitive comparison
+                export_format_upper = export_format.upper()
+                
+                generated_download = False
+                
+                # Handle CSV format
+                if export_format_upper == "CSV" and can_export_csv:
                     # For CSV format, we'll create a simple table from the dataframe
                     csv_buffer = io.StringIO()
                     df.to_csv(csv_buffer, index=False)
@@ -369,13 +375,17 @@ with tab2:
                     
                     download_link = f'<a href="data:text/csv;base64,{base64.b64encode(csv_data.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.csv">Download CSV Report</a>'
                     st.markdown(download_link, unsafe_allow_html=True)
+                    generated_download = True
                     
-                elif export_format == "HTML" and can_export_html:
+                # Handle HTML format
+                elif export_format_upper == "HTML" and can_export_html:
                     # For HTML format, provide the HTML report for download
                     download_link = f'<a href="data:text/html;base64,{base64.b64encode(report_html.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.html">Download HTML Report</a>'
                     st.markdown(download_link, unsafe_allow_html=True)
+                    generated_download = True
                     
-                elif export_format == "PDF" and can_export_pdf:
+                # Handle PDF format
+                elif export_format_upper == "PDF" and can_export_pdf:
                     # For PDF format, convert the HTML to PDF
                     from utils.export import convert_html_to_pdf, generate_pdf_download_link
                     pdf_link = generate_pdf_download_link(
@@ -383,8 +393,10 @@ with tab2:
                         filename=f"{st.session_state.current_project.get('name', 'report')}_summary.pdf"
                     )
                     st.markdown(pdf_link, unsafe_allow_html=True)
+                    generated_download = True
                     
-                elif export_format == "Excel" and can_export_excel:
+                # Handle Excel format
+                elif export_format_upper == "EXCEL" and can_export_excel:
                     # For Excel format, we create an Excel file with basic formatting
                     excel_buffer = io.BytesIO()
                     with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
@@ -409,9 +421,33 @@ with tab2:
                     excel_data = excel_buffer.getvalue()
                     download_link = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{base64.b64encode(excel_data).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.xlsx">Download Excel Report</a>'
                     st.markdown(download_link, unsafe_allow_html=True)
+                    generated_download = True
                     
-                else:
-                    # If format doesn't match available formats, check export permissions and use the best available format
+                # Handle JSON format
+                elif export_format_upper == "JSON" and "json" in allowed_formats:
+                    # Create JSON format from dataframe with additional metadata
+                    json_data = {
+                        "metadata": {
+                            "project": st.session_state.current_project.get("name", "Unnamed project"),
+                            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                            "rows": df.shape[0],
+                            "columns": df.shape[1]
+                        },
+                        "data": json.loads(df.to_json(orient="records")),
+                        "transformations": transformations if include_transformations else [],
+                        "insights": [i.get("title", i) if isinstance(i, dict) else i for i in insights] if include_insights else []
+                    }
+                    
+                    json_str = json.dumps(json_data, indent=2)
+                    download_link = f'<a href="data:application/json;base64,{base64.b64encode(json_str.encode()).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.json">Download JSON Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
+                    generated_download = True
+                
+                # If no format was matched or the user doesn't have permission for their selected format,
+                # fallback to the best available format
+                if not generated_download:
+                    st.warning(f"Your selected format '{export_format}' is either not supported or not available with your subscription. Using the best available format instead.")
+                    
                     if can_export_csv:
                         # Fallback to CSV for free tier
                         csv_buffer = io.StringIO()
