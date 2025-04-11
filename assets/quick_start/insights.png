@@ -1,0 +1,10 @@
+<svg width="640" height="320" xmlns="http://www.w3.org/2000/svg">
+ <rect width="640" height="320" fill="#1e3c72"/>
+ <rect x="20" y="20" width="600" height="280" rx="15" fill="#f9f9f9"/>
+ <text x="320" y="70" font-family="Arial" font-size="24" text-anchor="middle" fill="#1e3c72">Discover Insights</text>
+ <rect x="60" y="100" width="520" height="60" rx="10" fill="#f0f8ff" stroke="#ddd"/>
+ <text x="320" y="135" font-family="Arial" font-size="14" text-anchor="middle" fill="#1e3c72">Product A shows strong correlation with customer retention</text>
+ <rect x="60" y="180" width="520" height="60" rx="10" fill="#f0f8ff" stroke="#ddd"/>
+ <text x="320" y="215" font-family="Arial" font-size="14" text-anchor="middle" fill="#1e3c72">Sales increased by 28% in Q4 compared to previous quarters</text>
+ <text x="80" y="260" font-family="Arial" font-size="12" fill="#666">✨ AI-generated insights based on your data</text>
+</svg>

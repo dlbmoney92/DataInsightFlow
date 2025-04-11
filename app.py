@@ -22,6 +22,12 @@ from utils.subscription import SUBSCRIPTION_PLANS, format_price, get_trial_days_
 from utils.global_config import apply_global_css, render_footer
 import uuid
 from utils.custom_navigation import render_navigation, initialize_navigation
+from utils.quick_start import (
+    initialize_quick_start, 
+    should_show_quick_start, 
+    show_quick_start_wizard,
+    add_quick_start_button
+)
 
 # Create demo data and visualizations for the landing page
 def create_sample_chart(chart_type='bar'):
@@ -534,6 +540,16 @@ if not st.session_state.logged_in:
             """, unsafe_allow_html=True)
 else:
     # User is logged in, show dashboard
+    
+    # Initialize quick start wizard
+    initialize_quick_start()
+    
+    # Check if quick start wizard should be shown
+    if should_show_quick_start():
+        show_quick_start_wizard()
+    
+    # Add quick start button to sidebar
+    add_quick_start_button()
     
     # Greeting with user info
     if "user" in st.session_state and st.session_state.user:
