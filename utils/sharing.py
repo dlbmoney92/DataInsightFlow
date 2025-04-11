@@ -77,7 +77,7 @@ def create_share_link(content_type, content_id, data):
     # than a direct link to the Python file
     
     # The correct format is:
-    share_link = f"/shared_content?id={share_id}"
+    share_link = f"/pages/shared_content?id={share_id}"
     
     return share_link
 
@@ -381,6 +381,7 @@ def save_shared_content_to_file(share_link):
             return  # Not a valid share link format
         
         # Get the ID part after the = sign, handling various URL formats
+        # Works for both /shared_content?id=... and /pages/shared_content?id=...
         share_id = share_link.split('=')[-1]
         
         # Remove any extra parameters that might be after the ID
