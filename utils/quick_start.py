@@ -20,10 +20,16 @@ def initialize_quick_start():
         st.session_state.tour_enabled = True
     
     if 'tour_current_step' not in st.session_state:
-        st.session_state.tour_current_step = 1
+        st.session_state.tour_current_step = 0  # Start at step 0
     
     if 'tour_steps_completed' not in st.session_state:
         st.session_state.tour_steps_completed = set()
+        
+    if 'tour_page_key' not in st.session_state:
+        st.session_state.tour_page_key = 'home'
+        
+    if 'tour_step_key' not in st.session_state:
+        st.session_state.tour_step_key = 0
 
 def should_show_quick_start():
     """Determine if the quick start wizard should be shown."""
@@ -305,15 +311,23 @@ def disable_tour_mode():
 def next_tour_step():
     """Advance to the next step in the interactive tour."""
     # Mark current step as completed first
-    if "tour_page_key" in st.session_state and "tour_step_key" in st.session_state:
-        completed_step = f"{st.session_state.tour_page_key}_{st.session_state.tour_current_step}"
+    if "tour_page_key" in st.session_state and "tour_current_step" in st.session_state:
+        current_step = st.session_state.tour_current_step
+        page_key = st.session_state.tour_page_key
+        completed_step = f"{page_key}_{current_step}"
+        
+        # Add current step to completed steps
+        if 'tour_steps_completed' not in st.session_state:
+            st.session_state.tour_steps_completed = set()
         st.session_state.tour_steps_completed.add(completed_step)
         
-    # Then advance to next step
-    st.session_state.tour_current_step += 1
-    
-    # Print for debugging
-    print(f"Advanced to tour step {st.session_state.tour_current_step}")
+        # Increment step count
+        st.session_state.tour_current_step = current_step + 1
+        
+        # Log for debugging
+        print(f"Tour step {current_step} on page {page_key} completed")
+        print(f"Advanced to tour step {st.session_state.tour_current_step}")
+        print(f"Completed steps: {st.session_state.tour_steps_completed}")
 
 def show_tour_bubble(
     element_id: str,
