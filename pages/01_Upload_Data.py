@@ -335,6 +335,17 @@ if uploaded_file is None:
     # Sample datasets
     st.subheader("Sample Datasets")
     
+    # Show tour bubble for sample datasets if tour is enabled
+    if 'tour_enabled' in st.session_state and st.session_state.tour_enabled:
+        show_tour_bubble(
+            element_id="h3:contains('Sample Datasets')",
+            title="Explore Sample Datasets",
+            content="Don't have data handy? You can use one of our sample datasets to explore the full capabilities of Analytics Assist.",
+            step=2,
+            position="right",
+            page_key="upload_data"
+        )
+    
     sample_datasets = {
         "Sales Data": "Sample sales dataset with transactions, products, and customer information",
         "Customer Survey": "Sample customer satisfaction survey results with ratings and feedback",
@@ -525,6 +536,17 @@ if uploaded_file is None:
 # Add a section to load existing datasets
 st.markdown("---")
 st.subheader("Load Existing Dataset")
+
+# Show tour bubble for existing datasets if tour is enabled
+if 'tour_enabled' in st.session_state and st.session_state.tour_enabled:
+    show_tour_bubble(
+        element_id="h3:contains('Load Existing Dataset')",
+        title="Your Saved Datasets",
+        content="You can easily reload any of your previously uploaded datasets to continue your analysis from where you left off.",
+        step=3,
+        position="top",
+        page_key="upload_data"
+    )
 
 # Only fetch the list of datasets once and store in session state 
 # to avoid reloading the entire list on every interaction

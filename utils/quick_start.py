@@ -247,12 +247,12 @@ def show_quick_start_wizard():
                 if current_step > 0:
                     if st.button("← Previous", key="wizard_prev"):
                         st.session_state.quick_start_current_step -= 1
-                        st.experimental_rerun()
+                        st.rerun()
             
             with button_cols[1]:
                 if st.button("Skip Tour", key="wizard_skip"):
                     mark_quick_start_complete()
-                    st.experimental_rerun()
+                    st.rerun()
             
             with button_cols[2]:
                 if current_step < len(wizard_steps) - 1:
@@ -266,7 +266,7 @@ def show_quick_start_wizard():
                             st.switch_page(step["action_target"])
                         else:
                             st.session_state.quick_start_current_step += 1
-                            st.experimental_rerun()
+                            st.rerun()
                 else:
                     # Last step, complete button
                     final_action = step.get("action", "Finish")
@@ -276,7 +276,7 @@ def show_quick_start_wizard():
                         if "action_target" in step:
                             st.switch_page(step["action_target"])
                         else:
-                            st.experimental_rerun()
+                            st.rerun()
             
             # Secondary action if available
             if "secondary_action" in step:
@@ -284,7 +284,7 @@ def show_quick_start_wizard():
                     if "secondary_action_callback" in step:
                         step["secondary_action_callback"]()
                     mark_quick_start_complete()
-                    st.experimental_rerun()
+                    st.rerun()
             
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -541,7 +541,7 @@ def show_tour_bubble(
             elif tour_action == "skip":
                 disable_tour_mode()
             
-            st.experimental_rerun()
+            st.rerun()
     else:
         # No form submission, display normally
         pass
@@ -552,4 +552,4 @@ def add_quick_start_button():
         st.session_state.quick_start_shown = False
         st.session_state.quick_start_completed = False
         st.session_state.quick_start_current_step = 0
-        st.experimental_rerun()
+        st.rerun()
