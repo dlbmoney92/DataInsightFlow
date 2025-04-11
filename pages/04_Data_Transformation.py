@@ -50,7 +50,8 @@ from utils.transformation_visualizer import (
 from utils.custom_navigation import render_navigation, initialize_navigation
 from utils.global_config import apply_global_css
 from utils.quick_start import show_tour_bubble
-from utils.ai_learning import display_feedback_form, create_feedback_buttons
+from utils.ai_learning import display_feedback_form as ai_display_feedback_form, create_feedback_buttons
+from utils.feedback import display_quick_feedback
 
 # Apply global CSS
 apply_global_css()

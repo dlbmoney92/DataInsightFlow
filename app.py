@@ -163,6 +163,10 @@ apply_global_css()
 # Initialize database
 initialize_database()
 
+# Initialize feedback database
+from utils.feedback import initialize_feedback_database
+initialize_feedback_database()
+
 # Initialize session state variables if they don't exist
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -208,6 +212,12 @@ st.markdown("""
 
 # Render custom navigation bar
 render_navigation()
+
+# Display quick feedback option in the sidebar if user is logged in
+if st.session_state.logged_in:
+    st.sidebar.markdown("---")
+    from utils.feedback import display_quick_feedback
+    display_quick_feedback("home_page", "sidebar")
 
 # Main content
 if not st.session_state.logged_in:

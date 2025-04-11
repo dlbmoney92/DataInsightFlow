@@ -37,6 +37,25 @@ Base = declarative_base()
 # Define metadata object
 metadata = MetaData()
 
+# Function to get raw database connection
+def get_db_connection():
+    """Get a raw database connection for direct SQL operations."""
+    import psycopg2
+    try:
+        # Parse the DATABASE_URL to get connection parameters
+        # Expected format: postgresql://username:password@host:port/database
+        db_url = os.environ.get("DATABASE_URL", "")
+        if not db_url:
+            st.error("Database URL not found. Please check your environment configuration.")
+            return None
+            
+        # Connect to the database
+        conn = psycopg2.connect(db_url)
+        return conn
+    except Exception as e:
+        st.error(f"Error connecting to database: {e}")
+        return None
+
 # Define tables using SQLAlchemy's Table construct
 users = Table(
     'users',
