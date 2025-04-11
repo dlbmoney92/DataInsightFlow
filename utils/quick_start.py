@@ -360,8 +360,8 @@ def show_tour_bubble(
         <div class="tour-bubble-title">{title}</div>
         <div class="tour-bubble-content">{content}</div>
         <div class="tour-bubble-buttons">
-            <button onclick="document.dispatchEvent(new CustomEvent('tourSkip'))">Skip Tour</button>
-            <button onclick="document.dispatchEvent(new CustomEvent('tourNext'))">Next</button>
+            <button id="skip-tour-btn">Skip Tour</button>
+            <button id="next-tour-btn">Next</button>
         </div>
     </div>
     
@@ -491,35 +491,36 @@ def show_tour_bubble(
         }}
     }}
     
-    // Event listeners for tour navigation
-    document.addEventListener('tourNext', function() {{
-        fetch('/_stcore/process_form', {{
-            method: 'POST',
-            headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ 
-                form_data: {{"tour_action": "next"}},
-                form_id: "tour_navigation"
-            }})
-        }}).then(response => {{
-            if (response.ok) {{
-                window.location.reload();
-            }}
-        }});
-    }});
-    
-    document.addEventListener('tourSkip', function() {{
-        fetch('/_stcore/process_form', {{
-            method: 'POST',
-            headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ 
-                form_data: {{"tour_action": "skip"}},
-                form_id: "tour_navigation"
-            }})
-        }}).then(response => {{
-            if (response.ok) {{
-                window.location.reload();
-            }}
-        }});
+    // Event listeners for tour bubble buttons
+    document.addEventListener('DOMContentLoaded', function() {{
+        const nextBtn = document.getElementById('next-tour-btn');
+        const skipBtn = document.getElementById('skip-tour-btn');
+        
+        if (nextBtn) {{
+            nextBtn.addEventListener('click', function() {{
+                const inputElement = document.querySelector('input[key="tour_action_input"]');
+                if (inputElement) {{
+                    inputElement.value = 'next';
+                    const formElement = document.querySelector('form[data-testid="stForm"]');
+                    if (formElement) {{
+                        formElement.requestSubmit();
+                    }}
+                }}
+            }});
+        }}
+        
+        if (skipBtn) {{
+            skipBtn.addEventListener('click', function() {{
+                const inputElement = document.querySelector('input[key="tour_action_input"]');
+                if (inputElement) {{
+                    inputElement.value = 'skip';
+                    const formElement = document.querySelector('form[data-testid="stForm"]');
+                    if (formElement) {{
+                        formElement.requestSubmit();
+                    }}
+                }}
+            }});
+        }}
     }});
     
     // Position when loaded and on resize
@@ -531,10 +532,11 @@ def show_tour_bubble(
     
     st.markdown(bubble_html, unsafe_allow_html=True)
     
-    # Handle form submissions for tour navigation
-    if st.form("tour_navigation", clear_on_submit=True):
-        tour_action = st.text_input("tour_action", key="tour_action_input", label_visibility="collapsed")
-        submitted = st.form_submit_button("Submit", type="primary", help="Submit the form", label_visibility="collapsed")
+    # Create a hidden form to handle the AJAX requests
+    with st.form("tour_navigation", clear_on_submit=True):
+        # This is a hidden field that will be populated by JavaScript
+        tour_action = st.text_input("Action", value="", key="tour_action_input", label_visibility="collapsed")
+        submitted = st.form_submit_button("Submit", type="primary", label_visibility="collapsed")
         
         if submitted:
             if tour_action == "next":
@@ -545,9 +547,26 @@ def show_tour_bubble(
                 disable_tour_mode()
             
             st.rerun()
-    else:
-        # No form submission, display normally
-        pass
+    
+    # Add JavaScript to directly handle button clicks without AJAX
+    st.markdown(
+        """
+        <script>
+        // Direct click handlers for the tour buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('button') && e.target.innerText === 'Next') {
+                document.querySelector('input[key="tour_action_input"]').value = 'next';
+                document.querySelector('form[data-testid="stForm"]').requestSubmit();
+            }
+            if (e.target.closest('button') && e.target.innerText === 'Skip Tour') {
+                document.querySelector('input[key="tour_action_input"]').value = 'skip';
+                document.querySelector('form[data-testid="stForm"]').requestSubmit();
+            }
+        });
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
 
 def add_quick_start_button():
     """Add a button to restart the quick start wizard."""
