@@ -473,11 +473,19 @@ def save_shared_content_to_file(share_link):
     - share_link: The share link path, which contains the share ID
     """
     try:
-        # Extract the share ID from the share link
-        if not share_link.startswith('/shared_content?id='):
+        # Extract the share ID from the share link - more permissive check
+        if '=' not in share_link:
+            print(f"Invalid share link format: {share_link}")
             return  # Not a valid share link format
+        
+        # Get the ID part after the = sign, handling various URL formats
+        share_id = share_link.split('=')[-1]
+        
+        # Remove any extra parameters that might be after the ID
+        if '&' in share_id:
+            share_id = share_id.split('&')[0]
             
-        share_id = share_link.split('=')[1]
+        print(f"Extracted share ID: {share_id} from link: {share_link}")
         
         # Get the content from session state
         shared_content = st.session_state.get('shared_content', {}).get(share_id)
