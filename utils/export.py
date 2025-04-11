@@ -105,43 +105,172 @@ def export_summary_report(df, transformations, insights, visualizations=None, ad
     - visualizations: Optional list of visualizations to include
     - add_branding: Whether to add branding to the report (default: True)
     """
-    # Create HTML content
+    # Create HTML content with improved styling
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <title>Analytics Assist - Data Report</title>
         <style>
-            body {{ font-family: Arial, sans-serif; margin: 20px; }}
-            h1, h2, h3 {{ color: #4F8BF9; }}
-            table {{ border-collapse: collapse; width: 100%; }}
-            th, td {{ padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }}
-            th {{ background-color: #f2f2f2; }}
-            .section {{ margin-bottom: 30px; }}
-            .insight {{ background-color: #f9f9f9; padding: 10px; margin-bottom: 10px; border-left: 4px solid #4F8BF9; }}
-            .transformation {{ background-color: #f0f8ff; padding: 10px; margin-bottom: 10px; }}
+            body {{ 
+                font-family: 'Segoe UI', Arial, sans-serif; 
+                margin: 0; 
+                padding: 0;
+                color: #333;
+                line-height: 1.6;
+            }}
+            .container {{
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                background: white;
+            }}
+            .header {{
+                background: linear-gradient(to right, #1e3c72, #2a5298);
+                color: white;
+                padding: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-radius: 8px 8px 0 0;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }}
+            .header-content {{
+                flex: 1;
+            }}
+            .header-logo {{
+                margin-left: 20px;
+            }}
+            h1, h2, h3 {{ 
+                color: #1e3c72; 
+                margin-top: 1.5em;
+                margin-bottom: 0.5em;
+            }}
+            h1 {{
+                margin-top: 0;
+                color: white;
+            }}
+            table {{ 
+                border-collapse: collapse; 
+                width: 100%; 
+                margin: 20px 0;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                border-radius: 5px;
+                overflow: hidden;
+            }}
+            th, td {{ 
+                padding: 12px; 
+                text-align: left; 
+                border-bottom: 1px solid #ddd; 
+            }}
+            th {{ 
+                background-color: #f8f9fa; 
+                font-weight: 600;
+                color: #1e3c72;
+            }}
+            tr:nth-child(even) {{ background-color: #f2f2f2; }}
+            tr:hover {{ background-color: #e9f0ff; }}
+            .section {{ 
+                margin-bottom: 30px; 
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }}
+            .insight {{ 
+                background-color: #f9f9f9; 
+                padding: 15px; 
+                margin-bottom: 15px; 
+                border-left: 4px solid #4F8BF9; 
+                border-radius: 0 8px 8px 0;
+            }}
+            .transformation {{ 
+                background-color: #f0f8ff; 
+                padding: 15px; 
+                margin-bottom: 15px; 
+                border-radius: 8px;
+            }}
+            .footer {{
+                margin-top: 50px;
+                padding: 20px;
+                text-align: center;
+                background: linear-gradient(to right, #f5f7fa, #c3cfe2);
+                border-radius: 0 0 8px 8px;
+                color: #666;
+            }}
+            .timestamp {{
+                display: inline-block;
+                padding: 5px 10px;
+                background: rgba(255,255,255,0.3);
+                border-radius: 20px;
+                font-size: 0.8em;
+                margin-top: 5px;
+            }}
+            .summary-stat {{
+                display: inline-block;
+                background: #f0f8ff;
+                padding: 10px 15px;
+                margin: 5px;
+                border-radius: 8px;
+                border-left: 3px solid #4F8BF9;
+                min-width: 150px;
+            }}
+            .stat-label {{
+                font-size: 0.8em;
+                color: #666;
+                display: block;
+            }}
+            .stat-value {{
+                font-size: 1.2em;
+                font-weight: bold;
+                color: #1e3c72;
+            }}
         </style>
     </head>
     <body>
-        <h1>Analytics Assist - Data Analysis Report</h1>
-        <p>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-        
-        <div class="section">
-            <h2>Dataset Summary</h2>
-            <p>Rows: {len(df)}</p>
-            <p>Columns: {len(df.columns)}</p>
-            <p>Column names: {', '.join(df.columns.tolist())}</p>
-        </div>
-        
-        <div class="section">
-            <h2>Data Sample</h2>
-            <table>
-                <tr>
-                    {' '.join([f'<th>{col}</th>' for col in df.columns])}
-                </tr>
-                {''.join([f"<tr>{' '.join([f'<td>{str(val)}</td>' for val in row])}</tr>" for _, row in df.head(10).iterrows()])}
-            </table>
-        </div>
+        <div class="container">
+            <div class="header">
+                <div class="header-content">
+                    <h1>Analytics Assist - Data Analysis Report</h1>
+                    <div class="timestamp">Generated on: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</div>
+                </div>
+                <div class="header-logo">
+                    <!-- Logo will be inserted here via code later if available -->
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Dataset Summary</h2>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between;">
+                    <div class="summary-stat">
+                        <span class="stat-label">Rows</span>
+                        <span class="stat-value">{len(df):,}</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">Columns</span>
+                        <span class="stat-value">{len(df.columns)}</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">Numeric Columns</span>
+                        <span class="stat-value">{len(df.select_dtypes(include='number').columns)}</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">Text/Categorical</span>
+                        <span class="stat-value">{len(df.select_dtypes(include=['object','category']).columns)}</span>
+                    </div>
+                </div>
+                <p>Column names: {', '.join(df.columns.tolist())}</p>
+            </div>
+            
+            <div class="section">
+                <h2>Data Sample</h2>
+                <table>
+                    <tr>
+                        {' '.join([f'<th>{col}</th>' for col in df.columns])}
+                    </tr>
+                    {''.join([f"<tr>{' '.join([f'<td>{str(val)}</td>' for val in row])}</tr>" for _, row in df.head(10).iterrows()])}
+                </table>
+            </div>
     """
     
     # Add insights section
@@ -220,29 +349,40 @@ def export_summary_report(df, transformations, insights, visualizations=None, ad
     
     # Add branding footer if requested
     if add_branding:
+        # Add logo to the header first
         # Use embedded base64 logo
         logo_path = "assets/logo.png"
+        logo_base64 = None
         try:
             import base64
             with open(logo_path, "rb") as img_file:
                 logo_base64 = base64.b64encode(img_file.read()).decode()
-                logo_html = f'<img src="data:image/png;base64,{logo_base64}" alt="Analytics Assist Logo" style="height: 60px; margin-bottom: 10px;">'
-        except:
-            # Fallback if logo can't be loaded
-            logo_html = '<div style="font-weight: bold; font-size: 1.2em; margin-bottom: 10px;">Analytics Assist</div>'
+        except Exception as e:
+            print(f"Could not load logo for header: {e}")
+            
+        # Add logo to the header if available
+        if logo_base64:
+            # Find the header-logo div and replace its content
+            html_content = html_content.replace('<!-- Logo will be inserted here via code later if available -->', 
+                        f'<img src="data:image/png;base64,{logo_base64}" alt="Analytics Assist Logo" style="height: 50px; width: auto;">')
         
+        # Create HTML for the logo in footer
+        if logo_base64:
+            logo_html = f'<img src="data:image/png;base64,{logo_base64}" alt="Analytics Assist Logo" style="height: 60px; margin-bottom: 10px;">'
+        else:
+            # Fallback if logo can't be loaded
+            logo_html = '<div style="font-weight: bold; font-size: 1.6em; margin-bottom: 10px; color: #1e3c72;">Analytics Assist</div>'
+        
+        # Create a professional footer
         html_content += f"""
-        <div style="
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 1px solid #ccc;
-            text-align: center;
-            font-size: 0.9em;
-            color: #666;
-        ">
+        <div class="footer">
             {logo_html}
-            <p>Made with <a href="https://analytics-assist.replit.app" style="color: #4F8BF9; text-decoration: none;">Analytics Assist</a></p>
+            <p><strong>Report Generated with Analytics Assist</strong></p>
+            <p>Transform Your Data Into Powerful Insights</p>
+            <p><a href="https://analyticsassist.replit.app" style="color: #1e3c72; text-decoration: none; font-weight: bold;">analyticsassist.replit.app</a></p>
+            <div style="font-size: 0.8em; margin-top: 15px; color: #777;">© {datetime.now().year} Analytics Assist. All Rights Reserved.</div>
         </div>
+        </div> <!-- Close container -->
         """
     
     # Close HTML content
