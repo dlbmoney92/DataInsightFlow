@@ -148,136 +148,16 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
         st.caption("👆 Select the link above and press Ctrl+C (or Cmd+C on Mac) to copy it to your clipboard")
         
         col1, col2 = st.columns(2)
-                        
-                        // Create a hidden textarea element for copy fallback
-                        // Using textarea instead of input for better compatibility with longer text
-                        let tempTextArea = document.createElement('textarea');
-                        tempTextArea.value = shareUrl;
-                        tempTextArea.setAttribute('readonly', ''); // Make it readonly to avoid keyboard opening on mobile
-                        tempTextArea.style.position = 'absolute';
-                        tempTextArea.style.left = '-9999px'; // Move outside the screen
-                        tempTextArea.style.top = '0';
-                        tempTextArea.style.opacity = '0';
-                        document.body.appendChild(tempTextArea);
-                        
-                        // Function to show success message
-                        function showSuccess() {{
-                            let successElement = document.getElementById(copySuccessId);
-                            if (successElement) {{
-                                successElement.style.display = 'block';
-                                setTimeout(function() {{
-                                    successElement.style.display = 'none';
-                                }}, 3000);
-                                console.log('Copy operation completed');
-                            }}
-                        }}
-                        
-                        // Method 1: Use the modern Clipboard API (most modern browsers)
-                        if (navigator.clipboard && navigator.clipboard.writeText) {{
-                            navigator.clipboard.writeText(shareUrl)
-                                .then(() => {{
-                                    console.log('Clipboard API success');
-                                    showSuccess();
-                                }})
-                                .catch((err) => {{
-                                    console.warn('Clipboard API failed, trying fallback', err);
-                                    fallbackCopy();
-                                }});
-                        }} else {{
-                            console.log('Clipboard API not available, using fallback');
-                            fallbackCopy();
-                        }}
-                        
-                        // Fallback copy methods
-                        function fallbackCopy() {{
-                            try {{
-                                // Method 2: Use document.execCommand ('copy')
-                                tempTextArea.focus();
-                                tempTextArea.select();
-                                tempTextArea.setSelectionRange(0, 99999); // For mobile devices
-                                
-                                const successful = document.execCommand('copy');
-                                if (successful) {{
-                                    console.log('execCommand copy successful');
-                                    showSuccess();
-                                }} else {{
-                                    console.warn('execCommand copy failed, trying next fallback');
-                                    manualCopyPrompt();
-                                }}
-                            }} catch (err) {{
-                                console.error('Copy fallback failed:', err);
-                                manualCopyPrompt();
-                            }} finally {{
-                                // Clean up
-                                document.body.removeChild(tempTextArea);
-                            }}
-                        }}
-                        
-                        // Method 3: Last resort - prompt user to copy manually
-                        function manualCopyPrompt() {{
-                            // Still show success to avoid confusion
-                            showSuccess();
-                            
-                            // Create a modal or alert with instructions
-                            const copyModal = document.createElement('div');
-                            const modalContent = document.createElement('div');
-                            modalContent.style.position = 'fixed';
-                            modalContent.style.top = '50%';
-                            modalContent.style.left = '50%';
-                            modalContent.style.transform = 'translate(-50%, -50%)';
-                            modalContent.style.background = 'white';
-                            modalContent.style.padding = '20px';
-                            modalContent.style.zIndex = '1000';
-                            modalContent.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
-                            modalContent.style.borderRadius = '5px';
-                            modalContent.style.maxWidth = '90%';
-                            modalContent.style.width = '350px';
-                            
-                            const modalHeader = document.createElement('h3');
-                            modalHeader.textContent = 'Copy Link';
-                            
-                            const modalDesc = document.createElement('p');
-                            modalDesc.textContent = 'Please copy this link manually:';
-                            
-                            const inputField = document.createElement('input');
-                            inputField.type = 'text';
-                            inputField.value = shareUrl;
-                            inputField.style.width = '100%';
-                            inputField.style.padding = '5px';
-                            inputField.style.marginBottom = '10px';
-                            inputField.setAttribute('readonly', '');
-                            inputField.onclick = function() {
-                                inputField.select();
-                            };
-                            
-                            const closeButton = document.createElement('button');
-                            closeButton.textContent = 'Close';
-                            closeButton.style.padding = '5px 10px';
-                            closeButton.style.background = '#4F8BF9';
-                            closeButton.style.color = 'white';
-                            closeButton.style.border = 'none';
-                            closeButton.style.borderRadius = '3px';
-                            closeButton.style.cursor = 'pointer';
-                            closeButton.onclick = function() { 
-                                document.body.removeChild(copyModal);
-                            };
-                            
-                            modalContent.appendChild(modalHeader);
-                            modalContent.appendChild(modalDesc);
-                            modalContent.appendChild(inputField);
-                            modalContent.appendChild(closeButton);
-                            
-                            copyModal.appendChild(modalContent);
-                            document.body.appendChild(copyModal);
-                        }}
-                    }})();
-                </script>
-                <div id="copy_success_{hash(share_link)}" style="display: block; color: green; margin-top: 5px;">
-                    ✅ Link copied to clipboard!
-                </div>
-                """
-                st.markdown(copy_js, unsafe_allow_html=True)
-                
+        with col1:
+            # QR code generation
+            qr_data = generate_qr_code(absolute_share_link)
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <p>Scan QR Code</p>
+                <img src="data:image/png;base64,{qr_data}" width="150" />
+            </div>
+            """, unsafe_allow_html=True)
+            
         with col2:
             if st.button("✉️ Email Link", key=f"email_{content_type}_{hash(share_link)}"):
                 subject = f"Analytics Assist: {title}"
