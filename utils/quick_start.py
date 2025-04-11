@@ -300,9 +300,20 @@ def show_quick_start_wizard():
 
 def enable_tour_mode():
     """Enable the interactive tour mode."""
+    # Set the tour as enabled
     st.session_state.tour_enabled = True
+    
+    # Reset the tour step to the beginning
     st.session_state.tour_current_step = 0
+    
+    # Clear any completed steps
     st.session_state.tour_steps_completed = set()
+    
+    # Set the default page key if not set
+    st.session_state.tour_page_key = "home"
+    
+    # Print debug information
+    print(f"Tour mode enabled. Starting at step 0.")
 
 def disable_tour_mode():
     """Disable the interactive tour mode."""
@@ -350,166 +361,113 @@ def show_tour_bubble(
         page_key: Unique key for the current page
         on_complete: Callback function when this step is completed
     """
-    if not st.session_state.tour_enabled:
+    # Make sure tour is enabled
+    if 'tour_enabled' not in st.session_state or not st.session_state.tour_enabled:
         return
     
-    # Set current page key in session state
+    # Make sure tour step tracking is initialized
+    if 'tour_current_step' not in st.session_state:
+        st.session_state.tour_current_step = 0
+    
+    if 'tour_steps_completed' not in st.session_state:
+        st.session_state.tour_steps_completed = set()
+    
+    # Set current page key in session state if provided
     if page_key:
         st.session_state.tour_page_key = page_key
+    elif 'tour_page_key' not in st.session_state:
+        st.session_state.tour_page_key = 'home'
     
-    # Set current step key in session state
-    st.session_state.tour_step_key = step
-    
-    # Check if we're on the current step
+    # Only show the bubble if we're on the right step
     if st.session_state.tour_current_step != step:
+        print(f"Not showing bubble - current step is {st.session_state.tour_current_step}, this is step {step}")
         return
     
-    # Check if this step was already completed
-    if page_key:
-        completed_step = f"{page_key}_{step}"
-        if completed_step in st.session_state.tour_steps_completed:
-            # If this step was completed but we're still on it,
-            # automatically move to the next step
-            next_tour_step()
-            return
+    print(f"Showing bubble for step {step} on page {page_key}")
     
-    # Create bubble with direct navigation buttons
-    bubble_style = f"""
-    <style>
-    .tour-bubble {{
-        position: fixed !important;
-        width: 350px !important;
-        background: white !important;
-        border: 1px solid #ddd !important;
-        border-radius: 8px !important;
-        padding: 0 !important; /* Remove padding as we're styling the content internally */
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
-        z-index: 1000 !important;
-        overflow: visible !important;
-    }}
-    
-    .tour-bubble-title {{
-        font-weight: bold;
-        font-size: 16px;
-        margin-bottom: 8px;
-        color: #1E3C72;
-    }}
-    
-    .tour-bubble-content {{
-        margin-bottom: 15px;
-        font-size: 14px;
-    }}
-    
-    .tour-bubble-buttons {{
-        display: flex;
-        justify-content: space-between;
-    }}
-    
-    /* Bubble positions with arrows */
-    .tour-bubble-right:before {{
-        content: "";
-        position: absolute;
-        left: -10px;
-        top: 20px;
-        border-top: 10px solid transparent;
-        border-bottom: 10px solid transparent;
-        border-right: 10px solid white;
-    }}
-    
-    .tour-bubble-left:before {{
-        content: "";
-        position: absolute;
-        right: -10px;
-        top: 20px;
-        border-top: 10px solid transparent;
-        border-bottom: 10px solid transparent;
-        border-left: 10px solid white;
-    }}
-    
-    .tour-bubble-top:before {{
-        content: "";
-        position: absolute;
-        bottom: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        border-left: 10px solid transparent;
-        border-right: 10px solid transparent;
-        border-top: 10px solid white;
-    }}
-    
-    .tour-bubble-bottom:before {{
-        content: "";
-        position: absolute;
-        top: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        border-left: 10px solid transparent;
-        border-right: 10px solid transparent;
-        border-bottom: 10px solid white;
-    }}
-    </style>
-    """
-    
-    st.markdown(bubble_style, unsafe_allow_html=True)
-    
-    # Now using Streamlit native components for the bubble
+    # Create a visually appealing bubble
     with st.container():
-        bubble_container = st.container()
+        # Add style for the tour bubble
+        st.markdown(f"""
+        <style>
+        .tour-bubble-container {{
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }}
         
-        with bubble_container:
-            # Add custom styling for this container to make it look like a bubble
-            st.markdown(f"""
-                <div class="tour-bubble-header" style="background: linear-gradient(135deg, #1E3C72, #2A5298); color: white; padding: 10px; border-radius: 8px 8px 0 0;">
-                    <h3 style="margin: 0; font-size: 16px;">{title}</h3>
-                </div>
-                <div class="tour-bubble-content" style="padding: 10px; font-size: 14px;">
-                    {content}
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # Navigation buttons with a more distinct UI
-            st.markdown("""
-                <div style="padding: 10px; border-top: 1px solid #eee;">
-                </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Skip Tour", key=f"skip_tour_{step}", help="Skip the tour"):
-                    disable_tour_mode()
-                    st.rerun()
-            
-            with col2:
-                # Make the Next button more prominent
-                if st.button("▶ Next Step", key=f"next_step_{step}", use_container_width=True, type="primary", help="Continue to the next step"):
-                    # Add print for debugging
-                    print(f"Next button clicked on step {step}")
-                    next_tour_step()
-                    if on_complete:
-                        on_complete()
-                    # Print after next_tour_step
-                    print(f"After next_tour_step(), current step is now {st.session_state.tour_current_step}")
-                    st.rerun()
+        .element-highlight {{
+            box-shadow: 0 0 0 4px #1E3C72 !important;
+            position: relative !important;
+            z-index: 100 !important;
+            transition: box-shadow 0.3s ease-in-out !important;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Create the bubble with a nice header
+        st.markdown(f"""
+        <div class="tour-bubble-container">
+            <div style="background: linear-gradient(135deg, #1E3C72, #2A5298); 
+                        color: white; padding: 12px; border-radius: 10px 10px 0 0;">
+                <h3 style="margin: 0; padding: 0; font-size: 18px;">{title}</h3>
+            </div>
+            <div style="padding: 15px;">
+                <p style="margin-bottom: 20px;">{content}</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Navigation buttons in columns for better layout
+        col1, col2, col3 = st.columns([1, 1, 1])
+        
+        # Step counter to show progress
+        current_step = st.session_state.tour_current_step
+        with col1:
+            st.markdown(f"<p style='text-align:left;'>Step {current_step+1}</p>", unsafe_allow_html=True)
+        
+        # Skip tour button
+        with col2:
+            if st.button("Skip Tour", key=f"skip_tour_{step}", help="Skip the interactive tour"):
+                disable_tour_mode()
+                st.rerun()
+        
+        # Next button - make it more prominent 
+        with col3:
+            if st.button("Next →", key=f"next_tour_{step}", type="primary", help="Continue to the next step"):
+                # Store the step we're completing
+                if page_key:
+                    completed_step = f"{page_key}_{step}"
+                    if 'tour_steps_completed' not in st.session_state:
+                        st.session_state.tour_steps_completed = set()
+                    st.session_state.tour_steps_completed.add(completed_step)
+                
+                # Advance to the next step
+                st.session_state.tour_current_step += 1
+                print(f"Advanced to step {st.session_state.tour_current_step}")
+                
+                # Execute any completion callback
+                if on_complete:
+                    on_complete()
+                
+                # Force a rerun to show the next step
+                st.rerun()
     
-    # Use a simple CSS class approach instead of complex JavaScript
-    position_class = "tour-bubble-" + position
-    
-    # Create a highlight script for the target element
-    highlight_script = f"""
+    # Add a highlight script for the target element
+    highlight_js = f"""
     <script>
-        document.addEventListener('DOMContentLoaded', function() {{
-            const targetElement = document.querySelector('{element_id}');
-            if (targetElement) {{
-                targetElement.style.position = 'relative';
-                targetElement.style.zIndex = '999';
-                targetElement.style.boxShadow = '0 0 0 4px rgba(30, 60, 114, 0.4)';
-            }}
-        }});
+    document.addEventListener('DOMContentLoaded', function() {{
+        const element = document.querySelector('{element_id}');
+        if (element) {{
+            element.classList.add('element-highlight');
+        }}
+    }});
     </script>
     """
-    
-    # Add the highlight script
-    st.markdown(highlight_script, unsafe_allow_html=True)
+    st.markdown(highlight_js, unsafe_allow_html=True)
 
 def add_quick_start_button():
     """Add a button to restart the quick start wizard."""
