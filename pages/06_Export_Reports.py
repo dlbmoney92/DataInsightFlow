@@ -20,7 +20,9 @@ import uuid
 # Helper function to get the current export format safely
 def get_export_format():
     """Get the current export format from session state, defaulting to CSV if not set."""
-    return st.session_state.get("export_format", "CSV")
+    export_format = st.session_state.get("export_format", "CSV")
+    print(f"DEBUG - Export format requested: {export_format}")
+    return export_format
 from utils.export import (
     generate_excel_download_link,
     generate_csv_download_link,
@@ -345,6 +347,9 @@ with tab2:
                 # Use the helper function to get export format consistently
                 export_format = get_export_format()
                 
+                # Debug the export format
+                st.write(f"Exporting in format: {export_format}")
+                
                 if export_format == "CSV" and can_export_csv:
                     # For CSV format, we'll create a simple table from the dataframe
                     csv_buffer = io.StringIO()
@@ -367,6 +372,32 @@ with tab2:
                         filename=f"{st.session_state.current_project.get('name', 'report')}_summary.pdf"
                     )
                     st.markdown(pdf_link, unsafe_allow_html=True)
+                    
+                elif export_format == "Excel" and can_export_excel:
+                    # For Excel format, we create an Excel file with basic formatting
+                    excel_buffer = io.BytesIO()
+                    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                        df.to_excel(writer, sheet_name="Summary Data", index=False)
+                        # Add another sheet for transformations if available
+                        if transformations:
+                            trans_df = pd.DataFrame([{
+                                'Step': i+1,
+                                'Transformation': t.get('name', 'Unknown'),
+                                'Details': t.get('details', 'No details'),
+                                'Columns': ', '.join(t.get('columns_affected', []))
+                            } for i, t in enumerate(transformations)])
+                            trans_df.to_excel(writer, sheet_name="Transformations", index=False)
+                        # Add another sheet for insights if available
+                        if insights:
+                            insights_df = pd.DataFrame([{
+                                'Insight': i.get('title', 'Unknown') if isinstance(i, dict) else i
+                            } for i in insights])
+                            insights_df.to_excel(writer, sheet_name="Insights", index=False)
+                    
+                    excel_buffer.seek(0)
+                    excel_data = excel_buffer.getvalue()
+                    download_link = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{base64.b64encode(excel_data).decode()}" download="{st.session_state.current_project.get("name", "report")}_summary.xlsx">Download Excel Report</a>'
+                    st.markdown(download_link, unsafe_allow_html=True)
                     
                 else:
                     # If format doesn't match available formats, check export permissions and use the best available format
@@ -593,6 +624,8 @@ with tab2:
                 
                 # Get the export format from helper function
                 export_format = get_export_format()
+                # Display the current export format (debug)
+                st.write(f"Exporting in format: {export_format}")
                 # Different download options based on subscription and selected format
                 if export_format == "CSV" and can_export_csv:
                     # For CSV format, we'll create a simple table from the dataframe
@@ -774,6 +807,9 @@ with tab2:
                     
                     # Get the export format from helper function
                     export_format = get_export_format()
+                    
+                    # Display the current export format (debug)
+                    st.write(f"Exporting in format: {export_format}")
                     
                     # Different download options based on subscription and selected format
                     if export_format == "CSV" and can_export_csv:
@@ -1069,6 +1105,9 @@ with tab2:
                 
                 # Get the export format from helper function
                 export_format = get_export_format()
+                
+                # Display the current export format (debug)
+                st.write(f"Exporting in format: {export_format}")
                 
                 # Different download options based on subscription and selected format
                 if export_format == "CSV" and can_export_csv:
