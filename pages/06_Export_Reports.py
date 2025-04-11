@@ -30,7 +30,27 @@ def get_export_format():
     else:
         export_format = "CSV"
     
-    print(f"DEBUG - Export format requested: {export_format}")
+    # Store both original and standardized version for debugging
+    original_format = export_format
+    
+    # Standardize format name (convert to title case for consistent display)
+    if isinstance(export_format, str):
+        # Handle special cases
+        if export_format.upper() == "CSV":
+            export_format = "CSV"
+        elif export_format.upper() == "PDF":
+            export_format = "PDF"
+        elif export_format.upper() == "HTML":
+            export_format = "HTML"
+        elif export_format.upper() == "JSON":
+            export_format = "JSON"
+        elif export_format.upper() == "EXCEL":
+            export_format = "Excel"  # Use title case for Excel
+        else:
+            # For any other format, use title case
+            export_format = export_format.title()
+    
+    print(f"DEBUG - Export format requested: {original_format}, standardized to: {export_format}")
     return export_format
 from utils.export import (
     generate_excel_download_link,
