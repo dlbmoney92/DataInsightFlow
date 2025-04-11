@@ -334,11 +334,6 @@ def next_tour_step():
         
         # Increment step count
         st.session_state.tour_current_step = current_step + 1
-        
-        # Log for debugging
-        print(f"Tour step {current_step} on page {page_key} completed")
-        print(f"Advanced to tour step {st.session_state.tour_current_step}")
-        print(f"Completed steps: {st.session_state.tour_steps_completed}")
 
 def show_tour_bubble(
     element_id: str,

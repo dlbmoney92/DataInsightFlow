@@ -495,7 +495,7 @@ if not st.session_state.logged_in:
             <div style="text-align: right; margin-top: 15px;">
                 <img src="https://img.icons8.com/fluency/48/000000/user-female-circle.png" width="30" 
                 style="border-radius: 50%; vertical-align: middle; margin-right: 5px;">
-                <em>Sarah J., Marketing Director</em>
+                <em>Sage B., Marketing Director</em>
             </div>
             """, unsafe_allow_html=True)
     
@@ -515,7 +515,7 @@ if not st.session_state.logged_in:
             <div style="text-align: right; margin-top: 15px;">
                 <img src="https://img.icons8.com/fluency/48/000000/user-male-circle.png" width="30" 
                 style="border-radius: 50%; vertical-align: middle; margin-right: 5px;">
-                <em>Michael T., Data Scientist</em>
+                <em>Quan F., Data Scientist</em>
             </div>
             """, unsafe_allow_html=True)
     
