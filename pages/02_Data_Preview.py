@@ -4,6 +4,7 @@ import numpy as np
 from utils.file_processor import apply_column_types
 from utils.auth_redirect import require_auth
 from utils.custom_navigation import render_navigation, render_developer_login, logout_developer, initialize_navigation
+from utils.quick_start import show_tour_bubble
 
 st.set_page_config(
     page_title="Data Preview | Analytics Assist",
@@ -73,33 +74,57 @@ st.subheader(f"Dataset: {file_name}")
 st.markdown(f"**Rows:** {df.shape[0]} • **Columns:** {df.shape[1]}")
 
 # Data preview with pagination
-page_size = st.slider("Rows per page", min_value=5, max_value=50, value=10, step=5)
-total_pages = max(1, (len(df) + page_size - 1) // page_size)
-page_number = st.number_input("Page", min_value=1, max_value=total_pages, value=1, step=1)
+data_preview_container = st.container()
+with data_preview_container:
+    page_size = st.slider("Rows per page", min_value=5, max_value=50, value=10, step=5)
+    total_pages = max(1, (len(df) + page_size - 1) // page_size)
+    page_number = st.number_input("Page", min_value=1, max_value=total_pages, value=1, step=1)
+    
+    start_idx = (page_number - 1) * page_size
+    end_idx = min(start_idx + page_size, len(df))
+    
+    st.dataframe(df.iloc[start_idx:end_idx], height=400)
 
-start_idx = (page_number - 1) * page_size
-end_idx = min(start_idx + page_size, len(df))
-
-st.dataframe(df.iloc[start_idx:end_idx], height=400)
+# Add tour bubble for data preview section
+show_tour_bubble(
+    element_id="div[data-testid='stDataFrame']", 
+    title="Data Preview", 
+    content="This section displays the first few rows of your dataset. You can use the pagination controls to navigate through the data and get a better understanding of its structure.",
+    step=5,
+    position="bottom",
+    page_key="data_preview_page"
+)
 
 # Missing values summary
-st.subheader("Missing Values Summary")
-missing_values = df.isna().sum()
-missing_percent = (missing_values / len(df) * 100).round(2)
+missing_values_container = st.container()
+with missing_values_container:
+    st.subheader("Missing Values Summary")
+    missing_values = df.isna().sum()
+    missing_percent = (missing_values / len(df) * 100).round(2)
+    
+    missing_df = pd.DataFrame({
+        'Column': missing_values.index,
+        'Missing Values': missing_values.values,
+        'Percentage': missing_percent.values
+    })
+    
+    # Only show columns with missing values
+    missing_df = missing_df[missing_df['Missing Values'] > 0].sort_values(by='Missing Values', ascending=False)
+    
+    if not missing_df.empty:
+        st.dataframe(missing_df, height=200)
+    else:
+        st.success("No missing values found in the dataset!")
 
-missing_df = pd.DataFrame({
-    'Column': missing_values.index,
-    'Missing Values': missing_values.values,
-    'Percentage': missing_percent.values
-})
-
-# Only show columns with missing values
-missing_df = missing_df[missing_df['Missing Values'] > 0].sort_values(by='Missing Values', ascending=False)
-
-if not missing_df.empty:
-    st.dataframe(missing_df, height=200)
-else:
-    st.success("No missing values found in the dataset!")
+# Add tour bubble for missing values section
+show_tour_bubble(
+    element_id="h3:contains('Missing Values Summary')", 
+    title="Missing Values", 
+    content="This section helps you identify missing data in your dataset. Missing values can affect your analysis and should be addressed through imputation or filtering, which you can do in the Data Transformation page.",
+    step=7,
+    position="left",
+    page_key="data_preview_page"
+)
 
 # Duplicate rows check
 duplicates = df.duplicated().sum()
@@ -114,15 +139,27 @@ else:
     st.success("No duplicate rows found in the dataset!")
 
 # Column Types Editor
-st.subheader("Column Types")
-st.markdown("""
-Verify the detected column types below. You can change them if needed.
-- **numeric**: Numbers that can be used in calculations
-- **datetime**: Dates and times
-- **categorical**: Values from a fixed set of options
-- **text**: Free-form text data
-- **boolean**: True/False values
-""")
+column_types_container = st.container()
+with column_types_container:
+    st.subheader("Column Types")
+    st.markdown("""
+    Verify the detected column types below. You can change them if needed.
+    - **numeric**: Numbers that can be used in calculations
+    - **datetime**: Dates and times
+    - **categorical**: Values from a fixed set of options
+    - **text**: Free-form text data
+    - **boolean**: True/False values
+    """)
+
+# Add tour bubble for column types section
+show_tour_bubble(
+    element_id="h3:contains('Column Types')", 
+    title="Column Types", 
+    content="Setting the right data types is crucial for analysis. Here you can review and adjust the automatically detected column types to ensure your data is interpreted correctly.",
+    step=6,
+    position="right",
+    page_key="data_preview_page"
+)
 
 # Allow editing column types
 edited_column_types = {}
@@ -181,40 +218,64 @@ if st.button("Apply Column Types"):
 
 # Navigation buttons
 st.markdown("---")
-col1, col2 = st.columns(2)
+nav_container = st.container()
+with nav_container:
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("← Back to Upload", key="back_to_upload"):
+            st.switch_page("pages/01_Upload_Data.py")
+    
+    with col2:
+        if st.button("Continue to EDA Dashboard →", key="continue_to_eda"):
+            st.switch_page("pages/03_EDA_Dashboard.py")
 
-with col1:
-    if st.button("← Back to Upload", key="back_to_upload"):
-        st.switch_page("pages/01_Upload_Data.py")
-
-with col2:
-    if st.button("Continue to EDA Dashboard →", key="continue_to_eda"):
-        st.switch_page("pages/03_EDA_Dashboard.py")
+# Add tour bubble for navigation
+show_tour_bubble(
+    element_id="div:contains('Continue to EDA Dashboard')", 
+    title="Continue Your Journey", 
+    content="Once you've reviewed your data and made any necessary adjustments to column types, click here to explore your dataset with interactive visualizations in the EDA Dashboard.",
+    step=8,
+    position="bottom",
+    page_key="data_preview_page"
+)
 
 # Add a sidebar with tips
 with st.sidebar:
-    st.header("Understanding Data Types")
+    tips_container = st.container()
+    with tips_container:
+        st.header("Understanding Data Types")
+        
+        st.markdown("""
+        ### Why Data Types Matter:
+        
+        Correct data types ensure:
+        
+        1. **Proper analysis**: Calculations work as expected
+        
+        2. **Efficient storage**: Data is stored optimally
+        
+        3. **Better visualizations**: Charts are appropriate for the data
+        
+        4. **Accurate insights**: AI suggestions are more relevant
+        
+        ### Common Type Issues:
+        
+        - **Numbers stored as text**: Can't be used in calculations
+        
+        - **Dates stored as text**: Can't be used for time analysis
+        
+        - **Categories with too many values**: May need to be treated as text
+        
+        - **Boolean values as text**: Can't be used for logical operations
+        """)
     
-    st.markdown("""
-    ### Why Data Types Matter:
-    
-    Correct data types ensure:
-    
-    1. **Proper analysis**: Calculations work as expected
-    
-    2. **Efficient storage**: Data is stored optimally
-    
-    3. **Better visualizations**: Charts are appropriate for the data
-    
-    4. **Accurate insights**: AI suggestions are more relevant
-    
-    ### Common Type Issues:
-    
-    - **Numbers stored as text**: Can't be used in calculations
-    
-    - **Dates stored as text**: Can't be used for time analysis
-    
-    - **Categories with too many values**: May need to be treated as text
-    
-    - **Boolean values as text**: Can't be used for logical operations
-    """)
+    # Add tour bubble for the sidebar tips
+    show_tour_bubble(
+        element_id="h2:contains('Understanding Data Types')", 
+        title="Helpful Tips", 
+        content="The sidebar contains useful information about data types and why they matter for your analysis. Be sure to reference these tips when deciding how to categorize your columns.",
+        step=9,
+        position="left",
+        page_key="data_preview_page"
+    )
