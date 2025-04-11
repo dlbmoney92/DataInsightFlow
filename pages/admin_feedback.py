@@ -2,393 +2,580 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
-from utils.auth_redirect import require_auth
-from utils.feedback import get_feedback_stats
-from utils.database import get_db_connection
 import json
+import datetime
+import io
+from utils.custom_navigation import render_navigation, initialize_navigation
+from utils.auth_redirect import require_auth
+from utils.database import get_db_connection
+
+# Set the page configuration
+st.set_page_config(
+    page_title="Feedback Dashboard | Analytics Assist",
+    page_icon="📊",
+    layout="wide"
+)
+
+# Authentication check
+require_auth()
 
 def check_admin_status():
     """Check if the current user has admin privileges."""
     if not st.session_state.get("logged_in", False):
         return False
     
-    user_id = st.session_state.get("user_id")
-    if not user_id:
-        return False
+    conn = get_db_connection()
+    cursor = conn.cursor()
     
-    # Check if the user is an admin
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            """
-            SELECT is_admin FROM users WHERE id = %s
-            """,
-            (user_id,)
-        )
-        
-        result = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
-        return result and result[0]
-    except Exception as e:
-        st.error(f"Error checking admin status: {e}")
-        return False
+    user_id = st.session_state.get("user_id")
+    
+    # Check if user is an admin (this would usually be a more robust check)
+    cursor.execute("""
+    SELECT subscription_tier FROM users WHERE id = %s
+    """, (user_id,))
+    
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    if result and result[0] == "enterprise":
+        return True
+    return False
 
 def get_detailed_feedback_data():
     """Get detailed feedback data for analysis."""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Get all feedback with user info
-        cursor.execute(
-            """
-            SELECT 
-                f.id, f.feedback_id, f.feedback_type, f.rating, 
-                f.comments, f.feature, f.page, f.metadata,
-                f.created_at, u.email
-            FROM 
-                user_feedback f
-            LEFT JOIN 
-                users u ON f.user_id = u.id
-            ORDER BY 
-                f.created_at DESC
-            """
-        )
-        
-        # Convert to DataFrame
-        columns = [desc[0] for desc in cursor.description]
-        data = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
-        
-        df = pd.DataFrame(data, columns=columns)
-        
-        # Parse metadata JSON
-        def parse_metadata(metadata_json):
-            if metadata_json:
-                try:
-                    return json.loads(metadata_json)
-                except:
-                    return {}
-            return {}
-        
-        if 'metadata' in df.columns:
-            df['parsed_metadata'] = df['metadata'].apply(parse_metadata)
-        
-        return df
+    conn = get_db_connection()
+    cursor = conn.cursor()
     
-    except Exception as e:
-        st.error(f"Error retrieving feedback data: {e}")
-        return pd.DataFrame()
+    cursor.execute("""
+    SELECT 
+        f.id, 
+        f.user_id, 
+        f.feedback_id, 
+        f.feedback_type, 
+        f.rating, 
+        f.comments, 
+        f.feature, 
+        f.page, 
+        f.metadata, 
+        f.created_at,
+        u.email,
+        u.subscription_tier
+    FROM 
+        user_feedback f
+    LEFT JOIN 
+        users u ON f.user_id = u.id
+    ORDER BY 
+        f.created_at DESC
+    """)
+    
+    columns = [desc[0] for desc in cursor.description]
+    results = []
+    
+    for row in cursor.fetchall():
+        feedback_entry = dict(zip(columns, row))
+        
+        # Parse metadata if it exists
+        def parse_metadata(metadata_json):
+            if not metadata_json:
+                return {}
+            try:
+                if isinstance(metadata_json, str):
+                    return json.loads(metadata_json)
+                return metadata_json
+            except:
+                return {}
+        
+        feedback_entry['metadata'] = parse_metadata(feedback_entry.get('metadata'))
+        
+        # Format timestamps
+        if 'created_at' in feedback_entry and feedback_entry['created_at']:
+            if isinstance(feedback_entry['created_at'], str):
+                try:
+                    feedback_entry['created_at'] = datetime.datetime.fromisoformat(
+                        feedback_entry['created_at'].replace('Z', '+00:00')
+                    )
+                except:
+                    pass
+        
+        results.append(feedback_entry)
+    
+    cursor.close()
+    conn.close()
+    
+    return results
 
 def app():
-    st.title("Feedback Analysis Dashboard")
+    st.title("Feedback Analytics Dashboard")
     
-    # Check if user is logged in
-    if not require_auth():
-        return
+    # Check if user has admin privileges
+    is_admin = check_admin_status()
     
-    # Check admin status
-    if not check_admin_status():
-        st.warning("You need administrator privileges to access this page.")
-        return
+    if not is_admin:
+        st.error("You don't have permission to access this page. Please contact an administrator if you believe this is a mistake.")
+        st.stop()
     
-    # Get feedback statistics
-    stats = get_feedback_stats()
-    detailed_data = get_detailed_feedback_data()
+    # Get all feedback data
+    feedback_data = get_detailed_feedback_data()
     
-    # Dashboard layout with tabs
-    tab1, tab2, tab3 = st.tabs(["Overview", "Detailed Analysis", "Raw Data"])
+    if not feedback_data:
+        st.info("No feedback data has been collected yet.")
+        st.stop()
+    
+    # Convert to DataFrame for analysis
+    df = pd.DataFrame(feedback_data)
+    
+    # Create dashboard layout
+    st.markdown("""
+    <div style="background: linear-gradient(to right, #1e3c72, #2a5298); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: white; margin-bottom: 10px;">User Feedback Analytics</h2>
+        <p style="color: white; font-size: 1.1em;">
+            Analyze user feedback to understand satisfaction levels and identify areas for improvement.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Dashboard metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        total_feedback = len(df)
+        st.metric("Total Feedback", total_feedback)
+    
+    with col2:
+        avg_rating = df['rating'].mean() if 'rating' in df and not df['rating'].empty else 0
+        st.metric("Avg Rating", f"{avg_rating:.1f}/5")
+    
+    with col3:
+        positive_feedback = len(df[df['rating'] >= 4]) if 'rating' in df else 0
+        positive_pct = (positive_feedback / total_feedback * 100) if total_feedback > 0 else 0
+        st.metric("Positive Feedback", f"{positive_pct:.1f}%")
+    
+    with col4:
+        unique_users = df['user_id'].nunique() if 'user_id' in df else 0
+        st.metric("Unique Users", unique_users)
+    
+    # Create tabs for different analyses
+    tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Ratings Analysis", "Feedback Details", "Export Data"])
     
     with tab1:
-        st.subheader("Feedback Overview")
+        st.header("Feedback Overview")
         
-        # Key metrics in columns
-        col1, col2, col3, col4 = st.columns(4)
+        # Create two columns layout
+        col1, col2 = st.columns(2)
         
         with col1:
-            st.metric("Total Feedback", stats["total"])
+            # Feedback type distribution
+            if 'feedback_type' in df.columns:
+                feedback_counts = df['feedback_type'].value_counts().reset_index()
+                feedback_counts.columns = ['Type', 'Count']
+                
+                # Clean up the type names
+                feedback_counts['Type'] = feedback_counts['Type'].str.replace('_', ' ').str.title()
+                
+                fig = px.pie(
+                    feedback_counts, 
+                    values='Count', 
+                    names='Type',
+                    title='Feedback by Type',
+                    hole=0.4,
+                    color_discrete_sequence=px.colors.sequential.Blues_r
+                )
+                st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            avg_rating = round(stats["avg_rating"], 1)
-            st.metric("Average Rating", f"{avg_rating}/5")
-        
-        with col3:
-            positive_pct = int((stats["positive_count"] / stats["total"]) * 100) if stats["total"] > 0 else 0
-            st.metric("Positive Feedback", f"{positive_pct}%")
-        
-        with col4:
-            negative_pct = int((stats["negative_count"] / stats["total"]) * 100) if stats["total"] > 0 else 0
-            st.metric("Negative Feedback", f"{negative_pct}%")
-        
-        st.markdown("---")
-        
-        # Rating distribution chart
-        if detailed_data.empty:
-            st.info("No feedback data available yet.")
-        else:
-            rating_counts = detailed_data['rating'].value_counts().sort_index()
-            
-            fig = px.bar(
-                x=rating_counts.index,
-                y=rating_counts.values,
-                labels={'x': 'Rating', 'y': 'Count'},
-                title="Rating Distribution",
-                color=rating_counts.index,
-                color_continuous_scale=px.colors.sequential.Viridis
-            )
-            
-            fig.update_layout(
-                xaxis=dict(tickmode='linear', tick0=1, dtick=1),
-                showlegend=False
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Feedback over time
-            st.subheader("Feedback Trends")
-            
-            # Convert created_at to datetime if it's not already
-            if 'created_at' in detailed_data.columns:
-                detailed_data['created_at'] = pd.to_datetime(detailed_data['created_at'])
+            # Rating distribution
+            if 'rating' in df.columns:
+                rating_counts = df['rating'].value_counts().reset_index()
+                rating_counts.columns = ['Rating', 'Count']
+                rating_counts = rating_counts.sort_values('Rating')
                 
-                # Group by day and calculate average rating
-                daily_ratings = detailed_data.groupby(detailed_data['created_at'].dt.date)['rating'].agg(['mean', 'count'])
-                daily_ratings = daily_ratings.reset_index()
-                
-                # Line chart for ratings over time
-                fig = px.line(
-                    daily_ratings,
-                    x='created_at',
-                    y='mean',
-                    labels={'created_at': 'Date', 'mean': 'Average Rating'},
-                    title="Average Rating Over Time",
-                    markers=True
-                )
-                
-                fig.update_layout(yaxis=dict(range=[0.5, 5.5]))
-                
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Add volume overlay
                 fig = px.bar(
-                    daily_ratings,
-                    x='created_at',
-                    y='count',
-                    labels={'created_at': 'Date', 'count': 'Number of Responses'},
-                    title="Daily Feedback Volume"
+                    rating_counts,
+                    x='Rating',
+                    y='Count',
+                    title='Rating Distribution',
+                    labels={'Count': 'Number of Feedback'},
+                    color='Count',
+                    color_continuous_scale='Blues'
                 )
-                
                 st.plotly_chart(fig, use_container_width=True)
+        
+        # Feedback over time
+        if 'created_at' in df.columns:
+            # Convert to datetime if it's not already
+            if not pd.api.types.is_datetime64_any_dtype(df['created_at']):
+                df['created_at'] = pd.to_datetime(df['created_at'])
+            
+            # Create date column for grouping
+            df['date'] = df['created_at'].dt.date
+            
+            # Group by date
+            feedback_by_date = df.groupby('date').size().reset_index()
+            feedback_by_date.columns = ['Date', 'Count']
+            
+            # Sort by date
+            feedback_by_date = feedback_by_date.sort_values('Date')
+            
+            # Create timeseries chart
+            fig = px.line(
+                feedback_by_date,
+                x='Date',
+                y='Count',
+                title='Feedback Over Time',
+                labels={'Count': 'Number of Feedback', 'Date': 'Date Received'}
+            )
+            st.plotly_chart(fig, use_container_width=True)
     
     with tab2:
-        st.subheader("Detailed Feedback Analysis")
+        st.header("Ratings Analysis")
         
-        if detailed_data.empty:
-            st.info("No feedback data available yet.")
-        else:
-            # Filters
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                # Date range filter
-                min_date = detailed_data['created_at'].min().date()
-                max_date = detailed_data['created_at'].max().date()
+        # Filter controls
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if 'feedback_type' in df.columns:
+                feedback_types = ['All'] + sorted(df['feedback_type'].unique().tolist())
+                selected_type = st.selectbox('Filter by Feedback Type:', feedback_types)
+        
+        with col2:
+            if 'subscription_tier' in df.columns:
+                subscription_tiers = ['All'] + sorted(df['subscription_tier'].unique().tolist())
+                selected_tier = st.selectbox('Filter by Subscription Tier:', subscription_tiers)
+        
+        # Apply filters
+        filtered_df = df.copy()
+        if selected_type != 'All':
+            filtered_df = filtered_df[filtered_df['feedback_type'] == selected_type]
+        if selected_tier != 'All':
+            filtered_df = filtered_df[filtered_df['subscription_tier'] == selected_tier]
+        
+        # Display analytics
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Average rating by feedback type
+            if 'feedback_type' in df.columns and 'rating' in df.columns:
+                avg_by_type = filtered_df.groupby('feedback_type')['rating'].mean().reset_index()
+                avg_by_type.columns = ['Type', 'Average Rating']
+                avg_by_type['Type'] = avg_by_type['Type'].str.replace('_', ' ').str.title()
                 
-                date_range = st.date_input(
-                    "Date Range",
-                    value=(
-                        max_date - timedelta(days=30),
-                        max_date
-                    ),
-                    min_value=min_date,
-                    max_value=max_date
+                fig = px.bar(
+                    avg_by_type,
+                    x='Type',
+                    y='Average Rating',
+                    title='Average Rating by Feedback Type',
+                    color='Average Rating',
+                    color_continuous_scale='Blues'
                 )
-            
-            with col2:
-                # Feedback type filter
-                feedback_types = ['All'] + list(detailed_data['feedback_type'].unique())
-                selected_type = st.selectbox("Feedback Type", feedback_types)
-            
-            with col3:
-                # Rating filter
-                rating_filter = st.multiselect(
-                    "Rating",
-                    options=[1, 2, 3, 4, 5],
-                    default=[]
+                fig.update_layout(yaxis_range=[0, 5])
+                st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Average rating by subscription tier
+            if 'subscription_tier' in df.columns and 'rating' in df.columns:
+                avg_by_tier = filtered_df.groupby('subscription_tier')['rating'].mean().reset_index()
+                avg_by_tier.columns = ['Subscription Tier', 'Average Rating']
+                avg_by_tier['Subscription Tier'] = avg_by_tier['Subscription Tier'].str.capitalize()
+                
+                fig = px.bar(
+                    avg_by_tier,
+                    x='Subscription Tier',
+                    y='Average Rating',
+                    title='Average Rating by Subscription Tier',
+                    color='Average Rating',
+                    color_continuous_scale='Blues'
                 )
+                fig.update_layout(yaxis_range=[0, 5])
+                st.plotly_chart(fig, use_container_width=True)
+        
+        # Rating trend over time
+        if 'created_at' in filtered_df.columns and 'rating' in filtered_df.columns:
+            # Convert to datetime if it's not already
+            if not pd.api.types.is_datetime64_any_dtype(filtered_df['created_at']):
+                filtered_df['created_at'] = pd.to_datetime(filtered_df['created_at'])
             
-            # Apply filters
-            filtered_data = detailed_data.copy()
+            # Create date column for grouping
+            filtered_df['date'] = filtered_df['created_at'].dt.date
             
-            if len(date_range) == 2:
-                start_date, end_date = date_range
-                start_date = pd.Timestamp(start_date)
-                end_date = pd.Timestamp(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
-                filtered_data = filtered_data[(filtered_data['created_at'] >= start_date) & 
-                                            (filtered_data['created_at'] <= end_date)]
+            # Group by date
+            rating_by_date = filtered_df.groupby('date')['rating'].mean().reset_index()
+            rating_by_date.columns = ['Date', 'Average Rating']
             
-            if selected_type != 'All':
-                filtered_data = filtered_data[filtered_data['feedback_type'] == selected_type]
+            # Sort by date
+            rating_by_date = rating_by_date.sort_values('Date')
             
-            if rating_filter:
-                filtered_data = filtered_data[filtered_data['rating'].isin(rating_filter)]
+            # Create timeseries chart
+            fig = px.line(
+                rating_by_date,
+                x='Date',
+                y='Average Rating',
+                title='Average Rating Over Time',
+                labels={'Average Rating': 'Average Rating', 'Date': 'Date Received'}
+            )
+            fig.update_layout(yaxis_range=[0, 5])
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Feature heatmap
+        if 'feature' in filtered_df.columns and 'rating' in filtered_df.columns:
+            # Group by feature 
+            feature_stats = filtered_df.groupby('feature').agg(
+                avg_rating=('rating', 'mean'),
+                count=('rating', 'count')
+            ).reset_index()
             
-            st.markdown(f"**Showing {len(filtered_data)} feedback entries**")
+            # Sort by count descending
+            feature_stats = feature_stats.sort_values('count', ascending=False).head(10)
             
-            # Feature analysis
-            if 'feature' in filtered_data.columns:
-                feature_data = filtered_data[filtered_data['feature'].notna()]
-                
-                if not feature_data.empty:
-                    feature_ratings = feature_data.groupby('feature').agg({
-                        'rating': ['mean', 'count']
-                    }).reset_index()
-                    
-                    feature_ratings.columns = ['feature', 'avg_rating', 'count']
-                    
-                    # Sort by count then rating
-                    feature_ratings = feature_ratings.sort_values(['count', 'avg_rating'], ascending=[False, False])
-                    
-                    st.subheader("Feature Ratings")
-                    
-                    # Horizontal bar chart
-                    fig = px.bar(
-                        feature_ratings,
-                        y='feature',
-                        x='avg_rating',
-                        color='avg_rating',
-                        text='count',
-                        labels={'avg_rating': 'Average Rating', 'feature': 'Feature', 'count': 'Responses'},
-                        color_continuous_scale=px.colors.sequential.Viridis,
-                        range_x=[0, 5],
-                        hover_data=['count'],
-                        orientation='h'
-                    )
-                    
-                    fig.update_layout(yaxis={'categoryorder': 'total ascending'})
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            # Page analysis
-            if 'page' in filtered_data.columns:
-                page_data = filtered_data[filtered_data['page'].notna()]
-                
-                if not page_data.empty:
-                    page_ratings = page_data.groupby('page').agg({
-                        'rating': ['mean', 'count']
-                    }).reset_index()
-                    
-                    page_ratings.columns = ['page', 'avg_rating', 'count']
-                    
-                    # Sort by count then rating
-                    page_ratings = page_ratings.sort_values(['count', 'avg_rating'], ascending=[False, False])
-                    
-                    st.subheader("Page Ratings")
-                    
-                    # Horizontal bar chart
-                    fig = px.bar(
-                        page_ratings,
-                        y='page',
-                        x='avg_rating',
-                        color='avg_rating',
-                        text='count',
-                        labels={'avg_rating': 'Average Rating', 'page': 'Page', 'count': 'Responses'},
-                        color_continuous_scale=px.colors.sequential.Viridis,
-                        range_x=[0, 5],
-                        hover_data=['count'],
-                        orientation='h'
-                    )
-                    
-                    fig.update_layout(yaxis={'categoryorder': 'total ascending'})
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            # Comments analysis (most recent)
-            st.subheader("Recent Comments")
-            
-            comments_data = filtered_data[filtered_data['comments'].notna()]
-            if not comments_data.empty:
-                comments_data = comments_data.sort_values('created_at', ascending=False).head(10)
-                
-                for _, row in comments_data.iterrows():
-                    with st.container(border=True):
-                        col1, col2 = st.columns([4, 1])
-                        
-                        with col1:
-                            st.write(f"**Rating:** {'⭐' * int(row['rating'])}")
-                            if row.get('feature'):
-                                st.write(f"**Feature:** {row['feature']}")
-                            if row.get('page'):
-                                st.write(f"**Page:** {row['page']}")
-                            st.write(f"{row['comments']}")
-                        
-                        with col2:
-                            st.write(f"**Date:** {row['created_at'].strftime('%Y-%m-%d')}")
-                            if 'email' in row and row['email']:
-                                st.write(f"**User:** {row['email']}")
-            else:
-                st.info("No comments available for the selected filters.")
+            # Create bubble chart 
+            fig = px.scatter(
+                feature_stats,
+                x='feature',
+                y='avg_rating',
+                size='count',
+                title='Feature Rating Performance',
+                labels={
+                    'feature': 'Feature',
+                    'avg_rating': 'Average Rating',
+                    'count': 'Number of Feedback'
+                },
+                color='avg_rating',
+                color_continuous_scale='RdYlGn',
+                size_max=50
+            )
+            fig.update_layout(yaxis_range=[0, 5])
+            st.plotly_chart(fig, use_container_width=True)
     
     with tab3:
-        st.subheader("Raw Feedback Data")
+        st.header("Feedback Details")
         
-        if detailed_data.empty:
-            st.info("No feedback data available yet.")
+        # Search filters
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            search_text = st.text_input("Search in comments:", "")
+        
+        with col2:
+            min_rating = st.number_input("Minimum Rating:", min_value=1, max_value=5, value=1)
+        
+        with col3:
+            if 'feedback_type' in df.columns:
+                feedback_types = ['All'] + sorted(df['feedback_type'].unique().tolist())
+                search_type = st.selectbox('Feedback Type:', feedback_types, key="search_type")
+        
+        # Apply filters for search
+        search_df = df.copy()
+        
+        if search_text:
+            if 'comments' in search_df.columns:
+                # Filter for comments containing the search text
+                search_df = search_df[search_df['comments'].str.contains(search_text, case=False, na=False)]
+        
+        if 'rating' in search_df.columns:
+            search_df = search_df[search_df['rating'] >= min_rating]
+        
+        if search_type != 'All':
+            search_df = search_df[search_df['feedback_type'] == search_type]
+        
+        # Display feedback table
+        if not search_df.empty:
+            # Prepare display dataframe
+            display_cols = ['id', 'feedback_type', 'rating', 'feature', 'comments', 'email', 'created_at']
+            display_df = search_df[display_cols].copy() if all(col in search_df.columns for col in display_cols) else search_df.copy()
+            
+            # Format columns for display
+            if 'feedback_type' in display_df.columns:
+                display_df['feedback_type'] = display_df['feedback_type'].str.replace('_', ' ').str.title()
+            
+            if 'comments' in display_df.columns:
+                display_df['comments'] = display_df['comments'].apply(lambda x: x[:100] + "..." if isinstance(x, str) and len(x) > 100 else x)
+            
+            # Rename columns for display
+            column_map = {
+                'id': 'ID',
+                'feedback_type': 'Type',
+                'rating': 'Rating',
+                'feature': 'Feature',
+                'comments': 'Comments',
+                'email': 'User Email',
+                'created_at': 'Date'
+            }
+            display_df.rename(columns=column_map, inplace=True)
+            
+            st.dataframe(display_df, use_container_width=True)
+            
+            # Detailed view
+            if st.checkbox("Show detailed feedback"):
+                selected_id = st.selectbox(
+                    "Select feedback to view details:",
+                    search_df['id'].tolist(),
+                    format_func=lambda x: f"ID: {x} - {search_df[search_df['id'] == x]['created_at'].iloc[0].strftime('%Y-%m-%d %H:%M')} - {search_df[search_df['id'] == x]['feature'].iloc[0]}"
+                )
+                
+                selected_feedback = search_df[search_df['id'] == selected_id].iloc[0]
+                
+                st.markdown("---")
+                st.subheader(f"Feedback Details: {selected_feedback.get('feature', 'N/A')}")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown(f"**ID:** {selected_feedback.get('id', 'N/A')}")
+                    st.markdown(f"**Type:** {selected_feedback.get('feedback_type', '').replace('_', ' ').title()}")
+                    st.markdown(f"**Rating:** {selected_feedback.get('rating', 'N/A')}/5")
+                    st.markdown(f"**User:** {selected_feedback.get('email', 'Anonymous')}")
+                    st.markdown(f"**Subscription:** {selected_feedback.get('subscription_tier', 'N/A').capitalize()}")
+                
+                with col2:
+                    st.markdown(f"**Date:** {selected_feedback.get('created_at').strftime('%Y-%m-%d %H:%M')}")
+                    st.markdown(f"**Page:** {selected_feedback.get('page', 'N/A')}")
+                    st.markdown(f"**Feature:** {selected_feedback.get('feature', 'N/A')}")
+                
+                st.markdown("### Comments")
+                st.markdown(selected_feedback.get('comments', 'No comments provided'))
+                
+                # Display metadata if available
+                metadata = selected_feedback.get('metadata', {})
+                if metadata and isinstance(metadata, dict) and len(metadata) > 0:
+                    st.markdown("### Additional Information")
+                    
+                    # Format the metadata for display
+                    for key, value in metadata.items():
+                        formatted_key = key.replace('_', ' ').title()
+                        if isinstance(value, (dict, list)):
+                            st.markdown(f"**{formatted_key}:**")
+                            st.json(value)
+                        else:
+                            st.markdown(f"**{formatted_key}:** {value}")
+                
+                # Add response section
+                with st.expander("Respond to this feedback", expanded=False):
+                    response_text = st.text_area("Your response:", key=f"response_{selected_id}")
+                    resolve_status = st.checkbox("Mark as resolved", key=f"resolve_{selected_id}")
+                    
+                    if st.button("Submit Response", key=f"submit_response_{selected_id}"):
+                        # Save response to database
+                        conn = get_db_connection()
+                        cursor = conn.cursor()
+                        
+                        try:
+                            cursor.execute("""
+                            INSERT INTO feedback_responses
+                                (feedback_id, response_type, response_text, staff_id, resolved, created_at)
+                            VALUES
+                                (%s, %s, %s, %s, %s, %s)
+                            """, (
+                                selected_feedback.get('feedback_id'),
+                                'admin_response',
+                                response_text,
+                                st.session_state.get('user_id'),
+                                resolve_status,
+                                datetime.datetime.now()
+                            ))
+                            
+                            conn.commit()
+                            st.success("Response submitted successfully!")
+                        except Exception as e:
+                            st.error(f"Error submitting response: {e}")
+                        finally:
+                            cursor.close()
+                            conn.close()
         else:
-            # Display columns selection
-            display_cols = st.multiselect(
-                "Select columns to display",
-                options=detailed_data.columns.tolist(),
-                default=['id', 'rating', 'feedback_type', 'feature', 'page', 'comments', 'created_at', 'email']
+            st.info("No feedback entries match your search criteria.")
+    
+    with tab4:
+        st.header("Export Feedback Data")
+        
+        # Export options
+        st.markdown("Download the feedback data for further analysis.")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            export_format = st.selectbox(
+                "Export Format:",
+                ["CSV", "Excel", "JSON"],
+                key="export_format"
             )
-            
-            if not display_cols:
-                display_cols = ['id', 'rating', 'feedback_type', 'feature', 'page', 'comments', 'created_at']
-            
-            # Display the data
-            st.dataframe(
-                detailed_data[display_cols],
-                use_container_width=True,
-                column_config={
-                    "rating": st.column_config.NumberColumn(
-                        "Rating",
-                        format="%d ⭐"
-                    ),
-                    "created_at": st.column_config.DatetimeColumn(
-                        "Date",
-                        format="YYYY-MM-DD HH:mm"
-                    )
-                }
+        
+        with col2:
+            date_range = st.date_input(
+                "Date Range (optional):",
+                value=(
+                    df['created_at'].min().date() if 'created_at' in df.columns and not df.empty else datetime.date.today() - datetime.timedelta(days=30),
+                    df['created_at'].max().date() if 'created_at' in df.columns and not df.empty else datetime.date.today()
+                ),
+                key="export_date_range"
             )
-            
-            # Export options
-            export_format = st.radio("Export Format", ["CSV", "Excel"], horizontal=True)
-            
-            if st.button("Export Data"):
-                if export_format == "CSV":
-                    csv = detailed_data.to_csv(index=False)
-                    st.download_button(
-                        label="Download CSV",
-                        data=csv,
-                        file_name=f"feedback_export_{datetime.now().strftime('%Y%m%d')}.csv",
-                        mime="text/csv"
-                    )
-                else:
-                    # Export to Excel
-                    excel_buffer = detailed_data.to_excel(index=False)
-                    st.download_button(
-                        label="Download Excel",
-                        data=excel_buffer,
-                        file_name=f"feedback_export_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
+        
+        # Prepare data for export
+        export_df = df.copy()
+        
+        # Apply date filter if selected
+        if len(date_range) == 2 and 'created_at' in export_df.columns:
+            start_date, end_date = date_range
+            # Convert end_date to end of day
+            end_date = datetime.datetime.combine(end_date, datetime.time.max)
+            export_df = export_df[(export_df['created_at'] >= pd.Timestamp(start_date)) & 
+                                 (export_df['created_at'] <= pd.Timestamp(end_date))]
+        
+        # Convert metadata to string for export
+        if 'metadata' in export_df.columns:
+            export_df['metadata'] = export_df['metadata'].apply(
+                lambda x: json.dumps(x) if isinstance(x, (dict, list)) else x
+            )
+        
+        # Generate download button
+        if not export_df.empty:
+            if export_format == "CSV":
+                csv_data = export_df.to_csv(index=False)
+                st.download_button(
+                    label="Download CSV",
+                    data=csv_data,
+                    file_name=f"feedback_data_{datetime.date.today().strftime('%Y-%m-%d')}.csv",
+                    mime="text/csv"
+                )
+            elif export_format == "Excel":
+                # Convert to Excel
+                excel_buffer = io.BytesIO()
+                with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                    export_df.to_excel(writer, index=False, sheet_name='Feedback Data')
+                excel_data = excel_buffer.getvalue()
+                
+                st.download_button(
+                    label="Download Excel",
+                    data=excel_data,
+                    file_name=f"feedback_data_{datetime.date.today().strftime('%Y-%m-%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            elif export_format == "JSON":
+                # Convert to JSON
+                json_data = export_df.to_json(orient='records', date_format='iso')
+                st.download_button(
+                    label="Download JSON",
+                    data=json_data,
+                    file_name=f"feedback_data_{datetime.date.today().strftime('%Y-%m-%d')}.json",
+                    mime="application/json"
+                )
+        else:
+            st.info("No data available for export with the selected filters.")
 
+# Run the app
 if __name__ == "__main__":
+    # Initialize navigation
+    initialize_navigation()
+    
+    # Hide Streamlit's default menu
+    st.markdown("""
+        <style>
+            [data-testid="stSidebarNav"] {
+                display: none !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Render custom navigation bar
+    render_navigation()
+    
+    # Run the app
     app()

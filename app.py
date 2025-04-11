@@ -17,6 +17,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 from utils.file_processor import supported_file_types
 from utils.database import initialize_database
+from utils.feedback import initialize_feedback_database
 from utils.access_control import check_and_handle_trial_expiration
 from utils.subscription import SUBSCRIPTION_PLANS, format_price, get_trial_days_remaining
 from utils.global_config import apply_global_css, render_footer
@@ -164,7 +165,6 @@ apply_global_css()
 initialize_database()
 
 # Initialize feedback database
-from utils.feedback import initialize_feedback_database
 initialize_feedback_database()
 
 # Initialize session state variables if they don't exist
