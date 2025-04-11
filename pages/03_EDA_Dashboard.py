@@ -33,6 +33,7 @@ from utils.auth_redirect import require_auth
 from utils.custom_navigation import render_navigation, initialize_navigation
 from utils.global_config import apply_global_css
 from utils.access_control import check_access
+from utils.quick_start import show_tour_bubble
 import base64
 
 def format_outlier_value(value):
@@ -63,7 +64,19 @@ st.markdown("""
 render_navigation()
 
 # Main content
-st.title("EDA Dashboard")
+title_container = st.container()
+with title_container:
+    st.title("EDA Dashboard")
+
+# Add tour bubble for EDA Dashboard
+show_tour_bubble(
+    element_id="h1:contains('EDA Dashboard')", 
+    title="EDA Dashboard", 
+    content="Welcome to the Exploratory Data Analysis Dashboard! Here you can gain deeper insights into your data through statistical summaries, visualizations, and correlation analysis.",
+    step=10,
+    position="bottom",
+    page_key="eda_dashboard_page"
+)
 
 # Check if user is authenticated, redirect if not
 if not require_auth():
@@ -119,7 +132,19 @@ for tab_name, available in tabs_available.items():
         tab_index += 1
 
 # Create tabs
-tabs = st.tabs([name for name, info in tab_info.items() if info["available"]])
+tabs_container = st.container()
+with tabs_container:
+    tabs = st.tabs([name for name, info in tab_info.items() if info["available"]])
+
+# Add tour bubble for EDA tabs
+show_tour_bubble(
+    element_id="div[data-testid='stHorizontalBlock']", 
+    title="Analysis Tabs", 
+    content="These tabs organize different types of analysis for your dataset. Start with the Summary tab for basic statistics, then explore Visualizations and Correlations to discover deeper insights.",
+    step=11,
+    position="top",
+    page_key="eda_dashboard_page"
+)
 
 # Summary tab (always available)
 with tabs[tab_info["Summary"]["index"]]:
@@ -272,19 +297,31 @@ if tab_info["Visualizations"]["available"]:
         st.header("Data Visualizations")
         
         # Create an AI suggestion section
-        with st.expander("🤖 AI-Suggested Visualizations", expanded=True):
-            visualizations = suggest_visualizations(df)
-            if visualizations:
-                # Display suggestions in a user-friendly format
-                for i, viz in enumerate(visualizations):
-                    with st.container():
-                        st.markdown(f"### {i+1}. {viz.get('title', 'Visualization Suggestion')}")
-                        st.markdown(f"**Chart Type:** {viz.get('chart_type', 'Not specified')}")
-                        st.markdown(f"**Description:** {viz.get('description', 'No description available')}")
-                        st.markdown(f"**Columns:** {', '.join(viz.get('columns', []))}")
-                        st.markdown("---")
-            else:
-                st.info("No visualization suggestions available for this dataset.")
+        ai_suggestions_container = st.container()
+        with ai_suggestions_container:
+            with st.expander("🤖 AI-Suggested Visualizations", expanded=True):
+                visualizations = suggest_visualizations(df)
+                if visualizations:
+                    # Display suggestions in a user-friendly format
+                    for i, viz in enumerate(visualizations):
+                        with st.container():
+                            st.markdown(f"### {i+1}. {viz.get('title', 'Visualization Suggestion')}")
+                            st.markdown(f"**Chart Type:** {viz.get('chart_type', 'Not specified')}")
+                            st.markdown(f"**Description:** {viz.get('description', 'No description available')}")
+                            st.markdown(f"**Columns:** {', '.join(viz.get('columns', []))}")
+                            st.markdown("---")
+                else:
+                    st.info("No visualization suggestions available for this dataset.")
+
+        # Add tour bubble for AI suggestions
+        show_tour_bubble(
+            element_id="div:contains('AI-Suggested Visualizations')", 
+            title="AI-Powered Suggestions", 
+            content="Our AI analyzes your data and recommends the most insightful visualizations based on your dataset's structure and content.",
+            step=12,
+            position="right",
+            page_key="eda_dashboard_page"
+        )
         
         # Choose a visualization type
         viz_type = st.selectbox(
@@ -378,7 +415,19 @@ if tab_info["Visualizations"]["available"]:
         
 # Correlations tab (always available)
 with tabs[tab_info["Correlations"]["index"]]:
-    st.header("Correlation Analysis")
+    correlation_container = st.container()
+    with correlation_container:
+        st.header("Correlation Analysis")
+    
+    # Add tour bubble for correlation analysis
+    show_tour_bubble(
+        element_id="h2:contains('Correlation Analysis')", 
+        title="Correlation Analysis", 
+        content="Discover hidden relationships between variables in your dataset. Stronger correlations indicate potential causal relationships or predictive patterns.",
+        step=13,
+        position="bottom",
+        page_key="eda_dashboard_page"
+    )
     
     # Only perform correlation analysis if there are at least 2 numeric columns
     if len(numeric_cols) >= 2:
