@@ -141,23 +141,13 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
     with st.container(border=True):
         st.subheader(f"Share {content_type.title()}")
         
-        # Show the shareable link in a text input
-        st.text_input("Shareable Link", absolute_share_link, disabled=True, key=f"share_input_{hash(share_link)}")
+        # Show the shareable link in a text input (not disabled so it can be selected)
+        st.text_input("Shareable Link (Select and Copy)", absolute_share_link, key=f"share_input_{hash(share_link)}")
+        
+        # Display manual instructions for copying
+        st.caption("👆 Select the link above and press Ctrl+C (or Cmd+C on Mac) to copy it to your clipboard")
         
         col1, col2 = st.columns(2)
-        with col1:
-            # Instead of using onClick directly which causes React error #231,
-            # we'll use a proper streamlit button and the modern Clipboard API
-            
-            copy_unique_key = f"copy_btn_{hash(share_link)}"
-            if st.button("📋 Copy Link", key=copy_unique_key):
-                # Use the modern Clipboard API with proper error handling
-                # Enhanced clipboard functionality with multiple fallback methods
-                copy_js = f"""
-                <script>
-                    (function() {{
-                        const shareUrl = "{absolute_share_link}";
-                        const copySuccessId = "copy_success_{hash(share_link)}";
                         
                         // Create a hidden textarea element for copy fallback
                         // Using textarea instead of input for better compatibility with longer text
@@ -256,8 +246,8 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
                             inputField.style.padding = '5px';
                             inputField.style.marginBottom = '10px';
                             inputField.setAttribute('readonly', '');
-                            inputField.onclick = function() { 
-                                this.select(); 
+                            inputField.onclick = function() {
+                                inputField.select();
                             };
                             
                             const closeButton = document.createElement('button');
@@ -268,7 +258,9 @@ def generate_share_card(title, content_type, share_link, include_social=True, su
                             closeButton.style.border = 'none';
                             closeButton.style.borderRadius = '3px';
                             closeButton.style.cursor = 'pointer';
-                            closeButton.onclick = function() { copyModal.remove(); };
+                            closeButton.onclick = function() { 
+                                document.body.removeChild(copyModal);
+                            };
                             
                             modalContent.appendChild(modalHeader);
                             modalContent.appendChild(modalDesc);
