@@ -20,7 +20,16 @@ import uuid
 # Helper function to get the current export format safely
 def get_export_format():
     """Get the current export format from session state, defaulting to CSV if not set."""
-    export_format = st.session_state.get("export_format", "CSV")
+    # Get from the export_format_radio key directly if it exists (most reliable)
+    if "export_format_radio" in st.session_state:
+        export_format = st.session_state.export_format_radio
+    # Fall back to the export_format if it exists
+    elif "export_format" in st.session_state:
+        export_format = st.session_state.export_format
+    # Default to CSV if nothing is set
+    else:
+        export_format = "CSV"
+    
     print(f"DEBUG - Export format requested: {export_format}")
     return export_format
 from utils.export import (
@@ -321,10 +330,12 @@ with tab2:
         export_format = st.radio(
             "Export Format",
             available_formats,
-            horizontal=True
+            horizontal=True,
+            key="export_format_radio"  # Add a unique key
         )
-        # Update session state
-        st.session_state.export_format = export_format
+        # Update session state immediately when selection changes
+        if "export_format_radio" in st.session_state:
+            st.session_state.export_format = st.session_state.export_format_radio
     
     if report_type == "Summary Report" and can_export_reports:
         include_transformations = st.checkbox("Include transformation history", value=True)
