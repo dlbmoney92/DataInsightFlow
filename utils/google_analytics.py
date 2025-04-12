@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit.components.v1 import html
 
 # Google Analytics tracking ID
-GA_TRACKING_ID = "G-LNS5P4X7H9"
+GA_TRACKING_ID = "G-HGSH7TS3LX"
 
 def inject_ga_tracking_code():
     """
