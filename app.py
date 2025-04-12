@@ -8,9 +8,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Add Google Analytics tracking code - using the custom injector for better integration
-from utils.html_head_injector import inject_ga_tracking
-inject_ga_tracking()
+# Add Google Analytics tracking code - using improved implementation
+from utils.google_analytics import add_ga_tracking
+add_ga_tracking()
 
 import pandas as pd
 import numpy as np
