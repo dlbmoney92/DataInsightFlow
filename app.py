@@ -8,9 +8,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Add Google Analytics tracking code using component approach
-from components.google_analytics import add_google_analytics
-add_google_analytics()
+# Add Google Analytics tracking code using direct HTML approach
+from utils.direct_ga import add_ga_tag
+add_ga_tag()
 
 import pandas as pd
 import numpy as np
