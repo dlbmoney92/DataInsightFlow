@@ -5,8 +5,9 @@ def add_google_analytics():
     # Google Analytics measurement ID
     GA_TRACKING_ID = "G-LNS5P4X7H9"
     
-    # Google Analytics tracking code
+    # Google Analytics tracking code - add it to the head section of the page
     ga_script = f"""
+    <head>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={GA_TRACKING_ID}"></script>
     <script>
@@ -15,9 +16,10 @@ def add_google_analytics():
       gtag('js', new Date());
       gtag('config', '{GA_TRACKING_ID}');
     </script>
+    </head>
     """
     
-    # Inject the script to the Streamlit app
+    # Use HTML hack to inject the script before the Streamlit content
     st.markdown(ga_script, unsafe_allow_html=True)
 
 def hide_default_navigation():
