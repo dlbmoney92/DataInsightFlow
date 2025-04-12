@@ -1,5 +1,25 @@
 import streamlit as st
 
+def add_google_analytics():
+    """Add Google Analytics tracking code to the app."""
+    # Google Analytics measurement ID
+    GA_TRACKING_ID = "G-LNS5P4X7H9"
+    
+    # Google Analytics tracking code
+    ga_script = f"""
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={GA_TRACKING_ID}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){{dataLayer.push(arguments);}}
+      gtag('js', new Date());
+      gtag('config', '{GA_TRACKING_ID}');
+    </script>
+    """
+    
+    # Inject the script to the Streamlit app
+    st.markdown(ga_script, unsafe_allow_html=True)
+
 def hide_default_navigation():
     """Hide default Streamlit navigation elements."""
     st.markdown("""

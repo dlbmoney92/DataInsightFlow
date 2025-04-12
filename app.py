@@ -20,7 +20,7 @@ from utils.database import initialize_database
 from utils.feedback import initialize_feedback_database
 from utils.access_control import check_and_handle_trial_expiration
 from utils.subscription import SUBSCRIPTION_PLANS, format_price, get_trial_days_remaining
-from utils.global_config import apply_global_css, render_footer
+from utils.global_config import apply_global_css, render_footer, add_google_analytics
 import uuid
 from utils.custom_navigation import render_navigation, initialize_navigation
 # Removed quick start wizard functionality
@@ -160,6 +160,9 @@ def create_sample_chart(chart_type='bar'):
 
 # Apply global CSS to add styling to Streamlit's native navigation
 apply_global_css()
+
+# Add Google Analytics tracking code
+add_google_analytics()
 
 # Initialize database
 initialize_database()
