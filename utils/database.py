@@ -71,7 +71,8 @@ users = Table(
     Column('subscription_end_date', DateTime, nullable=True),
     Column('is_trial', Integer, default=0),  # Boolean (0 or 1)
     Column('trial_start_date', DateTime, nullable=True),
-    Column('trial_end_date', DateTime, nullable=True)
+    Column('trial_end_date', DateTime, nullable=True),
+    Column('is_admin', Integer, default=0)  # Boolean (0 or 1)
 )
 
 password_reset_tokens = Table(
