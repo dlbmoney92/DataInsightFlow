@@ -105,8 +105,10 @@ def app():
                 st.error("You must accept the terms and conditions.")
                 return
             
-            # Hash the password (SHA-256)
-            password_hash = hashlib.sha256(password.encode()).hexdigest()
+            # Hash the password with salt for consistency with login
+            salt = "analyticsassist"  # Fixed salt for consistency
+            salted_password = password + salt
+            password_hash = hashlib.sha256(salted_password.encode()).hexdigest()
             
             # Create user
             result = create_user(email, password_hash, full_name)

@@ -57,8 +57,10 @@ def app():
                 if not email or not password:
                     st.error("Please fill in all fields")
                 else:
-                    # Hash the password
-                    password_hash = hashlib.sha256(password.encode()).hexdigest()
+                    # Hash the password with salt for admin
+                    salt = "analyticsassist"  # Fixed salt for consistency
+                    salted_password = password + salt
+                    password_hash = hashlib.sha256(salted_password.encode()).hexdigest()
                     
                     # Check credentials
                     if check_valid_credentials(email, password_hash):
