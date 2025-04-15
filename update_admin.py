@@ -41,7 +41,11 @@ def update_admin_user():
                 connection.execute(
                     users.update()
                     .where(users.c.email == admin_email)
-                    .values(password_hash=password_hash)
+                    .values(
+                        password_hash=password_hash,
+                        subscription_tier="enterprise",  # Ensure admin has the highest tier
+                        is_admin=1  # Ensure admin flag is set
+                    )
                 )
                 print("Admin user updated successfully")
             else:
