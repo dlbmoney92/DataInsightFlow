@@ -43,6 +43,9 @@ def get_navigation_items():
     
     # Items for logged in users
     if is_logged_in:
+        # Get user's subscription tier
+        subscription_tier = st.session_state.get("subscription_tier", "free")
+        
         # Regular user navigation items
         user_items = [
             {
@@ -128,7 +131,21 @@ def get_navigation_items():
             "icon": '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M792-56 612-236q-30 26-69.959 41T460-180q-91.743 0-170.371-39T180-319q-51-61-75.5-138.5T80-600q0-42 8-83.5t24-81.5l244 243v71h72l71 71 54-54-45-45q20-11 36-28t24-38l62 62L792-56ZM419-495l-28-28q-11-11-28-11t-28 11q-11 11-11 28t11 28l28 28q11 11 28 11t28-11q11-11 11-28t-11-28ZM763-56l-31-31 84-202-149-149q-3 5-6 9.5t-7 9.5q-14-8-25-19.5T610-460q12-16 16.5-33.5T631-528l-55-55q-12 5-24 7.5t-22 2.5q-8 0-15-1.5t-15-3.5l-36-36q17-9 30-23t20-32l-85-85 31-31 303 303 124 125-124 301Z"/></svg>',
         })
         
-        # Developer mode has been removed
+        # Add admin pages for enterprise tier users
+        if subscription_tier == "enterprise":
+            admin_items = [
+                {
+                    "name": "Admin Feedback",
+                    "url": "/pages/admin_feedback.py",
+                    "icon": ADMIN_ICON,
+                },
+                {
+                    "name": "Admin Analytics",
+                    "url": "/pages/admin_analytics.py",
+                    "icon": '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M120-240v-80h720v80H120Zm40-160q-17 0-28.5-11.5T120-440v-240q0-17 11.5-28.5T160-720h160q17 0 28.5 11.5T360-680v240q0 17-11.5 28.5T320-400H160Zm280 0q-17 0-28.5-11.5T400-440v-400q0-17 11.5-28.5T440-880h160q17 0 28.5 11.5T640-840v400q0 17-11.5 28.5T600-400H440Zm280 0q-17 0-28.5-11.5T680-440v-120q0-17 11.5-28.5T720-600h160q17 0 28.5 11.5T920-560v120q0 17-11.5 28.5T880-400H720Z"/></svg>',
+                }
+            ]
+            nav_items.extend(admin_items)
     else:
         # No navigation items for non-logged in users (only home)
         pass
