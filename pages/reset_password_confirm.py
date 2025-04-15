@@ -112,8 +112,10 @@ def app():
                 if not is_strong:
                     st.error(message)
                 else:
-                    # Hash the new password
-                    password_hash = hashlib.sha256(new_password.encode()).hexdigest()
+                    # Hash the new password with salt for consistency
+                    salt = "analyticsassist"  # Fixed salt for consistency
+                    salted_password = new_password + salt
+                    password_hash = hashlib.sha256(salted_password.encode()).hexdigest()
                     
                     # Update the password and mark the token as used
                     if update_user_password(user_id, password_hash) and mark_token_as_used(token):
