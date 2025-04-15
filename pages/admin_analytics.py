@@ -30,16 +30,16 @@ def check_admin_status():
     
     user_id = st.session_state.get("user_id")
     
-    # Check if user is an admin (subscription tier = enterprise)
+    # Check if user is an admin based on is_admin flag
     cursor.execute("""
-    SELECT subscription_tier FROM users WHERE id = %s
+    SELECT is_admin FROM users WHERE id = %s
     """, (user_id,))
     
     result = cursor.fetchone()
     cursor.close()
     conn.close()
     
-    if result and result[0] == "enterprise":
+    if result and result[0] == 1:
         return True
     return False
 

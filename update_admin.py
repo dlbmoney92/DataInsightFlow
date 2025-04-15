@@ -52,7 +52,8 @@ def update_admin_user():
                         email=admin_email,
                         password_hash=password_hash,
                         full_name="Admin User",
-                        subscription_tier="enterprise"  # Give admin the highest tier
+                        subscription_tier="enterprise",  # Give admin the highest tier
+                        is_admin=1  # Set admin flag
                     )
                 )
                 print("Admin user created successfully")

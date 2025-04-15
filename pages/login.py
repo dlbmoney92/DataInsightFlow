@@ -71,6 +71,7 @@ def app():
                             st.session_state.user = user
                             st.session_state.user_id = user["id"]
                             st.session_state.subscription_tier = user.get("subscription_tier", "free")
+                            st.session_state.is_admin = user.get("is_admin", False)
                             
                             # Update last login time
                             update_last_login(user["id"])

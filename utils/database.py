@@ -772,7 +772,8 @@ def get_user_by_email(email):
                     'subscription_end_date': result.subscription_end_date,
                     'is_trial': bool(result.is_trial),
                     'trial_start_date': result.trial_start_date,
-                    'trial_end_date': result.trial_end_date
+                    'trial_end_date': result.trial_end_date,
+                    'is_admin': bool(result.is_admin)
                 }
             return None
         except Exception as e:
@@ -813,7 +814,8 @@ def get_user_by_id(user_id):
                     'subscription_end_date': result.subscription_end_date,
                     'is_trial': bool(result.is_trial),
                     'trial_start_date': result.trial_start_date,
-                    'trial_end_date': result.trial_end_date
+                    'trial_end_date': result.trial_end_date,
+                    'is_admin': bool(result.is_admin)
                 }
             return None
         except Exception as e:
