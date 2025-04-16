@@ -15,6 +15,8 @@ add_ga_tag()
 import pandas as pd
 import numpy as np
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import json
 import plotly.express as px
 import plotly.graph_objects as go
@@ -165,14 +167,20 @@ def create_sample_chart(chart_type='bar'):
 # Apply global CSS to add styling to Streamlit's native navigation
 apply_global_css()
 
-# Google Analytics is now added directly at the top of the page
-# No need to call add_google_analytics() here anymore
+# Initialize the main app database with DATABASE_URL from .env
+try:
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        raise ValueError("DATABASE_URL not found. Please check your environment configuration.")
+    initialize_database(db_url)
+except Exception as e:
+    st.error(f"Error initializing main database: {e}")
 
-# Initialize database
-initialize_database()
-
-# Initialize feedback database
-initialize_feedback_database()
+# Initialize the feedback database separately using same DATABASE_URL
+try:
+    initialize_feedback_database(db_url)
+except Exception as e:
+    st.error(f"Error initializing feedback database: {e}")
 
 # Initialize session state variables if they don't exist
 if 'logged_in' not in st.session_state:
