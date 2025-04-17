@@ -24,7 +24,7 @@ def render_navigation():
     current_page = st.session_state.get("current_page", "/")
     
     # Debug info
-    print(f"Rendering navigation with current page: {current_page}")
+    st.write(f"🧭 Rendering navigation for page: {current_page}")
     print(f"Navigation items: {[item.get('url', '#') for item in nav_items]}")
     
     # App title with gradient
