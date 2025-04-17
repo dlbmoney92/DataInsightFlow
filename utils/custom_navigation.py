@@ -237,4 +237,4 @@ def initialize_navigation():
     # Store in session state
     if "current_page" not in st.session_state or st.session_state.current_page != current_url:
         st.session_state.current_page = current_url
-        print(f"Set current_page to: {current_url}")
+        st.write(f"✅ Set current page to: {current_url}")
