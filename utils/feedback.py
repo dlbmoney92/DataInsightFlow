@@ -5,8 +5,11 @@ from typing import Optional, Dict, Any, List
 import json
 import os
 from utils.database import get_db_connection
+from sqlalchemy import create_engine
 
-def initialize_feedback_database():
+def initialize_feedback_database(db_url):
+    engine = create_engine(db_url)
+    conn = engine.connect()
     """Create the feedback tables if they don't exist."""
     def _initialize_operation():
         conn = get_db_connection()
