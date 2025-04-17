@@ -232,7 +232,7 @@ def initialize_navigation():
         current_url = "/"
     
     # Print for debugging
-    print(f"Current URL detected: {current_url}")
+    st.write(f"📍 Current URL detected: {current_url}")
     
     # Store in session state
     if "current_page" not in st.session_state or st.session_state.current_page != current_url:
