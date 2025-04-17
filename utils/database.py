@@ -144,7 +144,9 @@ insights = Table(
 )
 
 # Create tables if they don't exist
-def initialize_database():
+def initialize_database(db_url):
+    engine = create_engine(db_url)
+    conn = engine.connect()
     """Create database tables if they don't exist."""
     inspector = inspect(engine)
     
