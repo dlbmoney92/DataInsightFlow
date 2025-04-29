@@ -5,7 +5,7 @@ from utils.subscription import SUBSCRIPTION_PLANS
 from utils.database import update_user_subscription
 
 # Set up Stripe API key
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "pk_live_51RB3nwECzEFv0PT1bYl0SK9zMDczypQrPZ1ovgjmLe4fNPtTuGZKSys2l5nd5H2JsDkoKyt82aEfrSeex05yfbbX00O0oyguqI")
 
 # Check for API key on module load
 if not stripe.api_key:
